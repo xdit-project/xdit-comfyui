@@ -1,8 +1,16 @@
 import comfy
 import logging
+import torch
+import copy
+
+from safetensors import safe_open
 from comfy import model_management
 from comfy import model_detection
-from .executor import FluxExecutor
+from layers import (DoubleStreamBlockLoraProcessor,
+                    DoubleStreamMixerProcessor,
+                    DoubleStreamBlockProcessor)
+from layers import DoubleStreamBlock as DSBnew
+from comfy.ldm.flux.layers import DoubleStreamBlock as DSBold
 
 def load_diffusion_model_state_dict(sd, model_options={}): #load unet in diffusers or regular format
     dtype = model_options.get("dtype", None)
@@ -59,7 +67,8 @@ def load_diffusion_model_state_dict(sd, model_options={}): #load unet in diffuse
         operations = comfy.ops.pick_operations(unet_config.get("dtype", None), manual_cast_dtype)
     else:
         operations = model_config.custom_operations
-
+    
+    from .executor import FluxExecutor
     model.diffusion_model = FluxExecutor(**unet_config, device=None, operations=operations)
     model.load_model_weights(new_sd, "")
     left_over = sd.keys()
@@ -77,3 +86,117 @@ def load_diffusion_model(unet_path, model_options={}):
         logging.error("ERROR UNSUPPORTED UNET {}".format(unet_path))
         raise RuntimeError("ERROR: Could not detect model type of: {}".format(unet_path))
     return model
+
+
+def load_safetensors(path):
+    tensors = {}
+    with safe_open(path, framework="pt", device="cpu") as f:
+        for key in f.keys():
+            tensors[key] = f.get_tensor(key)
+    return tensors
+
+def load_flux_lora(path):
+    if path is not None:
+        if '.safetensors' in path:
+            checkpoint = load_safetensors(path)
+        else:
+            checkpoint = torch.load(path, map_location='cpu')
+    else:
+        checkpoint = None
+        print("Invalid path")
+    a1 = sorted(list(checkpoint[list(checkpoint.keys())[0]].shape))[0]
+    a2 = sorted(list(checkpoint[list(checkpoint.keys())[1]].shape))[0]
+    if a1==a2:
+        return checkpoint, int(a1)
+    return checkpoint, 16
+
+def check_is_comfy_lora(sd):
+    for k in sd:
+        if "lora_down" in k or "lora_up" in k:
+            return True
+    return False
+
+def comfy_to_xlabs_lora(sd):
+    sd_out = {}
+    for k in sd:
+        if "diffusion_model" in k:
+            new_k =  (k
+                    .replace(".lora_down.weight", ".down.weight")
+                    .replace(".lora_up.weight", ".up.weight")
+                    .replace(".img_attn.proj.", ".processor.proj_lora1.")
+                    .replace(".txt_attn.proj.", ".processor.proj_lora2.")
+                    .replace(".img_attn.qkv.", ".processor.qkv_lora1.")
+                    .replace(".txt_attn.qkv.", ".processor.qkv_lora2."))
+            new_k = new_k[len("diffusion_model."):]
+        else:
+            new_k=k
+        sd_out[new_k] = sd[k]
+    return sd_out
+
+def merge_loras(lora1, lora2):
+    new_block = DoubleStreamMixerProcessor()
+    if isinstance(lora1, DoubleStreamMixerProcessor):
+        new_block.set_loras(*lora1.get_loras())
+        new_block.set_ip_adapters(lora1.get_ip_adapters())
+    elif isinstance(lora1, DoubleStreamBlockLoraProcessor):
+        new_block.add_lora(lora1)
+    else:
+        pass
+    if isinstance(lora2, DoubleStreamMixerProcessor):
+        new_block.set_loras(*lora2.get_loras())
+        new_block.set_ip_adapters(lora2.get_ip_adapters())
+    elif isinstance(lora2, DoubleStreamBlockLoraProcessor):
+        new_block.add_lora(lora2)
+    else:
+        pass
+    return new_block
+
+def attn_processors(model_flux):
+    # set recursively
+    processors = {}
+
+    def fn_recursive_add_processors(name: str, module: torch.nn.Module, procs):
+        if hasattr(module, "set_processor"):
+            procs[f"{name}.processor"] = module.processor
+            print(f"{name} have set_processor")
+        for sub_name, child in module.named_children():
+            fn_recursive_add_processors(f"{name}.{sub_name}", child, procs)
+
+        return procs
+
+    for name, module in model_flux.named_children():
+        fn_recursive_add_processors(name, module, processors)
+    return processors
+
+def CopyDSB(oldDSB):
+
+    if isinstance(oldDSB, DSBold):
+        tyan = copy.copy(oldDSB)
+
+        if hasattr(tyan.img_mlp[0], 'out_features'):
+            mlp_hidden_dim = tyan.img_mlp[0].out_features
+        else:
+            mlp_hidden_dim = 12288
+
+        mlp_ratio = mlp_hidden_dim / tyan.hidden_size
+        bi = DSBnew(hidden_size=tyan.hidden_size, num_heads=tyan.num_heads, mlp_ratio=mlp_ratio)
+        #better use __dict__ but I bit scared
+        (
+            bi.img_mod, bi.img_norm1, bi.img_attn, bi.img_norm2,
+            bi.img_mlp, bi.txt_mod, bi.txt_norm1, bi.txt_attn, bi.txt_norm2, bi.txt_mlp
+        ) = (
+            tyan.img_mod, tyan.img_norm1, tyan.img_attn, tyan.img_norm2,
+            tyan.img_mlp, tyan.txt_mod, tyan.txt_norm1, tyan.txt_attn, tyan.txt_norm2, tyan.txt_mlp
+        )
+        bi.set_processor(DoubleStreamBlockProcessor())
+
+        return bi
+    return oldDSB
+
+def FluxUpdateModules(flux_model, pbar=None):
+    save_list = {}
+    count = len(flux_model.double_blocks)
+    patches = {}
+
+    for i in range(count):
+        flux_model.double_blocks[i]=CopyDSB(flux_model.double_blocks[i])

@@ -20,3 +20,6 @@ class FluxExecutor:
 
     def state_dict(self):
         return ray.get(self.worker.state_dict.remote())
+
+    def load_lora(self, lora_path, strength_model):
+        return ray.get(self.worker.load_lora.remote(lora_path, strength_model))
