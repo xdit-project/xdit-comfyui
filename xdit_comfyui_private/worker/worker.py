@@ -8,7 +8,7 @@ import comfy
 from comfy import model_detection
 from xdit_comfyui_private.model.flux.flux import xFuserFlux
 from xdit_comfyui_private.distributed.parallel_state import init_distributed_enviroment, init_model_parallel
-from xdit_comfyui_private.modules.loras.utils import load_flux_lora, check_is_comfy_lora, comfy_to_xlabs_lora
+from xdit_comfyui_private.modules.loras.utils import load_flux_lora, load_comfy_lora, apply_lora, check_is_comfy_lora, comfy_to_xlabs_lora
 from xdit_comfyui_private.modules.loras.layers import DoubleStreamBlockLoraProcessor, DoubleStreamBlockLorasMixerProcessor
 
 class FluxWorker:
@@ -67,6 +67,12 @@ class FluxWorker:
         pass
 
     def load_lora(self, lora_path, strength_model):
+        try:
+            self.load_lora_dynamic(lora_path, strength_model)
+        except Exception as e:
+            self.load_lora_static(lora_path, strength_model)
+
+    def load_lora_dynamic(self, lora_path, strength_model):
         checkpoint, lora_rank = load_flux_lora(lora_path)
         
         self.lora_processors_dict[lora_path] = []
@@ -90,6 +96,17 @@ class FluxWorker:
             for lora_processors in self.lora_processors_dict.values():
                 loras_processor.add_lora(lora_processors[idx])
             double_block.set_lora_processor(loras_processor)
+
+    def load_lora_static(self, lora_path, strength_model):
+        checkpoint = load_comfy_lora(lora_path)
+        for key, value in checkpoint.items():
+            model_key = key + ".weight"
+            if model_key in self.flux.state_dict():
+                weight = self.flux.state_dict()[model_key]
+                temp_weight = weight.to(torch.float32, copy=True)
+                out_weight = apply_lora(temp_weight, value, strength=strength_model, intermediate_dtype=torch.float32)
+                out_weight = comfy.float.stochastic_rounding(out_weight, weight.dtype, seed=0)
+                comfy.utils.copy_to_param(self.flux, model_key, out_weight)
 
     def clean_cache(self):
         torch.cuda.empty_cache()

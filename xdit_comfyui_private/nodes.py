@@ -65,6 +65,8 @@ class XDiTFluxLoraLoader:
         bi = model.clone()
         lora_path = os.path.join(dir_xdit_loras, lora_name)
         bi.lora_cache[lora_path] = strength_model
+        print(f"Applying Lora: {lora_path} with strength {strength_model}")
+        bi.model.diffusion_model.load_lora(lora_path, strength_model)
         return (bi,)
 
 class XDiTSamplerCustomAdvanced:
@@ -102,11 +104,11 @@ class XDiTSamplerCustomAdvanced:
 
         disable_pbar = not comfy.utils.PROGRESS_BAR_ENABLED
 
-        if hasattr(guider.model_patcher.model.diffusion_model, 'clean_lora'):
-            guider.model_patcher.model.diffusion_model.clean_lora()
-            for lora_path, strength_model in guider.model_patcher.lora_cache.items():
-                print(f"Applying Lora: {lora_path} with strength {strength_model}")
-                guider.model_patcher.model.diffusion_model.load_lora(lora_path, strength_model)
+        # if hasattr(guider.model_patcher.model.diffusion_model, 'clean_lora'):
+        #     guider.model_patcher.model.diffusion_model.clean_lora()
+        #     for lora_path, strength_model in guider.model_patcher.lora_cache.items():
+        #         print(f"Applying Lora: {lora_path} with strength {strength_model}")
+        #         guider.model_patcher.model.diffusion_model.load_lora(lora_path, strength_model)
 
         samples = guider.sample(noise.generate_noise(latent), latent_image, sampler, sigmas, denoise_mask=noise_mask, callback=callback, disable_pbar=disable_pbar, seed=noise.seed)
         samples = samples.to(comfy.model_management.intermediate_device())
