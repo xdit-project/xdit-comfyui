@@ -14,14 +14,22 @@ hybrid_seq_parallel_attn_joint = None
 def init_seq_parallel_attn():
     global hybrid_seq_parallel_attn
     global hybrid_seq_parallel_attn_joint
-    if HAS_FLASH_ATTN:
-        from xdit_comfyui_private.modules.long_ctx_attention.hybrid import xFuserFluxLongContextAttention, xFuserLongContextAttention
-        hybrid_seq_parallel_attn_joint = xFuserFluxLongContextAttention()
-        hybrid_seq_parallel_attn = xFuserLongContextAttention()
-    else:
-        from xdit_comfyui_private.modules.long_ctx_attention.ulysses import xFuserUlyssesAttention
-        hybrid_seq_parallel_attn_joint = xFuserUlyssesAttention(use_fa=False)
-        hybrid_seq_parallel_attn = hybrid_seq_parallel_attn_joint
+    # if HAS_FLASH_ATTN:
+    #     from xdit_comfyui_private.modules.long_ctx_attention.hybrid import xFuserFluxLongContextAttention, xFuserLongContextAttention
+    #     hybrid_seq_parallel_attn_joint = xFuserFluxLongContextAttention()
+    #     hybrid_seq_parallel_attn = xFuserLongContextAttention()
+    # else:
+    #     from xdit_comfyui_private.modules.long_ctx_attention.ulysses import xFuserUlyssesAttention
+    #     hybrid_seq_parallel_attn_joint = xFuserUlyssesAttention(use_fa=False)
+    #     hybrid_seq_parallel_attn = hybrid_seq_parallel_attn_joint
+    # from xdit_comfyui_private.modules.long_ctx_attention.ulysses import xFuserUlyssesAttention
+    # from yunchang.kernels import FlashAttentionImpl
+    # hybrid_seq_parallel_attn_joint = xFuserUlyssesAttention(use_sync=True, attn_type=FlashAttentionImpl.FA3)
+    # hybrid_seq_parallel_attn = hybrid_seq_parallel_attn_joint
+    from yunchang.kernels import FlashAttentionImpl
+    from xdit_comfyui_private.modules.long_ctx_attention.hybrid import xFuserFluxLongContextAttention, xFuserLongContextAttention
+    hybrid_seq_parallel_attn_joint = xFuserFluxLongContextAttention(use_sync=True, attn_type=FlashAttentionImpl.FA)
+    hybrid_seq_parallel_attn = xFuserLongContextAttention(use_sync=True, attn_type=FlashAttentionImpl.FA)
 
 
 def attention(img_q: Tensor, img_k: Tensor, img_v: Tensor, pe: Tensor, txt_q: Optional[Tensor] = None, txt_k: Optional[Tensor] = None, txt_v: Optional[Tensor] = None, joint_strategy = 'front') -> Tensor:

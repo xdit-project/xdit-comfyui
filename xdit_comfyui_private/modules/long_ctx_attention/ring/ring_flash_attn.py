@@ -3,6 +3,7 @@ from flash_attn.flash_attn_interface import _flash_attn_forward
 import torch.distributed
 from yunchang.ring.utils import RingComm, update_out_and_lse
 from yunchang.ring.ring_flash_attn import RingFlashAttnFunc
+from yunchang.kernels import FlashAttentionImpl, select_flash_attn_impl
 
 
 def ring_flash_attn_forward(
@@ -14,8 +15,10 @@ def ring_flash_attn_forward(
     dropout_p=0,
     causal=True,
     window_size=(-1, -1),
+    softcap=0.0,
     alibi_slopes=None,
     deterministic=False,
+    attn_type=FlashAttentionImpl.FA,
     attn_layer=None,
     joint_tensor_key=None,
     joint_tensor_value=None,
@@ -66,7 +69,8 @@ def ring_flash_attn_forward(
             key, value = k, v
 
         if not causal or step <= comm.rank:
-            block_out, _, _, _, _, block_lse, _, _ = _flash_attn_forward(
+            fn = select_flash_attn_impl(attn_type, "fwd-only")
+            block_out, block_lse = fn(
                 q,
                 key,
                 value,
@@ -74,7 +78,7 @@ def ring_flash_attn_forward(
                 softmax_scale,
                 causal=causal and step == 0,
                 window_size=window_size,
-                softcap=0.0,
+                softcap=softcap,
                 alibi_slopes=alibi_slopes,
                 return_softmax=True and dropout_p > 0,
             )
@@ -101,10 +105,12 @@ class xFuserRingFlashAttnFunc(RingFlashAttnFunc):
         softmax_scale,
         causal,
         window_size,
+        softcap,
         alibi_slopes,
         deterministic,
         return_softmax,
         group,
+        attn_type,
         attn_layer,
         joint_tensor_key,
         joint_tensor_value,
@@ -126,8 +132,10 @@ class xFuserRingFlashAttnFunc(RingFlashAttnFunc):
             dropout_p=dropout_p,
             causal=causal,
             window_size=window_size,
+            softcap=softcap,
             alibi_slopes=alibi_slopes,
             deterministic=False,
+            attn_type=attn_type,
             attn_layer=attn_layer,
             joint_tensor_key=joint_tensor_key,
             joint_tensor_value=joint_tensor_value,
@@ -139,9 +147,11 @@ class xFuserRingFlashAttnFunc(RingFlashAttnFunc):
         ctx.softmax_scale = softmax_scale
         ctx.causal = causal
         ctx.window_size = window_size
+        ctx.softcap = softcap
         ctx.alibi_slopes = alibi_slopes
         ctx.deterministic = deterministic
         ctx.group = group
+        ctx.attn_type = attn_type
         return out if not return_softmax else (out, softmax_lse, None)
 
 
@@ -153,10 +163,12 @@ def ring_flash_attn_func(
     softmax_scale=None,
     causal=False,
     window_size=(-1, -1),
+    softcap=0.0,
     alibi_slopes=None,
     deterministic=False,
     return_attn_probs=False,
     group=None,
+    attn_type = FlashAttentionImpl.FA,
     attn_layer=None,
     joint_tensor_key=None,
     joint_tensor_value=None,
@@ -170,10 +182,12 @@ def ring_flash_attn_func(
         softmax_scale,
         causal,
         window_size,
+        softcap,
         alibi_slopes,
         deterministic,
         return_attn_probs,
         group,
+        attn_type,
         attn_layer,
         joint_tensor_key,
         joint_tensor_value,

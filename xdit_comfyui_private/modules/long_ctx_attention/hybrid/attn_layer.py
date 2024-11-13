@@ -6,6 +6,7 @@ from logging import getLogger
 import torch.distributed
 from yunchang import LongContextAttention
 from yunchang.comm.all_to_all import SeqAllToAll4D
+from yunchang.kernels import FlashAttentionImpl
 
 from .utils import RING_IMPL_DICT
 
@@ -21,6 +22,8 @@ class xFuserLongContextAttention(LongContextAttention):
         gather_idx: int = 1,
         ring_impl_type: str = "basic",
         use_pack_qkv: bool = False,
+        use_sync: bool = False,
+        attn_type: FlashAttentionImpl = FlashAttentionImpl.FA,
         use_kv_cache: bool = False,
     ) -> None:
         super().__init__(
@@ -28,6 +31,8 @@ class xFuserLongContextAttention(LongContextAttention):
             gather_idx=gather_idx,
             ring_impl_type=ring_impl_type,
             use_pack_qkv=use_pack_qkv,
+            use_sync=use_sync,
+            attn_type=attn_type,
         )
         self.use_kv_cache = use_kv_cache
         if (
@@ -53,6 +58,7 @@ class xFuserLongContextAttention(LongContextAttention):
         softmax_scale=None,
         causal=False,
         window_size=(-1, -1),
+        softcap=0.0,
         alibi_slopes=None,
         deterministic=False,
         return_attn_probs=False,
@@ -76,20 +82,20 @@ class xFuserLongContextAttention(LongContextAttention):
             qkv = torch.cat([query, key, value]).continous()
             # (3*bs, seq_len, head_cnt/N, head_size)
             qkv = SeqAllToAll4D.apply(
-                self.ulysses_pg, qkv, self.scatter_idx, self.gather_idx
+                self.ulysses_pg, qkv, self.scatter_idx, self.gather_idx, self.use_sync
             )
             qkv = torch.chunk(qkv, 3, dim=0)
             query_layer, key_layer, value_layer = qkv
 
         else:
             query_layer = SeqAllToAll4D.apply(
-                self.ulysses_pg, query, self.scatter_idx, self.gather_idx
+                self.ulysses_pg, query, self.scatter_idx, self.gather_idx, self.use_sync
             )
             key_layer = SeqAllToAll4D.apply(
-                self.ulysses_pg, key, self.scatter_idx, self.gather_idx
+                self.ulysses_pg, key, self.scatter_idx, self.gather_idx, self.use_sync
             )
             value_layer = SeqAllToAll4D.apply(
-                self.ulysses_pg, value, self.scatter_idx, self.gather_idx
+                self.ulysses_pg, value, self.scatter_idx, self.gather_idx, self.use_sync
             )
 
         out = self.ring_attn_fn(
@@ -100,10 +106,12 @@ class xFuserLongContextAttention(LongContextAttention):
             softmax_scale=softmax_scale,
             causal=causal,
             window_size=window_size,
+            softcap=softcap,
             alibi_slopes=alibi_slopes,
             deterministic=deterministic,
             return_attn_probs=return_attn_probs,
             group=self.ring_pg,
+            attn_type=self.attn_type,
             attn_layer=attn if self.use_kv_cache else None,
         )
 
@@ -115,7 +123,7 @@ class xFuserLongContextAttention(LongContextAttention):
         # (bs, seq_len, head_cnt/N, head_size) -> (bs, seq_len/N, head_cnt, head_size)
         # scatter 1, gather 2
         output = SeqAllToAll4D.apply(
-            self.ulysses_pg, context_layer, self.gather_idx, self.scatter_idx
+            self.ulysses_pg, context_layer, self.gather_idx, self.scatter_idx, self.use_sync
         )
 
         # out e.g., [s/p::h]
@@ -169,20 +177,20 @@ class xFuserJointLongContextAttention(xFuserLongContextAttention):
             qkv = torch.cat([query, key, value]).continous()
             # (3*bs, seq_len, head_cnt/N, head_size)
             qkv = SeqAllToAll4D.apply(
-                self.ulysses_pg, qkv, self.scatter_idx, self.gather_idx
+                self.ulysses_pg, qkv, self.scatter_idx, self.gather_idx, self.use_sync
             )
             qkv = torch.chunk(qkv, 3, dim=0)
             query_layer, key_layer, value_layer = qkv
 
         else:
             query_layer = SeqAllToAll4D.apply(
-                self.ulysses_pg, query, self.scatter_idx, self.gather_idx
+                self.ulysses_pg, query, self.scatter_idx, self.gather_idx, self.use_sync
             )
             key_layer = SeqAllToAll4D.apply(
-                self.ulysses_pg, key, self.scatter_idx, self.gather_idx
+                self.ulysses_pg, key, self.scatter_idx, self.gather_idx, self.use_sync
             )
             value_layer = SeqAllToAll4D.apply(
-                self.ulysses_pg, value, self.scatter_idx, self.gather_idx
+                self.ulysses_pg, value, self.scatter_idx, self.gather_idx, self.use_sync
             )
 
         out = self.ring_attn_fn(
@@ -211,7 +219,7 @@ class xFuserJointLongContextAttention(xFuserLongContextAttention):
         # (bs, seq_len, head_cnt/N, head_size) -> (bs, seq_len/N, head_cnt, head_size)
         # scatter 1, gather 2
         output = SeqAllToAll4D.apply(
-            self.ulysses_pg, context_layer, self.gather_idx, self.scatter_idx
+            self.ulysses_pg, context_layer, self.gather_idx, self.scatter_idx, self.use_sync
         )
 
         # out e.g., [s/p::h]
@@ -276,20 +284,20 @@ class xFuserFluxLongContextAttention(xFuserLongContextAttention):
             qkv = torch.cat([query, key, value]).continous()
             # (3*bs, seq_len, head_cnt/N, head_size)
             qkv = SeqAllToAll4D.apply(
-                self.ulysses_pg, qkv, self.scatter_idx, self.gather_idx
+                self.ulysses_pg, qkv, self.scatter_idx, self.gather_idx, self.use_sync
             )
             qkv = torch.chunk(qkv, 3, dim=0)
             query_layer, key_layer, value_layer = qkv
 
         else:
             query_layer = SeqAllToAll4D.apply(
-                self.ulysses_pg, query, self.scatter_idx, self.gather_idx
+                self.ulysses_pg, query, self.scatter_idx, self.gather_idx, self.use_sync
             )
             key_layer = SeqAllToAll4D.apply(
-                self.ulysses_pg, key, self.scatter_idx, self.gather_idx
+                self.ulysses_pg, key, self.scatter_idx, self.gather_idx, self.use_sync
             )
             value_layer = SeqAllToAll4D.apply(
-                self.ulysses_pg, value, self.scatter_idx, self.gather_idx
+                self.ulysses_pg, value, self.scatter_idx, self.gather_idx, self.use_sync
             )
         out = self.ring_attn_fn(
             query_layer,
@@ -317,7 +325,7 @@ class xFuserFluxLongContextAttention(xFuserLongContextAttention):
         # (bs, seq_len, head_cnt/N, head_size) -> (bs, seq_len/N, head_cnt, head_size)
         # scatter 1, gather 2
         output = SeqAllToAll4D.apply(
-            self.ulysses_pg, context_layer, self.gather_idx, self.scatter_idx
+            self.ulysses_pg, context_layer, self.gather_idx, self.scatter_idx, self.use_sync
         )
 
         # out e.g., [s/p::h]
