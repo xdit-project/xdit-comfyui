@@ -365,3 +365,10 @@ class FluxExecutor:
             ray.kill(worker)
         ray.util.remove_placement_group(self.placement_group)
         self.workers = []
+        
+    def to_gpu(self):
+        return self._run_workers("to_gpu")
+
+    def to_cpu(self):
+        return self._run_workers("to_cpu")
+    

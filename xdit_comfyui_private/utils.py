@@ -82,7 +82,15 @@ def load_diffusion_model_state_dict(sd, model_options={}, load_weights=False): #
             logging.info("left over keys in unet: {}".format(left_over))
     print(f"Load_device: {load_device}, Offload_device: {offload_device}")
     print(model)
-    return CustomModelPatcher(model, load_device=load_device, offload_device=offload_device)
+    
+    def sd_size(sd):
+        module_mem = 0
+        for k in sd:
+            t = sd[k]
+            module_mem += t.nelement() * t.element_size()
+        return module_mem
+
+    return CustomModelPatcher(model, load_device=load_device, offload_device=offload_device, size=sd_size(sd))
 
 def load_diffusion_model(unet_path, model_options={}):
     sd = comfy.utils.load_torch_file(unet_path)

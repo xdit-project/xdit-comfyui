@@ -1,4 +1,5 @@
 import copy
+import torch
 from comfy.model_patcher import ModelPatcher
 
 class CustomModelPatcher(ModelPatcher):
@@ -19,3 +20,23 @@ class CustomModelPatcher(ModelPatcher):
         n.object_patches_backup = self.object_patches_backup
         n.lora_cache = copy.copy(self.lora_cache)
         return n
+
+    def partially_unload(self, device_to, memory_to_free=0):
+        with self.use_ejected():
+            #unload
+            self.model.diffusion_model.to_cpu()
+            
+            self.model.device = torch.device('cpu')
+            memory_freed = self.model.model_loaded_weight_memory
+            self.model.model_loaded_weight_memory = 0
+            return memory_freed
+
+    def load(self, device_to=None, lowvram_model_memory=0, force_patch_weights=False, full_load=False):
+        with self.use_ejected():
+            self.unpatch_hooks()
+            #load
+            self.model.diffusion_model.to_gpu()
+
+            self.model.device = torch.device('cuda:0')
+            self.model.model_loaded_weight_memory = self.size
+            self.apply_hooks(self.forced_hooks, force_apply=True)

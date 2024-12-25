@@ -89,7 +89,7 @@ class FluxWorker:
         self.device = "cuda:0"
         init_distributed_enviroment(kwargs.pop('distributed_init_method', 'env://'), self.world_size, self.rank)
         init_model_parallel(self.ulysses_degree, self.ring_degree, self.rank, self.world_size)
-        self.flux = xFuserFlux(**kwargs).to(self.device)
+        self.flux = xFuserFlux(**kwargs).to('cpu')
         self.lora_processors_dict = {}
 
     def forward_orig(self, img, img_ids, txt, txt_ids, timesteps, y, guidance, control=None, neg_mode=None, block_controlnet_hidden_states=None, block_controlnet_hidden_states_npy=None, **kwargs):
@@ -131,6 +131,7 @@ class FluxWorker:
             configs_worker = {'transformer_options': {'cond_or_uncond': [0], 'sigmas': torch.tensor([1.], device=self.device)}}
             output = self.flux.forward(x_worker, timestep_worker, context_worker, y_worker, guidance_worker, control, **configs_worker)
         
+        torch.cuda.empty_cache()
         return output
 
     def load_state_dict(self, sd, strict=False):
@@ -193,3 +194,10 @@ class FluxWorker:
         for double_block in self.flux.double_blocks:
             double_block.set_lora_processor(None)
         self.lora_processors_dict = {}
+
+    def to_gpu(self):
+        self.flux = self.flux.to(torch.device('cuda:0'))
+        
+    def to_cpu(self):
+        self.flux = self.flux.to(torch.device('cpu'))
+        torch.cuda.empty_cache()
