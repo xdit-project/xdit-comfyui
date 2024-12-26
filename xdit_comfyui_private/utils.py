@@ -74,7 +74,7 @@ def load_diffusion_model_state_dict(sd, model_options={}, load_weights=False): #
     else:
         operations = model_config.custom_operations
 
-    model.diffusion_model = FluxExecutor(**unet_config, device=None, operations=operations)
+    model.diffusion_model = FluxExecutor(fix_on_gpu=True, **unet_config, device=None, operations=operations)
     if load_weights:
         model.load_model_weights(new_sd, "")
         left_over = sd.keys()
@@ -87,7 +87,7 @@ def load_diffusion_model_state_dict(sd, model_options={}, load_weights=False): #
         module_mem = 0
         for k in sd:
             t = sd[k]
-            module_mem += t.nelement() * t.element_size()
+            module_mem += t.nelement() * torch.tensor([], dtype=unet_dtype).element_size()
         return module_mem
 
     return CustomModelPatcher(model, load_device=load_device, offload_device=offload_device, size=sd_size(sd))
@@ -158,7 +158,7 @@ def load_state_dict_guess_config(sd, output_vae=True, output_clip=True, output_c
         else:
             operations = model_config.custom_operations
 
-        model.diffusion_model = UNetExecutor(**unet_config, device=None, operations=operations)
+        model.diffusion_model = UNetExecutor(fix_on_gpu=True, **unet_config, device=None, operations=operations)
         # model = model_config.get_model(sd, diffusion_model_prefix, device=inital_load_device)
         model.load_model_weights(sd, diffusion_model_prefix)
 
@@ -192,7 +192,14 @@ def load_state_dict_guess_config(sd, output_vae=True, output_clip=True, output_c
         logging.debug("left over keys: {}".format(left_over))
 
     if output_model:
-        model_patcher = comfy.model_patcher.ModelPatcher(model, load_device=load_device, offload_device=model_management.unet_offload_device())
+        def sd_size(sd):
+            module_mem = 0
+            for k in sd:
+                t = sd[k]
+                module_mem += t.nelement() * t.element_size()
+            return module_mem
+
+        model_patcher = CustomModelPatcher(model, load_device=load_device, offload_device=model_management.unet_offload_device(), size=sd_size(sd))
         if inital_load_device != torch.device("cpu"):
             logging.info("loaded straight to GPU")
             model_management.load_models_gpu([model_patcher], force_full_load=True)

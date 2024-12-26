@@ -14,14 +14,45 @@ from xdit_comfyui_private.modules.loras.layers import DoubleStreamBlockLoraProce
 
 from xdit_comfyui_private.model.sd.unet import xFuserUnet
 
-class UNetWorker:
+class RayWorker:
     def __init__(self, **kwargs):
         self.world_size = kwargs.pop('world_size', 1)
+        self.ulysses_degree = kwargs.pop('ulysses_degree', 1)
+        self.ring_degree = kwargs.pop('ring_degree', 1)
         rank = int(ray.get_gpu_ids()[0]) % self.world_size
         self.rank = self.local_rank = rank
         self.device = "cuda:0"
         init_distributed_enviroment(kwargs.pop('distributed_init_method', 'env://'), self.world_size, self.rank)
-        self.unet = xFuserUnet(**kwargs).to(self.device)
+        init_model_parallel(self.ulysses_degree, self.ring_degree, self.rank, self.world_size)
+        self.flux_worker = None
+        self.unet_worker = None
+
+    def initialize_flux(self, fix_on_gpu, *args, **kwargs):
+        self.flux_worker = FluxWorker(fix_on_gpu, **kwargs)
+
+    def initialize_unet(self, fix_on_gpu, *args, **kwargs):
+        self.unet_worker = UNetWorker(fix_on_gpu, **kwargs)
+
+    def execute_method(self, method, *args, **kwargs):
+        return getattr(self, method)(*args, **kwargs)
+
+    def execute_flux_method(self, method, *args, **kwargs):
+        return getattr(self.flux_worker, method)(*args, **kwargs)
+
+    def execute_unet_method(self, method, *args, **kwargs):
+        return getattr(self.unet_worker, method)(*args, **kwargs)
+
+class UNetWorker:
+    def __init__(self, fix_on_gpu, **kwargs):
+        self.world_size = 2
+        self.rank = self.local_rank = int(ray.get_gpu_ids()[0]) % self.world_size
+        self.device = "cuda:0"
+        self.unet = xFuserUnet(**kwargs)
+        self.fix_on_gpu = fix_on_gpu
+        #if self.fix_on_gpu:
+        #    self.unet = self.unet.to('cuda:0')
+        #else:
+        self.unet = self.unet.to('cpu')
         self.is_compiled = False
 
     def execute_method(self, method, *args, **kwargs):
@@ -30,14 +61,14 @@ class UNetWorker:
     def forward(self, x, timestep, context, y, control=None, transformer_options={}, dtype=torch.float16, use_tensor_to_numpy=False, **kwargs):
         from xdit_comfyui_private.utils import tensor_to_numpy, numpy_to_tensor
         time_start = time.time()
-        if not self.is_compiled:
+        '''if not self.is_compiled:
             print("Compiling UNet")
             from xdit_comfyui_private.utils import patch_for_torch_compile
             patch_for_torch_compile()
             self.unet.to(dtype=dtype, memory_format=torch.channels_last)
             self.unet = torch.compile(self.unet, mode="max-autotune-no-cudagraphs")
             self.is_compiled = True
-            torch.cuda.synchronize()
+            torch.cuda.synchronize()'''
         
         if use_tensor_to_numpy:
             x = numpy_to_tensor(x, dtype=dtype)
@@ -77,19 +108,23 @@ class UNetWorker:
         m, u = self.unet.load_state_dict(sd, strict=strict)
         return m, u
 
-class FluxWorker:
-    modules_to_convert = []
+    def to_gpu(self):
+        self.unet = self.unet.to(torch.device('cuda:0'))
+        
+    def to_cpu(self):
+        #if not self.fix_on_gpu:
+        self.unet = self.unet.to(torch.device('cpu'))
+        torch.cuda.empty_cache()
 
-    def __init__(self, **kwargs):
-        self.world_size = kwargs.pop('world_size', 1)
-        self.ulysses_degree = kwargs.pop('ulysses_degree', 1)
-        self.ring_degree = kwargs.pop('ring_degree', 1)
-        rank = int(ray.get_gpu_ids()[0]) % self.world_size
-        self.rank = self.local_rank = rank
-        self.device = "cuda:0"
-        init_distributed_enviroment(kwargs.pop('distributed_init_method', 'env://'), self.world_size, self.rank)
-        init_model_parallel(self.ulysses_degree, self.ring_degree, self.rank, self.world_size)
-        self.flux = xFuserFlux(**kwargs).to('cpu')
+class FluxWorker:
+    def __init__(self, fix_on_gpu, **kwargs):
+        self.device = 'cuda:0'
+        self.flux = xFuserFlux(**kwargs)
+        self.fix_on_gpu = fix_on_gpu
+        #if self.fix_on_gpu:
+        #    self.flux = self.flux.to('cuda:0')
+        #else:
+        self.flux = self.flux.to('cpu')
         self.lora_processors_dict = {}
 
     def forward_orig(self, img, img_ids, txt, txt_ids, timesteps, y, guidance, control=None, neg_mode=None, block_controlnet_hidden_states=None, block_controlnet_hidden_states_npy=None, **kwargs):
@@ -199,5 +234,6 @@ class FluxWorker:
         self.flux = self.flux.to(torch.device('cuda:0'))
         
     def to_cpu(self):
+        #if not self.fix_on_gpu:
         self.flux = self.flux.to(torch.device('cpu'))
         torch.cuda.empty_cache()
