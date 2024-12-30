@@ -27,11 +27,11 @@ class RayWorker:
         self.flux_worker = None
         self.unet_worker = None
 
-    def initialize_flux(self, fix_on_gpu, *args, **kwargs):
-        self.flux_worker = FluxWorker(fix_on_gpu, **kwargs)
+    def initialize_flux(self, *args, **kwargs):
+        self.flux_worker = FluxWorker(**kwargs)
 
-    def initialize_unet(self, fix_on_gpu, *args, **kwargs):
-        self.unet_worker = UNetWorker(fix_on_gpu, **kwargs)
+    def initialize_unet(self, *args, **kwargs):
+        self.unet_worker = UNetWorker(**kwargs)
 
     def execute_method(self, method, *args, **kwargs):
         return getattr(self, method)(*args, **kwargs)
@@ -43,15 +43,11 @@ class RayWorker:
         return getattr(self.unet_worker, method)(*args, **kwargs)
 
 class UNetWorker:
-    def __init__(self, fix_on_gpu, **kwargs):
+    def __init__(self, **kwargs):
         self.world_size = 2
         self.rank = self.local_rank = int(ray.get_gpu_ids()[0]) % self.world_size
         self.device = "cuda:0"
         self.unet = xFuserUnet(**kwargs)
-        self.fix_on_gpu = fix_on_gpu
-        #if self.fix_on_gpu:
-        #    self.unet = self.unet.to('cuda:0')
-        #else:
         self.unet = self.unet.to('cpu')
         self.is_compiled = False
 
@@ -112,18 +108,12 @@ class UNetWorker:
         self.unet = self.unet.to(torch.device('cuda:0'))
         
     def to_cpu(self):
-        #if not self.fix_on_gpu:
         self.unet = self.unet.to(torch.device('cpu'))
-        torch.cuda.empty_cache()
 
 class FluxWorker:
-    def __init__(self, fix_on_gpu, **kwargs):
+    def __init__(self, **kwargs):
         self.device = 'cuda:0'
         self.flux = xFuserFlux(**kwargs)
-        self.fix_on_gpu = fix_on_gpu
-        #if self.fix_on_gpu:
-        #    self.flux = self.flux.to('cuda:0')
-        #else:
         self.flux = self.flux.to('cpu')
         self.lora_processors_dict = {}
 
@@ -166,7 +156,6 @@ class FluxWorker:
             configs_worker = {'transformer_options': {'cond_or_uncond': [0], 'sigmas': torch.tensor([1.], device=self.device)}}
             output = self.flux.forward(x_worker, timestep_worker, context_worker, y_worker, guidance_worker, control, **configs_worker)
         
-        torch.cuda.empty_cache()
         return output
 
     def load_state_dict(self, sd, strict=False):
@@ -234,6 +223,4 @@ class FluxWorker:
         self.flux = self.flux.to(torch.device('cuda:0'))
         
     def to_cpu(self):
-        #if not self.fix_on_gpu:
         self.flux = self.flux.to(torch.device('cpu'))
-        torch.cuda.empty_cache()

@@ -215,7 +215,7 @@ class RayExecutor:
 
 
 class UNetExecutor:
-    def __init__(self, max_devices_use=2, fix_on_gpu=False, **kwargs):
+    def __init__(self, max_devices_use=2, **kwargs):
         global _RAY_EXECUTOR
         self.dtype = kwargs.get('dtype', None)
         if _RAY_EXECUTOR == None:
@@ -227,7 +227,7 @@ class UNetExecutor:
                 f"is not identical to the previous value ({_RAY_EXECUTOR.max_devices_use})."
             self.ray_executor = _RAY_EXECUTOR
         # initialize UNetWorker
-        self.ray_executor._run_workers('initialize_unet', fix_on_gpu, **kwargs)
+        self.ray_executor._run_workers('initialize_unet', **kwargs)
         self.use_tensor_to_numpy = True
 
     def _run_workers(
@@ -271,7 +271,7 @@ class UNetExecutor:
     
 
 class FluxExecutor:
-    def __init__(self, max_devices_use=2, fix_on_gpu=False, **kwargs):
+    def __init__(self, max_devices_use=2, **kwargs):
         global _RAY_EXECUTOR
         self.dtype = kwargs.get('dtype', None)
         if _RAY_EXECUTOR == None:
@@ -283,7 +283,7 @@ class FluxExecutor:
                 f"is not identical to the previous value ({_RAY_EXECUTOR.max_devices_use})."
             self.ray_executor = _RAY_EXECUTOR
         # initialize FluxWorker
-        self.ray_executor._run_workers('initialize_flux', fix_on_gpu, **kwargs)
+        self.ray_executor._run_workers('initialize_flux', **kwargs)
         
     def _run_workers(
         self,

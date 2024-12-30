@@ -42,8 +42,10 @@ Please follow the [Flux Examples](https://comfyanonymous.github.io/ComfyUI_examp
 You can run the demo by running the following command:
 ```bash
 cd ${ComfyUI}
-python main.py
+python main.py --disable-cuda-malloc
 ```
+
+The option `--disable-cuda-malloc` is essential to ensure that ComfyUI can accurately manage the loading and offloading processes of our parallelized models.
 
 **You can load the default workflow in the xdit-comfyui-private/workflows folder: `xdit-flux1-dev.json`**
 
