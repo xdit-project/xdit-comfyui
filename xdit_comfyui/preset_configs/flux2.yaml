@@ -1,0 +1,897 @@
+# Copyright Advanced Micro Devices, Inc.
+# SPDX-License-Identifier: MIT
+
+- name: flux2.default
+  tags: [release, mad, lucid, instinct, gfx942, gfx950]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Add a cool hat to the cat
+    height: 1024
+    width: 1024
+    num_inference_steps: 50
+    max_sequence_length: 512
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+    guidance_scale: 4.0
+    num_iterations: 25
+    attention_backend: aiter
+
+- name: flux2.default.hopper.h100
+  tags: [lucid, hopper, h100]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Add a cool hat to the cat
+    height: 1024
+    width: 1024
+    num_inference_steps: 50
+    max_sequence_length: 512
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+    guidance_scale: 4.0
+    num_iterations: 25
+    fully_shard_degree: 8
+    attention_backend: cudnn
+
+- name: flux2.default.hopper.h200
+  tags: [lucid, hopper, h200]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Add a cool hat to the cat
+    height: 1024
+    width: 1024
+    num_inference_steps: 50
+    max_sequence_length: 512
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+    guidance_scale: 4.0
+    num_iterations: 25
+    attention_backend: cudnn
+
+- name: flux2.default.blackwell
+  tags: [lucid, blackwell, b200, b300]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Add a cool hat to the cat
+    height: 1024
+    width: 1024
+    num_inference_steps: 50
+    max_sequence_length: 512
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+    guidance_scale: 4.0
+    num_iterations: 25
+    attention_backend: cudnn
+
+- name: flux2.quantgemm.gfx942
+  tags: [release, mad, lucid, instinct, gfx942]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Add a cool hat to the cat
+    height: 1024
+    width: 1024
+    num_inference_steps: 50
+    max_sequence_length: 512
+    warmup_calls: 5
+    use_fp8_gemms: true
+    ulysses_degree: 8
+    use_torch_compile: true
+    input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+    guidance_scale: 4.0
+    num_iterations: 25
+    attention_backend: aiter
+
+- name: flux2.quantgemm.gfx950
+  tags: [release, mad, lucid, instinct, gfx950]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Add a cool hat to the cat
+    height: 1024
+    width: 1024
+    num_inference_steps: 50
+    max_sequence_length: 512
+    warmup_calls: 5
+    use_fp4_gemms: true
+    ulysses_degree: 8
+    use_torch_compile: true
+    input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+    guidance_scale: 4.0
+    num_iterations: 25
+    attention_backend: aiter
+
+- name: flux2.quantgemm.hopper.h100
+  tags: [lucid, hopper, h100]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Add a cool hat to the cat
+    height: 1024
+    width: 1024
+    num_inference_steps: 50
+    max_sequence_length: 512
+    warmup_calls: 5
+    use_fp8_gemms: true
+    ulysses_degree: 8
+    fully_shard_degree: 8
+    use_torch_compile: true
+    input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+    guidance_scale: 4.0
+    num_iterations: 25
+    attention_backend: cudnn
+
+- name: flux2.quantgemm.hopper.h200
+  tags: [lucid, hopper, h200]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Add a cool hat to the cat
+    height: 1024
+    width: 1024
+    num_inference_steps: 50
+    max_sequence_length: 512
+    warmup_calls: 5
+    use_fp8_gemms: true
+    ulysses_degree: 8
+    use_torch_compile: true
+    input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+    guidance_scale: 4.0
+    num_iterations: 25
+    attention_backend: cudnn
+
+- name: flux2.quantgemm.blackwell
+  tags: [lucid, blackwell, b200, b300]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Add a cool hat to the cat
+    height: 1024
+    width: 1024
+    num_inference_steps: 50
+    max_sequence_length: 512
+    warmup_calls: 5
+    use_fp4_gemms: true
+    ulysses_degree: 8
+    use_torch_compile: true
+    input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+    guidance_scale: 4.0
+    num_iterations: 25
+    attention_backend: cudnn
+
+- name: flux2.quantgemm_sageattn.gfx942
+  tags: [release, instinct, gfx942]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Add a cool hat to the cat
+    height: 1024
+    width: 1024
+    num_inference_steps: 50
+    max_sequence_length: 512
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+    guidance_scale: 4.0
+    num_iterations: 25
+    attention_backend: aiter_i8fp8
+    use_fp8_gemms: true
+
+- name: flux2.quantgemm_sageattn.gfx950
+  tags: [release, instinct, gfx950]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Add a cool hat to the cat
+    height: 1024
+    width: 1024
+    num_inference_steps: 50
+    max_sequence_length: 512
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+    guidance_scale: 4.0
+    num_iterations: 25
+    attention_backend: aiter_i8fp8
+    use_fp4_gemms: true
+
+# TI2V 2K
+- name: flux2.ti2i_2k
+  tags: [release, mad, lucid, instinct, gfx942, gfx950]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Add a cool hat to the cat
+    height: 2048
+    width: 2048
+    num_inference_steps: 50
+    max_sequence_length: 512
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+    guidance_scale: 4.0
+    num_iterations: 25
+    attention_backend: aiter
+
+- name: flux2.ti2i_2k.hopper.h100
+  tags: [lucid, hopper, h100]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Add a cool hat to the cat
+    height: 2048
+    width: 2048
+    num_inference_steps: 50
+    max_sequence_length: 512
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+    guidance_scale: 4.0
+    num_iterations: 25
+    fully_shard_degree: 8
+    attention_backend: cudnn
+
+- name: flux2.ti2i_2k.hopper.h200
+  tags: [lucid, hopper, h200]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Add a cool hat to the cat
+    height: 2048
+    width: 2048
+    num_inference_steps: 50
+    max_sequence_length: 512
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+    guidance_scale: 4.0
+    num_iterations: 25
+    attention_backend: cudnn
+
+- name: flux2.ti2i_2k.blackwell
+  tags: [lucid, blackwell, b200, b300]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Add a cool hat to the cat
+    height: 2048
+    width: 2048
+    num_inference_steps: 50
+    max_sequence_length: 512
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+    guidance_scale: 4.0
+    num_iterations: 25
+    attention_backend: cudnn
+
+# T2V 1K
+- name: flux2.t2i_1k
+  tags: [release, mad, lucid, instinct, gfx942, gfx950]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Cat astronaut raising a cat flag on the surface of moon
+    height: 1024
+    width: 1024
+    num_inference_steps: 50
+    max_sequence_length: 512
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    guidance_scale: 4.0
+    num_iterations: 25
+    attention_backend: aiter
+
+- name: flux2.t2i_1k.hopper.h100
+  tags: [lucid, hopper, h100]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Cat astronaut raising a cat flag on the surface of moon
+    height: 1024
+    width: 1024
+    num_inference_steps: 50
+    max_sequence_length: 512
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    guidance_scale: 4.0
+    num_iterations: 25
+    fully_shard_degree: 8
+    attention_backend: cudnn
+
+- name: flux2.t2i_1k.hopper.h200
+  tags: [lucid, hopper, h200]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Cat astronaut raising a cat flag on the surface of moon
+    height: 1024
+    width: 1024
+    num_inference_steps: 50
+    max_sequence_length: 512
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    guidance_scale: 4.0
+    num_iterations: 25
+    attention_backend: cudnn
+
+- name: flux2.t2i_1k.blackwell
+  tags: [lucid, blackwell, b200, b300]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Cat astronaut raising a cat flag on the surface of moon
+    height: 1024
+    width: 1024
+    num_inference_steps: 50
+    max_sequence_length: 512
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    guidance_scale: 4.0
+    num_iterations: 25
+    attention_backend: cudnn
+
+# T2V 2K
+- name: flux2.t2i_2k
+  tags: [release, mad, lucid, instinct, gfx942, gfx950]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Cat astronaut raising a cat flag on the surface of moon
+    height: 2048
+    width: 2048
+    num_inference_steps: 50
+    max_sequence_length: 512
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    guidance_scale: 4.0
+    num_iterations: 25
+    attention_backend: aiter
+
+- name: flux2.t2i_2k.hopper.h100
+  tags: [lucid, hopper, h100]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Cat astronaut raising a cat flag on the surface of moon
+    height: 2048
+    width: 2048
+    num_inference_steps: 50
+    max_sequence_length: 512
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    guidance_scale: 4.0
+    num_iterations: 25
+    fully_shard_degree: 8
+    attention_backend: cudnn
+
+- name: flux2.t2i_2k.hopper.h200
+  tags: [lucid, hopper, h200]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Cat astronaut raising a cat flag on the surface of moon
+    height: 2048
+    width: 2048
+    num_inference_steps: 50
+    max_sequence_length: 512
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    guidance_scale: 4.0
+    num_iterations: 25
+    attention_backend: cudnn
+
+- name: flux2.t2i_2k.blackwell
+  tags: [lucid, blackwell, b200, b300]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Cat astronaut raising a cat flag on the surface of moon
+    height: 2048
+    width: 2048
+    num_inference_steps: 50
+    max_sequence_length: 512
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    guidance_scale: 4.0
+    num_iterations: 25
+    attention_backend: cudnn
+
+# TmultiI2V 1K
+- name: flux2.t-multi-i2i_1k
+  tags: [release, mad, lucid, instinct, gfx942, gfx950]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: the cat from image 1 has the same expression as cat on image 2
+    height: 1024
+    width: 1024
+    num_inference_steps: 50
+    max_sequence_length: 512
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    input_images:
+      - https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+      - https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/grumpy.jpg
+    guidance_scale: 4.0
+    num_iterations: 25
+    attention_backend: aiter
+
+- name: flux2.t-multi-i2i_1k.hopper.h100
+  tags: [lucid, hopper, h100]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: the cat from image 1 has the same expression as cat on image 2
+    height: 1024
+    width: 1024
+    num_inference_steps: 50
+    max_sequence_length: 512
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    input_images:
+      - https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+      - https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/grumpy.jpg
+    guidance_scale: 4.0
+    num_iterations: 25
+    fully_shard_degree: 8
+    attention_backend: cudnn
+
+- name: flux2.t-multi-i2i_1k.hopper.h200
+  tags: [lucid, hopper, h200]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: the cat from image 1 has the same expression as cat on image 2
+    height: 1024
+    width: 1024
+    num_inference_steps: 50
+    max_sequence_length: 512
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    input_images:
+      - https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+      - https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/grumpy.jpg
+    guidance_scale: 4.0
+    num_iterations: 25
+    attention_backend: cudnn
+
+- name: flux2.t-multi-i2i_1k.blackwell
+  tags: [lucid, blackwell, b200, b300]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: the cat from image 1 has the same expression as cat on image 2
+    height: 1024
+    width: 1024
+    num_inference_steps: 50
+    max_sequence_length: 512
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    input_images:
+      - https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+      - https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/grumpy.jpg
+    guidance_scale: 4.0
+    num_iterations: 25
+    attention_backend: cudnn
+
+# TmultiI2V 2K
+- name: flux2.t-multi-i2i_2k
+  tags: [release, mad, lucid, instinct, gfx942, gfx950]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: the cat from image 1 has the same expression as cat on image 2
+    height: 2048
+    width: 2048
+    num_inference_steps: 50
+    max_sequence_length: 512
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    input_images:
+      - https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+      - https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/grumpy.jpg
+    guidance_scale: 4.0
+    num_iterations: 25
+    attention_backend: aiter
+
+- name: flux2.t-multi-i2i_2k.hopper.h100
+  tags: [lucid, hopper, h100]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: the cat from image 1 has the same expression as cat on image 2
+    height: 2048
+    width: 2048
+    num_inference_steps: 50
+    max_sequence_length: 512
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    input_images:
+      - https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+      - https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/grumpy.jpg
+    guidance_scale: 4.0
+    num_iterations: 25
+    fully_shard_degree: 8
+    attention_backend: cudnn
+
+- name: flux2.t-multi-i2i_2k.hopper.h200
+  tags: [lucid, hopper, h200]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: the cat from image 1 has the same expression as cat on image 2
+    height: 2048
+    width: 2048
+    num_inference_steps: 50
+    max_sequence_length: 512
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    input_images:
+      - https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+      - https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/grumpy.jpg
+    guidance_scale: 4.0
+    num_iterations: 25
+    attention_backend: cudnn
+
+- name: flux2.t-multi-i2i_2k.blackwell
+  tags: [lucid, blackwell, b200, b300]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: the cat from image 1 has the same expression as cat on image 2
+    height: 2048
+    width: 2048
+    num_inference_steps: 50
+    max_sequence_length: 512
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    input_images:
+      - https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+      - https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/grumpy.jpg
+    guidance_scale: 4.0
+    num_iterations: 25
+    attention_backend: cudnn
+
+- name: flux2.i2i_1k.4gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Add a cool hat to the cat
+    height: 1024
+    width: 1024
+    num_inference_steps: 25
+    max_sequence_length: 512
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 4.0
+    input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+    attention_backend: aiter_flydsl_fp8
+    use_torch_compile: true
+    use_fp8_gemms: true
+    cache_method: dbcache
+    cache_config:
+      residual_diff_threshold: 0.16
+      enable_taylorseer: false
+    use_fp8_text_encoder: true
+    ulysses_degree: 4
+    fully_shard_degree: 2
+    memory_efficient_sharding: true
+    use_parallel_vae: true
+    enable_tiling: true
+    vae_tile_size_height: 352
+    vae_tile_size_width: 1024
+    vae_tile_overlap_height: 88
+    vae_tile_overlap_width: 0
+
+- name: flux2.multi_1k.4gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: the cat from image 1 has the same expression as cat on image 2
+    height: 1024
+    width: 1024
+    num_inference_steps: 25
+    max_sequence_length: 512
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 4.0
+    input_images:
+      - https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+      - https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/grumpy.jpg
+    attention_backend: aiter_flydsl_fp8
+    use_torch_compile: true
+    use_fp8_gemms: true
+    cache_method: dbcache
+    cache_config:
+      residual_diff_threshold: 0.16
+      enable_taylorseer: false
+    use_fp8_text_encoder: true
+    ulysses_degree: 4
+    fully_shard_degree: 4
+    memory_efficient_sharding: true
+    use_parallel_vae: true
+    enable_tiling: true
+    vae_tile_size_height: 352
+    vae_tile_size_width: 1024
+    vae_tile_overlap_height: 88
+    vae_tile_overlap_width: 0
+
+- name: flux2.t2i_1k.4gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Cat astronaut raising a cat flag on the surface of moon
+    height: 1024
+    width: 1024
+    num_inference_steps: 25
+    max_sequence_length: 512
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 4.0
+    attention_backend: aiter_flydsl_fp8
+    use_torch_compile: true
+    use_fp8_gemms: true
+    cache_method: dbcache
+    cache_config:
+      residual_diff_threshold: 0.16
+      enable_taylorseer: false
+    use_fp8_text_encoder: true
+    ulysses_degree: 4
+    fully_shard_degree: 2
+    memory_efficient_sharding: true
+    use_parallel_vae: true
+    enable_tiling: true
+    vae_tile_size_height: 352
+    vae_tile_size_width: 1024
+    vae_tile_overlap_height: 88
+    vae_tile_overlap_width: 0
+
+- name: flux2.i2i_1k.2gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Add a cool hat to the cat
+    height: 1024
+    width: 1024
+    num_inference_steps: 25
+    max_sequence_length: 512
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 4.0
+    input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+    attention_backend: aiter_flydsl_fp8
+    use_torch_compile: true
+    use_fp8_gemms: true
+    cache_method: dbcache
+    cache_config:
+      residual_diff_threshold: 0.16
+      enable_taylorseer: false
+    use_fp8_text_encoder: true
+    ulysses_degree: 2
+    fully_shard_degree: 2
+    memory_efficient_sharding: true
+    use_parallel_vae: true
+    enable_tiling: true
+    vae_tile_size_height: 352
+    vae_tile_size_width: 1024
+    vae_tile_overlap_height: 88
+    vae_tile_overlap_width: 0
+
+- name: flux2.multi_1k.2gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: the cat from image 1 has the same expression as cat on image 2
+    height: 1024
+    width: 1024
+    num_inference_steps: 25
+    max_sequence_length: 512
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 4.0
+    input_images:
+      - https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+      - https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/grumpy.jpg
+    attention_backend: aiter_flydsl_fp8
+    use_torch_compile: true
+    use_fp8_gemms: true
+    cache_method: dbcache
+    cache_config:
+      residual_diff_threshold: 0.16
+      enable_taylorseer: false
+    use_fp8_text_encoder: true
+    ulysses_degree: 2
+    fully_shard_degree: 2
+    memory_efficient_sharding: true
+    use_parallel_vae: true
+    enable_tiling: true
+    vae_tile_size_height: 352
+    vae_tile_size_width: 1024
+    vae_tile_overlap_height: 88
+    vae_tile_overlap_width: 0
+
+- name: flux2.t2i_1k.2gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Cat astronaut raising a cat flag on the surface of moon
+    height: 1024
+    width: 1024
+    num_inference_steps: 25
+    max_sequence_length: 512
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 4.0
+    attention_backend: aiter_flydsl_fp8
+    use_torch_compile: true
+    use_fp8_gemms: true
+    cache_method: dbcache
+    cache_config:
+      residual_diff_threshold: 0.16
+      enable_taylorseer: false
+    use_fp8_text_encoder: true
+    ulysses_degree: 2
+    fully_shard_degree: 2
+    memory_efficient_sharding: true
+    use_parallel_vae: true
+    enable_tiling: true
+    vae_tile_size_height: 352
+    vae_tile_size_width: 1024
+    vae_tile_overlap_height: 88
+    vae_tile_overlap_width: 0
+
+- name: flux2.i2i_1k.1gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Add a cool hat to the cat
+    height: 1024
+    width: 1024
+    num_inference_steps: 25
+    max_sequence_length: 512
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 4.0
+    input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+    attention_backend: aiter_flydsl_fp8
+    use_torch_compile: true
+    use_fp8_gemms: true
+    use_fp8_text_encoder: true
+    enable_group_cpu_offload: true
+    group_offload_low_cpu_mem: false
+    cache_method: dbcache
+    cache_config:
+      residual_diff_threshold: 0.16
+      enable_taylorseer: false
+
+- name: flux2.multi_1k.1gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: the cat from image 1 has the same expression as cat on image 2
+    height: 1024
+    width: 1024
+    num_inference_steps: 25
+    max_sequence_length: 512
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 4.0
+    input_images:
+      - https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+      - https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/grumpy.jpg
+    attention_backend: aiter_flydsl_fp8
+    use_torch_compile: true
+    use_fp8_gemms: true
+    use_fp8_text_encoder: true
+    enable_group_cpu_offload: true
+    group_offload_low_cpu_mem: true
+    cache_method: dbcache
+    cache_config:
+      residual_diff_threshold: 0.16
+      enable_taylorseer: false
+
+- name: flux2.t2i_1k.1gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: black-forest-labs/FLUX.2-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Cat astronaut raising a cat flag on the surface of moon
+    height: 1024
+    width: 1024
+    num_inference_steps: 25
+    max_sequence_length: 512
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 4.0
+    attention_backend: aiter_flydsl_fp8
+    use_torch_compile: true
+    use_fp8_gemms: true
+    use_fp8_text_encoder: true
+    enable_group_cpu_offload: true
+    group_offload_low_cpu_mem: false
+    cache_method: dbcache
+    cache_config:
+      residual_diff_threshold: 0.16
+      enable_taylorseer: false

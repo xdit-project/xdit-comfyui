@@ -1,0 +1,383 @@
+# Copyright Advanced Micro Devices, Inc.
+# SPDX-License-Identifier: MIT
+
+- name: flux.usp
+  tags: [release, mad, lucid, instinct, gfx942, gfx950]
+  model: black-forest-labs/FLUX.1-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: A small cat
+    height: 1024
+    width: 1024
+    num_inference_steps: 25
+    max_sequence_length: 256
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    guidance_scale: 0.0
+    num_iterations: 50
+    attention_backend: aiter
+
+- name: flux.usp.hopper
+  tags: [lucid, hopper, h100, h200]
+  model: black-forest-labs/FLUX.1-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: A small cat
+    height: 1024
+    width: 1024
+    num_inference_steps: 25
+    max_sequence_length: 256
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    guidance_scale: 0.0
+    num_iterations: 50
+    attention_backend: cudnn
+
+- name: flux.usp.blackwell
+  tags: [lucid, blackwell, b200, b300]
+  model: black-forest-labs/FLUX.1-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: A small cat
+    height: 1024
+    width: 1024
+    num_inference_steps: 25
+    max_sequence_length: 256
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    guidance_scale: 0.0
+    num_iterations: 50
+    attention_backend: cudnn
+
+- name: flux.single_gpu
+  tags: [release, instinct, gfx942, gfx950]
+  model: black-forest-labs/FLUX.1-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: A small cat
+    height: 1024
+    width: 1024
+    num_inference_steps: 25
+    max_sequence_length: 256
+    warmup_calls: 5
+    ulysses_degree: 1
+    use_torch_compile: true
+    guidance_scale: 0.0
+    num_iterations: 50
+    attention_backend: aiter
+
+- name: flux.single_gpu.hopper
+  tags: [hopper, h100, h200]
+  model: black-forest-labs/FLUX.1-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: A small cat
+    height: 1024
+    width: 1024
+    num_inference_steps: 25
+    max_sequence_length: 256
+    warmup_calls: 5
+    ulysses_degree: 1
+    use_torch_compile: true
+    guidance_scale: 0.0
+    num_iterations: 50
+    attention_backend: cudnn
+
+- name: flux.single_gpu.blackwell
+  tags: [blackwell, b200, b300]
+  model: black-forest-labs/FLUX.1-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: A small cat
+    height: 1024
+    width: 1024
+    num_inference_steps: 25
+    max_sequence_length: 256
+    warmup_calls: 5
+    ulysses_degree: 1
+    use_torch_compile: true
+    guidance_scale: 0.0
+    num_iterations: 50
+    attention_backend: cudnn
+
+- name: flux.usp_2k
+  tags: [release, mad, lucid, instinct, gfx942, gfx950]
+  model: black-forest-labs/FLUX.1-dev
+  runner: xdit
+  args:
+    seed: 0
+    prompt: A small cat
+    height: 2048
+    width: 2048
+    num_inference_steps: 25
+    max_sequence_length: 256
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    guidance_scale: 0.0
+    num_iterations: 25
+    attention_backend: aiter
+
+- name: flux.usp_2k.hopper
+  tags: [lucid, hopper, h100, h200]
+  model: black-forest-labs/FLUX.1-dev
+  runner: xdit
+  args:
+    seed: 0
+    prompt: A small cat
+    height: 2048
+    width: 2048
+    num_inference_steps: 25
+    max_sequence_length: 256
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    guidance_scale: 0.0
+    num_iterations: 25
+    attention_backend: cudnn
+
+- name: flux.usp_2k.blackwell
+  tags: [lucid, blackwell, b200, b300]
+  model: black-forest-labs/FLUX.1-dev
+  runner: xdit
+  args:
+    seed: 0
+    prompt: A small cat
+    height: 2048
+    width: 2048
+    num_inference_steps: 25
+    max_sequence_length: 256
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    guidance_scale: 0.0
+    num_iterations: 25
+    attention_backend: cudnn
+
+- name: flux.single_gpu_2k
+  tags: [release, instinct, gfx942, gfx950]
+  model: black-forest-labs/FLUX.1-dev
+  runner: xdit
+  args:
+    seed: 0
+    prompt: A small cat
+    height: 2048
+    width: 2048
+    num_inference_steps: 25
+    max_sequence_length: 256
+    warmup_calls: 5
+    ulysses_degree: 1
+    use_torch_compile: true
+    guidance_scale: 0.0
+    num_iterations: 25
+    attention_backend: aiter
+
+- name: flux.single_gpu_2k.hopper
+  tags: [hopper, h100, h200]
+  model: black-forest-labs/FLUX.1-dev
+  runner: xdit
+  args:
+    seed: 0
+    prompt: A small cat
+    height: 2048
+    width: 2048
+    num_inference_steps: 25
+    max_sequence_length: 256
+    warmup_calls: 5
+    ulysses_degree: 1
+    use_torch_compile: true
+    guidance_scale: 0.0
+    num_iterations: 25
+    attention_backend: cudnn
+
+- name: flux.single_gpu_2k.blackwell
+  tags: [blackwell, b200, b300]
+  model: black-forest-labs/FLUX.1-dev
+  runner: xdit
+  args:
+    seed: 0
+    prompt: A small cat
+    height: 2048
+    width: 2048
+    num_inference_steps: 25
+    max_sequence_length: 256
+    warmup_calls: 5
+    ulysses_degree: 1
+    use_torch_compile: true
+    guidance_scale: 0.0
+    num_iterations: 25
+    attention_backend: cudnn
+
+- name: flux.usp_1k.4gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: black-forest-labs/FLUX.1-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: A small cat
+    height: 1024
+    width: 1024
+    num_inference_steps: 25
+    max_sequence_length: 256
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 0.0
+    attention_backend: aiter_flydsl_fp8
+    ulysses_degree: 4
+    use_torch_compile: true
+    use_fp8_gemms: true
+    use_parallel_vae: true
+    enable_tiling: true
+    cache_method: dbcache
+    cache_config:
+      residual_diff_threshold: 0.16
+    memory_efficient_replicated_load: true
+    use_fp8_text_encoder: true
+    vae_tile_size_height: 352
+    vae_tile_size_width: 1024
+    vae_tile_overlap_height: 88
+    vae_tile_overlap_width: 0
+
+- name: flux.usp_2k.4gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: black-forest-labs/FLUX.1-dev
+  runner: xdit
+  args:
+    seed: 0
+    prompt: A small cat
+    height: 2048
+    width: 2048
+    num_inference_steps: 25
+    max_sequence_length: 256
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 0.0
+    attention_backend: aiter_flydsl_fp8
+    ulysses_degree: 4
+    use_torch_compile: true
+    use_fp8_gemms: true
+    use_parallel_vae: true
+    enable_tiling: true
+    cache_method: dbcache
+    cache_config:
+      residual_diff_threshold: 0.16
+    memory_efficient_replicated_load: true
+    use_fp8_text_encoder: true
+    vae_tile_size_height: 352
+    vae_tile_size_width: 2048
+    vae_tile_overlap_height: 88
+    vae_tile_overlap_width: 0
+
+- name: flux.usp_1k.2gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: black-forest-labs/FLUX.1-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: A small cat
+    height: 1024
+    width: 1024
+    num_inference_steps: 25
+    max_sequence_length: 256
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 0.0
+    attention_backend: aiter_flydsl_fp8
+    ulysses_degree: 2
+    use_torch_compile: true
+    use_fp8_gemms: true
+    use_parallel_vae: true
+    enable_tiling: true
+    cache_method: dbcache
+    cache_config:
+      residual_diff_threshold: 0.16
+    memory_efficient_replicated_load: true
+    use_fp8_text_encoder: true
+    vae_tile_size_height: 352
+    vae_tile_size_width: 1024
+    vae_tile_overlap_height: 88
+    vae_tile_overlap_width: 0
+
+- name: flux.usp_2k.2gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: black-forest-labs/FLUX.1-dev
+  runner: xdit
+  args:
+    seed: 0
+    prompt: A small cat
+    height: 2048
+    width: 2048
+    num_inference_steps: 25
+    max_sequence_length: 256
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 0.0
+    attention_backend: aiter_flydsl_fp8
+    ulysses_degree: 2
+    use_torch_compile: true
+    use_fp8_gemms: true
+    use_parallel_vae: true
+    enable_tiling: true
+    cache_method: dbcache
+    cache_config:
+      residual_diff_threshold: 0.16
+    memory_efficient_replicated_load: true
+    use_fp8_text_encoder: true
+    vae_tile_size_height: 352
+    vae_tile_size_width: 2048
+    vae_tile_overlap_height: 88
+    vae_tile_overlap_width: 0
+
+- name: flux.1gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: black-forest-labs/FLUX.1-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: A small cat
+    height: 1024
+    width: 1024
+    num_inference_steps: 25
+    max_sequence_length: 256
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 0.0
+    attention_backend: aiter_flydsl_fp8
+    use_torch_compile: true
+    use_fp8_gemms: true
+    cache_method: dbcache
+    cache_config:
+      residual_diff_threshold: 0.16
+    use_fp8_text_encoder: true
+
+- name: flux.2k.1gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: black-forest-labs/FLUX.1-dev
+  runner: xdit
+  args:
+    seed: 0
+    prompt: A small cat
+    height: 2048
+    width: 2048
+    num_inference_steps: 25
+    max_sequence_length: 256
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 0.0
+    attention_backend: aiter_flydsl_fp8
+    use_torch_compile: true
+    use_fp8_gemms: true
+    enable_tiling: true
+    cache_method: dbcache
+    cache_config:
+      residual_diff_threshold: 0.16
+    use_fp8_text_encoder: true

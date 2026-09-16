@@ -1,0 +1,113 @@
+# Copyright Advanced Micro Devices, Inc.
+# SPDX-License-Identifier: MIT
+
+- name: stablediffusion_3_5.default
+  tags: [release, mad, lucid, instinct, gfx942, gfx950]
+  model: stabilityai/stable-diffusion-3.5-large
+  runner: xdit
+  args:
+    prompt: A capybara holding a sign that reads Hello World
+    num_iterations: 50
+    num_inference_steps: 28
+    pipefusion_parallel_degree: 4
+    use_cfg_parallel: true
+    use_torch_compile: true
+    attention_backend: aiter
+
+- name: stablediffusion_3_5.default.hopper
+  tags: [lucid, hopper, h100, h200]
+  model: stabilityai/stable-diffusion-3.5-large
+  runner: xdit
+  args:
+    prompt: A capybara holding a sign that reads Hello World
+    num_iterations: 50
+    num_inference_steps: 28
+    pipefusion_parallel_degree: 4
+    use_cfg_parallel: true
+    use_torch_compile: true
+    attention_backend: cudnn
+
+- name: stablediffusion_3_5.default.blackwell
+  tags: [lucid, blackwell, b200, b300]
+  model: stabilityai/stable-diffusion-3.5-large
+  runner: xdit
+  args:
+    prompt: A capybara holding a sign that reads Hello World
+    num_iterations: 50
+    num_inference_steps: 28
+    pipefusion_parallel_degree: 4
+    use_cfg_parallel: true
+    use_torch_compile: true
+    attention_backend: cudnn
+
+- name: stablediffusion_3_5.4gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: stabilityai/stable-diffusion-3.5-large
+  runner: xdit
+  args:
+    seed: 42
+    prompt: A capybara holding a sign that reads Hello World
+    height: 1024
+    width: 1024
+    num_inference_steps: 28
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 3.5
+    attention_backend: aiter_flydsl_fp8
+    use_cfg_parallel: true
+    ulysses_degree: 2
+    use_torch_compile: true
+    enable_tiling: true
+    enable_slicing: true
+    vae_tile_size_height: 512
+    vae_tile_size_width: 512
+    vae_tile_overlap_height: 128
+    vae_tile_overlap_width: 128
+    cache_method: dbcache
+
+- name: stablediffusion_3_5.2gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: stabilityai/stable-diffusion-3.5-large
+  runner: xdit
+  args:
+    seed: 42
+    prompt: A capybara holding a sign that reads Hello World
+    height: 1024
+    width: 1024
+    num_inference_steps: 28
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 3.5
+    attention_backend: aiter_flydsl_fp8
+    use_torch_compile: true
+    cache_method: dbcache
+    enable_tiling: true
+    enable_slicing: true
+    vae_tile_size_height: 704
+    vae_tile_size_width: 1024
+    vae_tile_overlap_height: 176
+    vae_tile_overlap_width: 0
+    use_cfg_parallel: true
+
+- name: stablediffusion_3_5.1gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: stabilityai/stable-diffusion-3.5-large
+  runner: xdit
+  args:
+    seed: 42
+    prompt: A capybara holding a sign that reads Hello World
+    height: 1024
+    width: 1024
+    num_inference_steps: 28
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 3.5
+    attention_backend: aiter_flydsl_fp8
+    use_torch_compile: true
+    enable_tiling: true
+    enable_slicing: true
+    vae_tile_size_height: 384
+    vae_tile_size_width: 1024
+    vae_tile_overlap_height: 96
+    vae_tile_overlap_width: 0
+    cache_method: dbcache

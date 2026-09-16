@@ -1,0 +1,109 @@
+name: ci
+
+on:
+  push:
+    branches: ["main", "next"]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        # The floor this pack claims to support, and what current ComfyUI ships with.
+        python-version: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Sync dependencies
+        # xfuser is a git dependency and pulls torch, so this is the slow step; the uv
+        # cache above is what keeps it off the critical path on repeat runs.
+        run: uv sync --dev
+      - name: Check Python formatting
+        run: uv run black --check .
+      - name: Lint Python
+        run: uv run ruff check .
+      - name: Install JavaScript tooling
+        if: matrix.python-version == '3.12'
+        run: corepack enable && pnpm install --frozen-lockfile
+      - name: Check web and data formatting
+        if: matrix.python-version == '3.12'
+        run: pnpm format:check
+      - name: Lint JavaScript
+        if: matrix.python-version == '3.12'
+        run: pnpm lint
+      - name: Verify pinned preset configs
+        if: matrix.python-version == '3.12'
+        run: uv run python scripts/maintenance/sync_preset_configs.py --check
+      - name: Run unit suite
+        run: uv run pytest tests -q --ignore=tests/integration
+      - name: Run CPU contract suite
+        run: uv run pytest tests/integration -q -m contract
+
+  plain-clone:
+    # A clone into custom_nodes/ with nothing pip-installed still has to register its
+    # nodes: that is what ComfyUI Manager and the Docker image produce. Without xfuser
+    # the Model node cannot build its schema, and must say so in its own words.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pyyaml aiohttp
+      - name: Import the pack the way ComfyUI does
+        run: |
+          python - <<'PY'
+          import asyncio, importlib.util
+          spec = importlib.util.spec_from_file_location("xdit_pack", "__init__.py")
+          module = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(module)
+          extension = asyncio.run(module.comfy_entrypoint())
+          nodes = asyncio.run(extension.get_node_list())
+          registered = {node.__name__: node for node in nodes}
+          assert set(registered) == {"XDiTPreset", "XDiTModel", "XDiTSample"}, registered
+          try:
+              registered["XDiTModel"].define_schema()
+          except RuntimeError as exc:
+              assert "pip install -r requirements.txt" in str(exc), exc
+          else:
+              raise AssertionError("the Model node built a schema without xfuser")
+          print("registered:", sorted(registered))
+          PY
+
+  browser-layout:
+    # Real Nodes 2.0 rendering: provisions CPU ComfyUI locally and checks DOM geometry
+    # in Chromium. This catches layout behavior the LiteGraph lifecycle mocks cannot.
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Sync development dependencies
+        run: uv sync --group dev
+      - name: Install Chromium and system libraries
+        run: uv run playwright install --with-deps chromium
+      - name: Run live Nodes 2.0 layout suite
+        run: bash scripts/browser/run_tests.sh

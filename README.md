@@ -1,69 +1,143 @@
-# xdit-comfyui-private
-## Environment
-### Install ComfyUI
-Follow the [ComfyUI](https://github.com/comfyanonymous/ComfyUI) repo to install the dependencies.
+# xDiT
 
-You can simply install the dependencies by running the following command:
+xDiT for ComfyUI runs supported diffusion models through the
+[xDiT](https://github.com/xdit-project/xDiT) unified runner. It provides nodes for selecting
+a tested hardware preset, loading a distributed model, and generating images or video.
+
+## Requirements
+
+- Linux
+- A ComfyUI version satisfying the constraint in `pyproject.toml`
+- A CUDA or ROCm environment supported by xDiT
+- Enough GPU memory for the selected model and parallel configuration
+
+## Installation
+
+### ComfyUI Manager
+
+**This has not yet been published to the Comfy Registry, manual installation is required.**
+
+### Manual installation
+
+Clone the repository into `ComfyUI/custom_nodes` and install its dependencies with the
+same Python interpreter that runs ComfyUI:
+
 ```bash
-git clone https://github.com/comfyanonymous/ComfyUI
-cd ComfyUI
-pip install -r requirements.txt
+cd ComfyUI/custom_nodes
+git clone https://github.com/xdit-project/xdit-comfyui.git
+python -m pip install -r xdit-comfyui/requirements.txt
 ```
 
-### Install [Ray](https://docs.ray.io/en/latest/ray-overview/installation.html)
+Restart ComfyUI after installation.
+
+### Docker
+
+The included Dockerfile expects an xDiT base image containing the matching GPU stack:
+
 ```bash
-pip install -U "ray[data,train,tune,serve]"
+docker build -t xdit-comfyui -f docker/Dockerfile .
 ```
 
-### Install [yunchang](https://github.com/feifeibear/long-context-attention)
+## Quick start
+
+Add the **xDiT Starter** template or connect the nodes manually.
+
+1. In **xDiT Preset**, select the detected GPU family, GPU count, and a matching preset.
+2. In **xDiT Model**, review the model, GPU assignment, and residency policy.
+3. In **xDiT Sample**, enter a prompt and queue the workflow.
+4. Use **Unload Model (Free VRAM)** when you no longer need the warm model.
+
+The xDiT sidebar shows resident workers, assigned GPUs, memory use, and unload controls.
+
+## Nodes
+
+| Node            | Purpose                                                              |
+| --------------- | -------------------------------------------------------------------- |
+| **xDiT Preset** | Applies a benchmark-tested model, GPU, and generation configuration. |
+| **xDiT Model**  | Loads and keeps an xDiT worker ready for inference.                  |
+| **xDiT Sample** | Generates images or video from the loaded model.                     |
+
+Model, residency, and compilation are always visible. Less frequently changed controls
+are grouped into model cache, parallelism, memory, VAE, attention, GEMM precision, step
+cache, and optional model-specific sections. Unsupported controls are disabled or hidden
+for the selected model.
+
+## Model storage
+
+With the default `auto` setting, downloads use the first configured Hugging Face location:
+
+1. `HF_HUB_CACHE` or `HUGGINGFACE_HUB_CACHE`
+2. `HF_HOME`
+3. A populated container cache at `/cache/huggingface`
+4. `ComfyUI/models/huggingface`
+
+The Model node shows the effective source and path. Choose `custom_path` to specify another
+Hugging Face cache root. Authentication uses `HF_TOKEN` or `hf auth login`; credentials are
+not stored in workflows.
+
+Models are selected by Hugging Face repository ID. Arbitrary directories under
+`ComfyUI/models/diffusers` are not discovered; this plugin does not reorganize model files or
+create compatibility symlinks.
+
+## Development
+
+Install the locked development environment and run the checks:
+
 ```bash
-git clone git@github.com:feifeibear/long-context-attention.git
-cd long-context-attention
-pip install ninja
-pip install .
+uv sync --dev
+uv run ruff check .
+uv run black --check -W 1 .
+corepack pnpm install --frozen-lockfile
+corepack pnpm format:check
+corepack pnpm lint
+uv run pytest tests -q --ignore=tests/integration
+uv run pytest tests/integration -q -m contract
 ```
 
-### Put the xdit-comfyui-private folder into the ComfyUI/custom_nodes folder
-You can put the xdit-comfyui-private folder into the ComfyUI/custom_nodes folder by running the following command:
+### Preset snapshot
+
+Preset YAML files are bundled in `xdit_comfyui/preset_configs`; the plugin reads this local
+snapshot at runtime and does not fetch presets from upstream. The source repository and commit
+are pinned in `pyproject.toml`. After changing that pin, refresh and commit the snapshot with:
+
 ```bash
-cd ${ComfyUI}/custom_nodes
-git clone git@github.com:xdit-project/xdit-comfyui-private.git
-cd xdit-comfyui-private
-pip install -e .
+uv run python scripts/maintenance/sync_preset_configs.py
 ```
 
-## Prepare models checkpoint
-Please follow the [Flux Examples](https://comfyanonymous.github.io/ComfyUI_examples/flux/) to prepare the corresponding checkpoints:
-1. Put in the `${ComfyUI}/models/clip` folder: https://huggingface.co/comfyanonymous/flux_text_encoders/tree/main
-2. Put in the `${ComfyUI}/models/vae` folder: https://huggingface.co/black-forest-labs/FLUX.1-schnell/blob/main/ae.safetensors
-3. Put in the `${ComfyUI}/models/unet` folder: https://huggingface.co/black-forest-labs/FLUX.1-dev
+CI runs the same command with `--check` to ensure the committed files still match the pin.
+Regenerate the committed starter workflow with
+`uv run python scripts/maintenance/build_starter_workflow.py` after changing its builder.
 
-## Run the demo
-You can run the demo by running the following command:
+GPU integration tests are opt-in:
+
 ```bash
-cd ${ComfyUI}
-python main.py
+XDIT_RUN_GPU_TESTS=1 uv run pytest tests/integration -m gpu_live
+bash scripts/browser/run_tests.sh --install  # install Chromium once
+bash scripts/browser/run_tests.sh
 ```
 
-**You can load the default workflow in the xdit-comfyui-private/workflows folder: `xdit-flux1-dev.json`**
+For a GPU development container, run `bash scripts/docker/run_dev.sh`. The most useful
+overrides are:
 
-## Loras Supports
-We also provide some loras for you to try. You can put the loras into the `${ComfyUI}/models/xdit/loras` folder(the folder will be created automatically if not exists). Currently, we support the following loras:
-1. [flux-RealismLora](https://huggingface.co/XLabs-AI/flux-RealismLora)
-2. [flux-lora-collection](https://huggingface.co/XLabs-AI/flux-lora-collection)
-3. [flux-furry-lora](https://huggingface.co/XLabs-AI/flux-furry-lora)
+| Variable                               | Purpose                                                      |
+| -------------------------------------- | ------------------------------------------------------------ |
+| `XDIT_DOCKER_ROCM=0`                   | Use CUDA (`--gpus all`) instead of the ROCm device defaults. |
+| `XDIT_REPOSITORY`, `XDIT_REF`          | Build against another xDiT repository or revision.           |
+| `HF_CACHE_HOST`                        | Host Hugging Face cache to mount in the container.           |
+| `XDIT_DEV_IMAGE`, `XDIT_DEV_CONTAINER` | Override the development image or container name.            |
+| `COMFYUI_URL`                          | Target an existing ComfyUI server in live tests.             |
+| `XDIT_BROWSER_COMFYUI_PORT`            | Override the provisioned browser-test port.                  |
 
-**You can load the example loras workflow in the xdit-comfyui-private/workflows folder: `xdit-flux1-dev-loras.json`**
+Python node changes require a ComfyUI restart: `bash scripts/docker/restart.sh`.
+See [docker/README.md](docker/README.md) for container examples and the complete Docker
+configuration.
 
-## FP8 Supports
-We also provide some FP8 models for you to try if you don't have enough VRAM. You can put the FP8 models into the `${ComfyUI}/models/unet` folder. Download the FP8 models from [here](https://huggingface.co/Comfy-Org/flux1-dev/blob/main/flux1-dev-fp8.safetensors).
+## Releases
 
-Use the `xdit-flux1-dev-fp8.json` workflow in the ComfyUI/workflows folder to try the FP8 models.
+The package version and Registry metadata are maintained in `pyproject.toml`. Releases are
+published to the Comfy Registry through the protected `publish` workflow.
 
-## ControlNet Supports
-We also provide some ControlNet for you to try. Before you use this function, you need to install the `x-flux-comfyui` node in the ComfyUI from [here](https://github.com/XLabs-AI/x-flux-comfyui/tree/main). Please follow the [instruction](https://github.com/XLabs-AI/x-flux-comfyui/tree/main?tab=readme-ov-file#installation) in the `x-flux-comfyui` repo to install the node.
+## License
 
-Currently, we support the following ControlNet:
-1. [flux-controlnet-canny] (https://huggingface.co/XLabs-AI/flux-controlnet-canny)
-
-Use the `xdit-flux1-dev-controlnet-canny.json` workflow in the ComfyUI/workflows folder to try the ControlNet.
+Licensed under Apache-2.0. See [LICENSE](LICENSE) and
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

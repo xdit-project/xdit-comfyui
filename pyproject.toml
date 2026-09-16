@@ -1,0 +1,93 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "xdit-comfyui"
+version = "0.2.0"
+description = "ComfyUI custom node pack for xDiT unified runner workflows."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+classifiers = [
+  "Operating System :: POSIX :: Linux",
+  "Environment :: GPU :: AMD ROCm",
+  "Environment :: GPU :: NVIDIA CUDA",
+]
+dependencies = [
+  # Read at import time by the preset loader, so it cannot be left to whatever
+  # ComfyUI happens to have installed.
+  "pyyaml",
+  "xfuser[cache-dit,opencv-python] @ git+https://github.com/xdit-project/xDiT.git@68bca878f454c718d23b3764ded1de6add474eb4",
+]
+
+[project.urls]
+Repository = "https://github.com/xdit-project/xdit-comfyui"
+Issues = "https://github.com/xdit-project/xdit-comfyui/issues"
+
+[dependency-groups]
+dev = [
+  "aiohttp",
+  "black==26.5.1",
+  "build==1.3.0",
+  "playwright",
+  "pre-commit==4.3.0",
+  "pytest",
+  "ruff==0.16.5",
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = [".test-cache", ".venv"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+ignore = ["E402"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/cpu_only_plugin.py" = ["F401"]
+
+[tool.setuptools.packages.find]
+include = ["xdit_comfyui*"]
+exclude = ["tests*", "workflows*", "docs*"]
+
+[tool.setuptools.package-data]
+xdit_comfyui = ["preset_configs/*.yaml"]
+
+[tool.uv]
+system-certs = true
+
+[tool.pytest.ini_options]
+addopts = "--strict-markers"
+markers = [
+    "contract: CPU-only cross-module and xFuser argument contracts",
+    "comfy_import: imports ComfyUI and validates graphs in-process",
+    "comfy_live: requires a running ComfyUI server (COMFYUI_URL or localhost:8188)",
+    "gpu_init: initializes a real xDiT worker without inference",
+    "gpu_live: runs real xDiT inference on GPU",
+    "gpu_residency: GPU residency broker and eviction integration tests",
+    "long_gpu: long-running or full-matrix GPU inference",
+    "browser_live: requires a live ComfyUI server and Playwright Chromium",
+]
+
+[tool.comfy]
+PublisherId = "xdit-project"
+DisplayName = "xDiT"
+Icon = "https://avatars.githubusercontent.com/u/176372481?v=4&size=400"
+requires-comfyui = ">=0.28.0"
+
+[tool.xdit-comfyui.preset-configs]
+repository = "https://github.com/AMD-AGI/diffusion-models-inference.git"
+commit = "172fbcce2bf603216771f476fc40002b0640ce8d"
+path = "benchmark_configs/xdit"
+
+[tool.xdit-comfyui.preset-assets]
+path = "assets/data"
+image = "wan_input.jpg"
+license = "WAN2.1-LICENSE.txt"

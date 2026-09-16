@@ -1,4 +1,14 @@
 __pycache__/
-xdit_comfyui_private.egg-info/
+.venv/
+.pytest_cache/
+.coverage
+-af.ready
+.claude/
+.codex/
+CLAUDE.md
+*.egg-info/
 build/
 dist/
+node_modules/
+xdit_comfyui/data/.cache/
+.test-cache/

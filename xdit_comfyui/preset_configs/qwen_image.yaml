@@ -1,0 +1,133 @@
+# Copyright Advanced Micro Devices, Inc.
+# SPDX-License-Identifier: MIT
+
+- name: qwen_image.default
+  tags: [release, lucid, mad, instinct, gfx942, gfx950]
+  model: Qwen/Qwen-Image-2512
+  runner: xdit
+  args:
+    prompt: A cat holding a sign that says hello world
+    height: 2048
+    width: 2048
+    seed: 42
+    num_inference_steps: 50
+    guidance_scale: 0.0
+    num_iterations: 25
+    ulysses_degree: 8
+    use_torch_compile: true
+    attention_backend: aiter
+
+- name: qwen_image.default.hopper
+  tags: [lucid, hopper, h100, h200]
+  model: Qwen/Qwen-Image-2512
+  runner: xdit
+  args:
+    prompt: A cat holding a sign that says hello world
+    height: 2048
+    width: 2048
+    seed: 42
+    num_inference_steps: 50
+    guidance_scale: 0.0
+    num_iterations: 25
+    ulysses_degree: 8
+    use_torch_compile: true
+    attention_backend: cudnn
+
+- name: qwen_image.default.blackwell
+  tags: [lucid, blackwell, b200, b300]
+  model: Qwen/Qwen-Image-2512
+  runner: xdit
+  args:
+    prompt: A cat holding a sign that says hello world
+    height: 2048
+    width: 2048
+    seed: 42
+    num_inference_steps: 50
+    guidance_scale: 0.0
+    num_iterations: 25
+    ulysses_degree: 8
+    use_torch_compile: true
+    attention_backend: cudnn
+
+- name: qwen_image.4gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: Qwen/Qwen-Image-2512
+  runner: xdit
+  args:
+    seed: 42
+    prompt: A cat holding a sign that says hello world
+    height: 2048
+    width: 2048
+    num_inference_steps: 50
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 0.0
+    attention_backend: aiter_flydsl_fp8
+    use_torch_compile: true
+    use_fp8_gemms: true
+    enable_tiling: true
+    cache_method: dbcache
+    cache_config:
+      residual_diff_threshold: 0.1
+    use_fp8_text_encoder: true
+    ulysses_degree: 4
+    fully_shard_degree: 2
+    memory_efficient_sharding: true
+    use_parallel_vae: true
+    vae_tile_size_height: 352
+    vae_tile_size_width: 2048
+    vae_tile_overlap_height: 88
+    vae_tile_overlap_width: 0
+
+- name: qwen_image.2gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: Qwen/Qwen-Image-2512
+  runner: xdit
+  args:
+    seed: 42
+    prompt: A cat holding a sign that says hello world
+    height: 2048
+    width: 2048
+    num_inference_steps: 50
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 0.0
+    attention_backend: aiter_flydsl_fp8
+    use_torch_compile: true
+    use_fp8_gemms: true
+    enable_tiling: true
+    cache_method: dbcache
+    cache_config:
+      residual_diff_threshold: 0.1
+    use_fp8_text_encoder: true
+    ulysses_degree: 2
+    fully_shard_degree: 2
+    memory_efficient_sharding: true
+    use_parallel_vae: true
+    vae_tile_size_height: 352
+    vae_tile_size_width: 2048
+    vae_tile_overlap_height: 88
+    vae_tile_overlap_width: 0
+
+- name: qwen_image.1gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: Qwen/Qwen-Image-2512
+  runner: xdit
+  args:
+    seed: 42
+    prompt: A cat holding a sign that says hello world
+    height: 2048
+    width: 2048
+    num_inference_steps: 50
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 0.0
+    attention_backend: aiter_flydsl_fp8
+    use_torch_compile: true
+    use_fp8_gemms: true
+    enable_model_cpu_offload: true
+    enable_tiling: true
+    cache_method: dbcache
+    cache_config:
+      residual_diff_threshold: 0.1
+    use_fp8_text_encoder: true

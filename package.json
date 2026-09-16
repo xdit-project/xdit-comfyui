@@ -1,0 +1,17 @@
+{
+  "name": "xdit-comfyui-dev",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "format": "prettier --write . && eslint --fix .",
+    "format:check": "prettier --check .",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@eslint/js": "9.35.0",
+    "eslint": "9.35.0",
+    "globals": "16.3.0",
+    "prettier": "3.6.2"
+  },
+  "packageManager": "pnpm@10.15.1"
+}

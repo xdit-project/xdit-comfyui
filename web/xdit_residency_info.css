@@ -1,0 +1,57 @@
+.xdit-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem;
+}
+
+.xdit-sidebar-toolbar,
+.xdit-sidebar-card-heading {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.xdit-sidebar-section-heading {
+  margin: 0.25rem 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.xdit-sidebar-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.75rem;
+  border: 1px solid var(--p-content-border-color, rgb(128 128 128 / 0.35));
+  border-radius: 0.4rem;
+}
+
+.xdit-sidebar-card-heading {
+  font-weight: 600;
+}
+
+.xdit-sidebar-card-heading > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.xdit-sidebar-card-action {
+  flex: none;
+}
+
+.xdit-sidebar-muted {
+  opacity: 0.7;
+}
+
+.xdit-sidebar-active {
+  color: var(--p-primary-color, currentColor);
+  font-weight: 600;
+}
+
+.xdit-sidebar-memory-row {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 0.75rem;
+}

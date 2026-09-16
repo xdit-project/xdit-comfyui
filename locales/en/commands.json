@@ -1,0 +1,6 @@
+{
+  "xdit_unloadAllModels": {
+    "label": "Unload all xDiT models",
+    "description": "Stop every resident xDiT worker and release its GPU memory."
+  }
+}

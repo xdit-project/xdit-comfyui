@@ -1,0 +1,59 @@
+# Copyright Advanced Micro Devices, Inc.
+# SPDX-License-Identifier: MIT
+
+- name: hunyuanvideo_1_5.default
+  tags: [release, mad, lucid, instinct, gfx942, gfx950]
+  model: hunyuanvideo-community/HunyuanVideo-1.5-Diffusers-720p_t2v
+  runner: xdit
+  args:
+    prompt: In the large cage, two puppies were wagging their tails at each other.
+    task: t2v
+    height: 720
+    width: 1280
+    seed: 1168860793
+    num_frames: 129
+    num_inference_steps: 50
+    num_iterations: 1
+    ulysses_degree: 8
+    enable_tiling: True
+    enable_slicing: True
+    use_torch_compile: True
+    attention_backend: aiter
+
+- name: hunyuanvideo_1_5.default.hopper
+  tags: [lucid, hopper, h100, h200]
+  model: hunyuanvideo-community/HunyuanVideo-1.5-Diffusers-720p_t2v
+  runner: xdit
+  args:
+    prompt: In the large cage, two puppies were wagging their tails at each other.
+    task: t2v
+    height: 720
+    width: 1280
+    seed: 1168860793
+    num_frames: 129
+    num_inference_steps: 50
+    num_iterations: 1
+    ulysses_degree: 8
+    enable_tiling: True
+    enable_slicing: True
+    use_torch_compile: True
+    attention_backend: flash_3
+
+- name: hunyuanvideo_1_5.default.blackwell
+  tags: [lucid, blackwell, b200, b300]
+  model: hunyuanvideo-community/HunyuanVideo-1.5-Diffusers-720p_t2v
+  runner: xdit
+  args:
+    prompt: In the large cage, two puppies were wagging their tails at each other.
+    task: t2v
+    height: 720
+    width: 1280
+    seed: 1168860793
+    num_frames: 129
+    num_inference_steps: 50
+    num_iterations: 1
+    ulysses_degree: 8
+    enable_tiling: True
+    enable_slicing: True
+    use_torch_compile: True
+    attention_backend: cudnn

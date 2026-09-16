@@ -1,0 +1,147 @@
+# Copyright Advanced Micro Devices, Inc.
+# SPDX-License-Identifier: MIT
+
+- name: flux_kontext.default
+  tags: [release, mad, lucid, instinct, gfx942, gfx950]
+  model: black-forest-labs/FLUX.1-Kontext-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Add a cool hat to the cat
+    height: 1024
+    width: 1024
+    num_inference_steps: 30
+    max_sequence_length: 512
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+    guidance_scale: 2.5
+    num_iterations: 25
+    attention_backend: aiter
+
+- name: flux_kontext.default.hopper
+  tags: [lucid, hopper, h100, h200]
+  model: black-forest-labs/FLUX.1-Kontext-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Add a cool hat to the cat
+    height: 1024
+    width: 1024
+    num_inference_steps: 30
+    max_sequence_length: 512
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+    guidance_scale: 2.5
+    num_iterations: 25
+    attention_backend: cudnn
+
+- name: flux_kontext.default.blackwell
+  tags: [lucid, blackwell, b200, b300]
+  model: black-forest-labs/FLUX.1-Kontext-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Add a cool hat to the cat
+    height: 1024
+    width: 1024
+    num_inference_steps: 30
+    max_sequence_length: 512
+    warmup_calls: 5
+    ulysses_degree: 8
+    use_torch_compile: true
+    input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+    guidance_scale: 2.5
+    num_iterations: 25
+    attention_backend: cudnn
+
+- name: flux_kontext.4gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: black-forest-labs/FLUX.1-Kontext-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: A small cat sitting in a garden
+    height: 1024
+    width: 1024
+    num_inference_steps: 30
+    max_sequence_length: 256
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 2.5
+    input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+    resize_input_images: true
+    attention_backend: aiter_flydsl_fp8
+    ulysses_degree: 4
+    use_torch_compile: true
+    use_fp8_gemms: true
+    use_parallel_vae: true
+    enable_tiling: true
+    cache_method: dbcache
+    cache_config:
+      residual_diff_threshold: 0.16
+    memory_efficient_replicated_load: true
+    use_fp8_text_encoder: true
+    vae_tile_size_height: 352
+    vae_tile_size_width: 1024
+    vae_tile_overlap_height: 88
+    vae_tile_overlap_width: 0
+
+- name: flux_kontext.2gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: black-forest-labs/FLUX.1-Kontext-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: A small cat sitting in a garden
+    height: 1024
+    width: 1024
+    num_inference_steps: 30
+    max_sequence_length: 256
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 2.5
+    input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+    resize_input_images: true
+    attention_backend: aiter_flydsl_fp8
+    ulysses_degree: 2
+    use_torch_compile: true
+    use_fp8_gemms: true
+    use_parallel_vae: true
+    enable_tiling: true
+    cache_method: dbcache
+    cache_config:
+      residual_diff_threshold: 0.16
+    memory_efficient_replicated_load: true
+    use_fp8_text_encoder: true
+    vae_tile_size_height: 352
+    vae_tile_size_width: 1024
+    vae_tile_overlap_height: 88
+    vae_tile_overlap_width: 0
+
+- name: flux_kontext.1gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: black-forest-labs/FLUX.1-Kontext-dev
+  runner: xdit
+  args:
+    seed: 42
+    prompt: A small cat sitting in a garden
+    height: 1024
+    width: 1024
+    num_inference_steps: 30
+    max_sequence_length: 256
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 2.5
+    input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+    resize_input_images: true
+    attention_backend: aiter_flydsl_fp8
+    use_torch_compile: true
+    use_fp8_gemms: true
+    cache_method: dbcache
+    cache_config:
+      residual_diff_threshold: 0.16
+    use_fp8_text_encoder: true

@@ -1,0 +1,136 @@
+# Copyright Advanced Micro Devices, Inc.
+# SPDX-License-Identifier: MIT
+
+- name: z_image.default
+  tags: [release, mad, lucid, instinct, gfx942, gfx950]
+  model: Tongyi-MAI/Z-Image
+  runner: xdit
+  args:
+    seed: 42
+    prompt: A crowded beach
+    height: 1088
+    width: 1920
+    num_inference_steps: 50
+    ulysses_degree: 8
+    use_torch_compile: true
+    guidance_scale: 4.0
+    num_iterations: 25
+    attention_backend: aiter
+
+- name: z_image.default.hopper
+  tags: [lucid, hopper, h100, h200]
+  model: Tongyi-MAI/Z-Image
+  runner: xdit
+  args:
+    seed: 42
+    prompt: A crowded beach
+    height: 1088
+    width: 1920
+    num_inference_steps: 50
+    ulysses_degree: 8
+    use_torch_compile: true
+    guidance_scale: 4.0
+    num_iterations: 25
+    attention_backend: flash_3
+
+- name: z_image.default.blackwell
+  tags: [lucid, blackwell, b200, b300]
+  model: Tongyi-MAI/Z-Image
+  runner: xdit
+  args:
+    seed: 42
+    prompt: A crowded beach
+    height: 1088
+    width: 1920
+    num_inference_steps: 50
+    ulysses_degree: 8
+    use_torch_compile: true
+    guidance_scale: 4.0
+    num_iterations: 25
+    attention_backend: cudnn
+
+- name: z_image.4gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: Tongyi-MAI/Z-Image
+  runner: xdit
+  args:
+    seed: 42
+    prompt: A crowded beach
+    height: 1088
+    width: 1920
+    num_inference_steps: 50
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 4.0
+    attention_backend: aiter_flydsl_fp8
+    ulysses_degree: 2
+    use_torch_compile: true
+    use_fp8_gemms: true
+    cache_method: dbcache
+    cache_config:
+      residual_diff_threshold: 0.08
+      scm_policy: ultra
+      Fn_compute_blocks: 6
+    use_parallel_vae: true
+    memory_efficient_replicated_load: true
+    use_fp8_text_encoder: true
+    use_cfg_parallel: true
+    enable_tiling: true
+    vae_tile_size_height: 384
+    vae_tile_size_width: 1920
+    vae_tile_overlap_height: 96
+    vae_tile_overlap_width: 0
+
+- name: z_image.2gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: Tongyi-MAI/Z-Image
+  runner: xdit
+  args:
+    seed: 42
+    prompt: A crowded beach
+    height: 1088
+    width: 1920
+    num_inference_steps: 50
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 4.0
+    attention_backend: aiter_flydsl_fp8
+    use_torch_compile: true
+    use_fp8_gemms: true
+    cache_method: dbcache
+    cache_config:
+      residual_diff_threshold: 0.08
+      scm_policy: ultra
+      Fn_compute_blocks: 6
+    use_parallel_vae: true
+    memory_efficient_replicated_load: true
+    use_fp8_text_encoder: true
+    use_cfg_parallel: true
+    enable_tiling: true
+    vae_tile_size_height: 384
+    vae_tile_size_width: 1920
+    vae_tile_overlap_height: 96
+    vae_tile_overlap_width: 0
+
+- name: z_image.1gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: Tongyi-MAI/Z-Image
+  runner: xdit
+  args:
+    seed: 42
+    prompt: A crowded beach
+    height: 1088
+    width: 1920
+    num_inference_steps: 50
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 4.0
+    attention_backend: aiter_flydsl_fp8
+    use_torch_compile: true
+    use_fp8_gemms: true
+    cache_method: dbcache
+    cache_config:
+      residual_diff_threshold: 0.08
+      scm_policy: ultra
+      Fn_compute_blocks: 6
+    use_fp8_text_encoder: true

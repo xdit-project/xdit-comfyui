@@ -1,0 +1,7 @@
+.codex/
+.test-cache/
+.venv/
+dist/
+uv.lock
+xdit_comfyui.egg-info/
+xdit_comfyui/preset_configs/

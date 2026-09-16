@@ -1,0 +1,1173 @@
+{
+  "last_node_id": 5,
+  "last_link_id": 6,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "xDiT.Preset",
+      "pos": [40, 40],
+      "size": [420, 180],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "gpu_detection_info",
+          "type": "STRING",
+          "widget": {
+            "name": "gpu_detection_info"
+          },
+          "link": null
+        },
+        {
+          "name": "gpu_tag",
+          "type": "COMBO",
+          "widget": {
+            "name": "gpu_tag"
+          },
+          "link": null
+        },
+        {
+          "name": "gpu_count",
+          "type": "COMBO",
+          "widget": {
+            "name": "gpu_count"
+          },
+          "link": null
+        },
+        {
+          "name": "preset",
+          "type": "COMBO",
+          "widget": {
+            "name": "preset"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "*",
+          "links": [1]
+        },
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [5]
+        },
+        {
+          "name": "sample",
+          "type": "*",
+          "links": [2]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "xDiT.Preset"
+      },
+      "widgets_values": [],
+      "xdit_widget_values": {
+        "gpu_detection_info": "",
+        "gpu_tag": "gfx1201",
+        "gpu_count": "1",
+        "preset": "flux.1gpu.rdna4"
+      }
+    },
+    {
+      "id": 2,
+      "type": "xDiT.Model",
+      "pos": [520, 40],
+      "size": [420, 420],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "COMBO",
+          "widget": {
+            "name": "model"
+          },
+          "link": null
+        },
+        {
+          "name": "task",
+          "type": "STRING",
+          "widget": {
+            "name": "task"
+          },
+          "link": null
+        },
+        {
+          "name": "gpu_device_ids",
+          "type": "STRING",
+          "widget": {
+            "name": "gpu_device_ids"
+          },
+          "link": null
+        },
+        {
+          "name": "residency",
+          "type": "COMBO",
+          "widget": {
+            "name": "residency"
+          },
+          "link": null
+        },
+        {
+          "name": "use_torch_compile",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "use_torch_compile"
+          },
+          "link": null
+        },
+        {
+          "name": "MODEL CACHE",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "MODEL CACHE"
+          },
+          "link": null
+        },
+        {
+          "name": "PARALLELISM",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "PARALLELISM"
+          },
+          "link": null
+        },
+        {
+          "name": "ulysses_degree",
+          "type": "INT",
+          "widget": {
+            "name": "ulysses_degree"
+          },
+          "link": null
+        },
+        {
+          "name": "ring_degree",
+          "type": "INT",
+          "widget": {
+            "name": "ring_degree"
+          },
+          "link": null
+        },
+        {
+          "name": "pipefusion_parallel_degree",
+          "type": "INT",
+          "widget": {
+            "name": "pipefusion_parallel_degree"
+          },
+          "link": null
+        },
+        {
+          "name": "tensor_parallel_degree",
+          "type": "INT",
+          "widget": {
+            "name": "tensor_parallel_degree"
+          },
+          "link": null
+        },
+        {
+          "name": "text_encoder_tp_degree",
+          "type": "INT",
+          "widget": {
+            "name": "text_encoder_tp_degree"
+          },
+          "link": null
+        },
+        {
+          "name": "data_parallel_degree",
+          "type": "INT",
+          "widget": {
+            "name": "data_parallel_degree"
+          },
+          "link": null
+        },
+        {
+          "name": "use_cfg_parallel",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "use_cfg_parallel"
+          },
+          "link": null
+        },
+        {
+          "name": "fully_shard_degree",
+          "type": "INT",
+          "widget": {
+            "name": "fully_shard_degree"
+          },
+          "link": null
+        },
+        {
+          "name": "reshard_after_forward",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "reshard_after_forward"
+          },
+          "link": null
+        },
+        {
+          "name": "MEMORY",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "MEMORY"
+          },
+          "link": null
+        },
+        {
+          "name": "memory_efficient_sharding",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "memory_efficient_sharding"
+          },
+          "link": null
+        },
+        {
+          "name": "memory_efficient_replicated_load",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "memory_efficient_replicated_load"
+          },
+          "link": null
+        },
+        {
+          "name": "cpu_offload_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "cpu_offload_mode"
+          },
+          "link": null
+        },
+        {
+          "name": "group_offload_low_cpu_mem",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "group_offload_low_cpu_mem"
+          },
+          "link": null
+        },
+        {
+          "name": "VAE",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "VAE"
+          },
+          "link": null
+        },
+        {
+          "name": "use_parallel_vae",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "use_parallel_vae"
+          },
+          "link": null
+        },
+        {
+          "name": "use_vae_channels_last_format",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "use_vae_channels_last_format"
+          },
+          "link": null
+        },
+        {
+          "name": "ATTENTION",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "ATTENTION"
+          },
+          "link": null
+        },
+        {
+          "name": "attention_backend",
+          "type": "COMBO",
+          "widget": {
+            "name": "attention_backend"
+          },
+          "link": null
+        },
+        {
+          "name": "cross_attention_backend",
+          "type": "COMBO",
+          "widget": {
+            "name": "cross_attention_backend"
+          },
+          "link": null
+        },
+        {
+          "name": "use_hybrid_attn_schedule",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "use_hybrid_attn_schedule"
+          },
+          "link": null
+        },
+        {
+          "name": "hybrid_attn_low_precision_backend",
+          "type": "STRING",
+          "widget": {
+            "name": "hybrid_attn_low_precision_backend"
+          },
+          "link": null
+        },
+        {
+          "name": "hybrid_attn_high_precision_backend",
+          "type": "STRING",
+          "widget": {
+            "name": "hybrid_attn_high_precision_backend"
+          },
+          "link": null
+        },
+        {
+          "name": "num_hybrid_attn_high_precision_steps",
+          "type": "INT",
+          "widget": {
+            "name": "num_hybrid_attn_high_precision_steps"
+          },
+          "link": null
+        },
+        {
+          "name": "hybrid_attn_schedule",
+          "type": "STRING",
+          "widget": {
+            "name": "hybrid_attn_schedule"
+          },
+          "link": null
+        },
+        {
+          "name": "use_ssta_sparse_text_to_image",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "use_ssta_sparse_text_to_image"
+          },
+          "link": null
+        },
+        {
+          "name": "spargeattn_simthreshold",
+          "type": "FLOAT",
+          "widget": {
+            "name": "spargeattn_simthreshold"
+          },
+          "link": null
+        },
+        {
+          "name": "spargeattn_cdfthreshold",
+          "type": "FLOAT",
+          "widget": {
+            "name": "spargeattn_cdfthreshold"
+          },
+          "link": null
+        },
+        {
+          "name": "spargeattn_reorder_sequence",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "spargeattn_reorder_sequence"
+          },
+          "link": null
+        },
+        {
+          "name": "use_spargeattn_static_block_mask",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "use_spargeattn_static_block_mask"
+          },
+          "link": null
+        },
+        {
+          "name": "use_spargeattn_head_balance",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "use_spargeattn_head_balance"
+          },
+          "link": null
+        },
+        {
+          "name": "vsa_block_size",
+          "type": "INT",
+          "widget": {
+            "name": "vsa_block_size"
+          },
+          "link": null
+        },
+        {
+          "name": "vsa_top_k",
+          "type": "INT",
+          "widget": {
+            "name": "vsa_top_k"
+          },
+          "link": null
+        },
+        {
+          "name": "vsa_top_k_ratio",
+          "type": "FLOAT",
+          "widget": {
+            "name": "vsa_top_k_ratio"
+          },
+          "link": null
+        },
+        {
+          "name": "vsa_drop_rates",
+          "type": "STRING",
+          "widget": {
+            "name": "vsa_drop_rates"
+          },
+          "link": null
+        },
+        {
+          "name": "vsa_prob_threshold",
+          "type": "FLOAT",
+          "widget": {
+            "name": "vsa_prob_threshold"
+          },
+          "link": null
+        },
+        {
+          "name": "vsa_reorder_sequence",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "vsa_reorder_sequence"
+          },
+          "link": null
+        },
+        {
+          "name": "use_vsa_static_block_mask",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "use_vsa_static_block_mask"
+          },
+          "link": null
+        },
+        {
+          "name": "use_vsa_first_frame_mask",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "use_vsa_first_frame_mask"
+          },
+          "link": null
+        },
+        {
+          "name": "GEMM PRECISION",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "GEMM PRECISION"
+          },
+          "link": null
+        },
+        {
+          "name": "gemm_precision",
+          "type": "COMBO",
+          "widget": {
+            "name": "gemm_precision"
+          },
+          "link": null
+        },
+        {
+          "name": "use_fp8_text_encoder",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "use_fp8_text_encoder"
+          },
+          "link": null
+        },
+        {
+          "name": "fp8_precision_override_prefix_patterns",
+          "type": "STRING",
+          "widget": {
+            "name": "fp8_precision_override_prefix_patterns"
+          },
+          "link": null
+        },
+        {
+          "name": "fp8_precision_override_suffix_patterns",
+          "type": "STRING",
+          "widget": {
+            "name": "fp8_precision_override_suffix_patterns"
+          },
+          "link": null
+        },
+        {
+          "name": "use_hybrid_gemm_schedule",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "use_hybrid_gemm_schedule"
+          },
+          "link": null
+        },
+        {
+          "name": "num_hybrid_gemm_high_precision_steps",
+          "type": "INT",
+          "widget": {
+            "name": "num_hybrid_gemm_high_precision_steps"
+          },
+          "link": null
+        },
+        {
+          "name": "STEP CACHE",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "STEP CACHE"
+          },
+          "link": null
+        },
+        {
+          "name": "cache_method",
+          "type": "COMBO",
+          "widget": {
+            "name": "cache_method"
+          },
+          "link": null
+        },
+        {
+          "name": "residual_diff_threshold",
+          "type": "FLOAT",
+          "widget": {
+            "name": "residual_diff_threshold"
+          },
+          "link": null
+        },
+        {
+          "name": "Fn_compute_blocks",
+          "type": "INT",
+          "widget": {
+            "name": "Fn_compute_blocks"
+          },
+          "link": null
+        },
+        {
+          "name": "Bn_compute_blocks",
+          "type": "INT",
+          "widget": {
+            "name": "Bn_compute_blocks"
+          },
+          "link": null
+        },
+        {
+          "name": "max_warmup_steps",
+          "type": "INT",
+          "widget": {
+            "name": "max_warmup_steps"
+          },
+          "link": null
+        },
+        {
+          "name": "max_cached_steps",
+          "type": "INT",
+          "widget": {
+            "name": "max_cached_steps"
+          },
+          "link": null
+        },
+        {
+          "name": "scm_policy",
+          "type": "COMBO",
+          "widget": {
+            "name": "scm_policy"
+          },
+          "link": null
+        },
+        {
+          "name": "enable_separate_cfg",
+          "type": "COMBO",
+          "widget": {
+            "name": "enable_separate_cfg"
+          },
+          "link": null
+        },
+        {
+          "name": "enable_encoder_calibrator",
+          "type": "COMBO",
+          "widget": {
+            "name": "enable_encoder_calibrator"
+          },
+          "link": null
+        },
+        {
+          "name": "enable_taylorseer",
+          "type": "COMBO",
+          "widget": {
+            "name": "enable_taylorseer"
+          },
+          "link": null
+        },
+        {
+          "name": "STEP CACHE \u00b7 DENOISER 2",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "STEP CACHE \u00b7 DENOISER 2"
+          },
+          "link": null
+        },
+        {
+          "name": "t2_residual_diff_threshold",
+          "type": "FLOAT",
+          "widget": {
+            "name": "t2_residual_diff_threshold"
+          },
+          "link": null
+        },
+        {
+          "name": "t2_Fn_compute_blocks",
+          "type": "INT",
+          "widget": {
+            "name": "t2_Fn_compute_blocks"
+          },
+          "link": null
+        },
+        {
+          "name": "t2_Bn_compute_blocks",
+          "type": "INT",
+          "widget": {
+            "name": "t2_Bn_compute_blocks"
+          },
+          "link": null
+        },
+        {
+          "name": "t2_max_warmup_steps",
+          "type": "INT",
+          "widget": {
+            "name": "t2_max_warmup_steps"
+          },
+          "link": null
+        },
+        {
+          "name": "t2_max_cached_steps",
+          "type": "INT",
+          "widget": {
+            "name": "t2_max_cached_steps"
+          },
+          "link": null
+        },
+        {
+          "name": "t2_scm_policy",
+          "type": "COMBO",
+          "widget": {
+            "name": "t2_scm_policy"
+          },
+          "link": null
+        },
+        {
+          "name": "t2_enable_separate_cfg",
+          "type": "COMBO",
+          "widget": {
+            "name": "t2_enable_separate_cfg"
+          },
+          "link": null
+        },
+        {
+          "name": "t2_enable_encoder_calibrator",
+          "type": "COMBO",
+          "widget": {
+            "name": "t2_enable_encoder_calibrator"
+          },
+          "link": null
+        },
+        {
+          "name": "t2_enable_taylorseer",
+          "type": "COMBO",
+          "widget": {
+            "name": "t2_enable_taylorseer"
+          },
+          "link": null
+        },
+        {
+          "name": "DISTILLED WEIGHTS",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "DISTILLED WEIGHTS"
+          },
+          "link": null
+        },
+        {
+          "name": "distilled_transformer_path",
+          "type": "STRING",
+          "widget": {
+            "name": "distilled_transformer_path"
+          },
+          "link": null
+        },
+        {
+          "name": "distilled_transformer_2_path",
+          "type": "STRING",
+          "widget": {
+            "name": "distilled_transformer_2_path"
+          },
+          "link": null
+        },
+        {
+          "name": "preset",
+          "type": "*",
+          "link": 1
+        },
+        {
+          "name": "hf_cache_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "hf_cache_mode"
+          },
+          "link": null
+        },
+        {
+          "name": "hf_cache_dir",
+          "type": "STRING",
+          "widget": {
+            "name": "hf_cache_dir"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "*",
+          "links": [3]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "xDiT.Model",
+        "_xdit_model_preset_trigger": "gfx1201:1:flux.1gpu.rdna4"
+      },
+      "widgets_values": [],
+      "xdit_widget_values": {
+        "model": "black-forest-labs/FLUX.1-dev",
+        "task": "",
+        "gpu_device_ids": "0",
+        "residency": "keep_gpu",
+        "use_torch_compile": false,
+        "MODEL CACHE": false,
+        "PARALLELISM": false,
+        "ulysses_degree": 1,
+        "ring_degree": 1,
+        "pipefusion_parallel_degree": 1,
+        "tensor_parallel_degree": 1,
+        "text_encoder_tp_degree": 1,
+        "data_parallel_degree": 1,
+        "use_cfg_parallel": false,
+        "fully_shard_degree": 1,
+        "reshard_after_forward": true,
+        "MEMORY": false,
+        "memory_efficient_sharding": false,
+        "memory_efficient_replicated_load": false,
+        "cpu_offload_mode": "none",
+        "group_offload_low_cpu_mem": false,
+        "VAE": false,
+        "use_parallel_vae": false,
+        "use_vae_channels_last_format": false,
+        "ATTENTION": false,
+        "attention_backend": "aiter_flydsl",
+        "cross_attention_backend": "auto",
+        "use_hybrid_attn_schedule": false,
+        "hybrid_attn_low_precision_backend": "",
+        "hybrid_attn_high_precision_backend": "",
+        "num_hybrid_attn_high_precision_steps": 0,
+        "hybrid_attn_schedule": "",
+        "use_ssta_sparse_text_to_image": false,
+        "spargeattn_simthreshold": 0.3,
+        "spargeattn_cdfthreshold": 0.92,
+        "spargeattn_reorder_sequence": true,
+        "use_spargeattn_static_block_mask": true,
+        "use_spargeattn_head_balance": false,
+        "vsa_block_size": 128,
+        "vsa_top_k": 1,
+        "vsa_top_k_ratio": 0.0,
+        "vsa_drop_rates": "",
+        "vsa_prob_threshold": 0.9,
+        "vsa_reorder_sequence": true,
+        "use_vsa_static_block_mask": true,
+        "use_vsa_first_frame_mask": true,
+        "GEMM PRECISION": false,
+        "gemm_precision": "fp8",
+        "use_fp8_text_encoder": false,
+        "fp8_precision_override_prefix_patterns": "",
+        "fp8_precision_override_suffix_patterns": "",
+        "use_hybrid_gemm_schedule": false,
+        "num_hybrid_gemm_high_precision_steps": 0,
+        "STEP CACHE": false,
+        "cache_method": "none",
+        "residual_diff_threshold": 0.08,
+        "Fn_compute_blocks": 8,
+        "Bn_compute_blocks": 0,
+        "max_warmup_steps": 8,
+        "max_cached_steps": -1,
+        "scm_policy": "default",
+        "enable_separate_cfg": "default",
+        "enable_encoder_calibrator": "default",
+        "enable_taylorseer": "default",
+        "STEP CACHE \u00b7 DENOISER 2": false,
+        "t2_residual_diff_threshold": 0.08,
+        "t2_Fn_compute_blocks": 8,
+        "t2_Bn_compute_blocks": 0,
+        "t2_max_warmup_steps": 8,
+        "t2_max_cached_steps": -1,
+        "t2_scm_policy": "default",
+        "t2_enable_separate_cfg": "default",
+        "t2_enable_encoder_calibrator": "default",
+        "t2_enable_taylorseer": "default",
+        "DISTILLED WEIGHTS": false,
+        "distilled_transformer_path": "",
+        "distilled_transformer_2_path": "",
+        "hf_cache_mode": "auto",
+        "hf_cache_dir": "huggingface"
+      }
+    },
+    {
+      "id": 3,
+      "type": "xDiT.Sample",
+      "pos": [1000, 40],
+      "size": [420, 520],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "*",
+          "link": 3
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": null
+        },
+        {
+          "name": "negative_prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "negative_prompt"
+          },
+          "link": null
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "widget": {
+            "name": "width"
+          },
+          "link": null
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "widget": {
+            "name": "height"
+          },
+          "link": null
+        },
+        {
+          "name": "seed",
+          "type": "INT",
+          "widget": {
+            "name": "seed"
+          },
+          "link": null
+        },
+        {
+          "name": "num_inference_steps",
+          "type": "INT",
+          "widget": {
+            "name": "num_inference_steps"
+          },
+          "link": null
+        },
+        {
+          "name": "guidance_scale",
+          "type": "FLOAT",
+          "widget": {
+            "name": "guidance_scale"
+          },
+          "link": null
+        },
+        {
+          "name": "Video",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "Video"
+          },
+          "link": null
+        },
+        {
+          "name": "num_frames",
+          "type": "INT",
+          "widget": {
+            "name": "num_frames"
+          },
+          "link": null
+        },
+        {
+          "name": "output_fps",
+          "type": "INT",
+          "widget": {
+            "name": "output_fps"
+          },
+          "link": null
+        },
+        {
+          "name": "flow_shift",
+          "type": "FLOAT",
+          "widget": {
+            "name": "flow_shift"
+          },
+          "link": null
+        },
+        {
+          "name": "guidance_scale_2",
+          "type": "FLOAT",
+          "widget": {
+            "name": "guidance_scale_2"
+          },
+          "link": null
+        },
+        {
+          "name": "resize_input_images",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "resize_input_images"
+          },
+          "link": null
+        },
+        {
+          "name": "max_sequence_length",
+          "type": "INT",
+          "widget": {
+            "name": "max_sequence_length"
+          },
+          "link": null
+        },
+        {
+          "name": "timeout_seconds",
+          "type": "INT",
+          "widget": {
+            "name": "timeout_seconds"
+          },
+          "link": null
+        },
+        {
+          "name": "VAE",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "VAE"
+          },
+          "link": null
+        },
+        {
+          "name": "enable_tiling",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "enable_tiling"
+          },
+          "link": null
+        },
+        {
+          "name": "enable_slicing",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "enable_slicing"
+          },
+          "link": null
+        },
+        {
+          "name": "vae_tile_size_height",
+          "type": "INT",
+          "widget": {
+            "name": "vae_tile_size_height"
+          },
+          "link": null
+        },
+        {
+          "name": "vae_tile_size_width",
+          "type": "INT",
+          "widget": {
+            "name": "vae_tile_size_width"
+          },
+          "link": null
+        },
+        {
+          "name": "vae_tile_overlap_height",
+          "type": "INT",
+          "widget": {
+            "name": "vae_tile_overlap_height"
+          },
+          "link": null
+        },
+        {
+          "name": "vae_tile_overlap_width",
+          "type": "INT",
+          "widget": {
+            "name": "vae_tile_overlap_width"
+          },
+          "link": null
+        },
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 5
+        },
+        {
+          "name": "preset",
+          "type": "*",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [4]
+        },
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": [6]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "xDiT.Sample"
+      },
+      "widgets_values": [],
+      "xdit_widget_values": {
+        "prompt": "A small cat",
+        "negative_prompt": "",
+        "width": 1024,
+        "height": 1024,
+        "seed": 42,
+        "control_after_generate": "randomize",
+        "num_inference_steps": 25,
+        "guidance_scale": 0.0,
+        "Video": false,
+        "num_frames": 1,
+        "output_fps": 0,
+        "flow_shift": 0.0,
+        "guidance_scale_2": 0.0,
+        "resize_input_images": false,
+        "max_sequence_length": 256,
+        "timeout_seconds": 900,
+        "VAE": false,
+        "enable_tiling": false,
+        "enable_slicing": false,
+        "vae_tile_size_height": 0,
+        "vae_tile_size_width": 0,
+        "vae_tile_overlap_height": 0,
+        "vae_tile_overlap_width": 0
+      }
+    },
+    {
+      "id": 4,
+      "type": "SaveImage",
+      "pos": [1480, 40],
+      "size": [320, 220],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "images",
+          "name": "images",
+          "type": "IMAGE",
+          "link": 4
+        },
+        {
+          "localized_name": "filename_prefix",
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": {
+            "name": "filename_prefix"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "images",
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": ["xdit"]
+    },
+    {
+      "id": 5,
+      "type": "SaveVideo",
+      "pos": [1480, 420],
+      "size": [320, 220],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "video",
+          "name": "video",
+          "type": "VIDEO",
+          "link": 6
+        },
+        {
+          "localized_name": "filename_prefix",
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": {
+            "name": "filename_prefix"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "format",
+          "name": "format",
+          "type": "COMBO",
+          "widget": {
+            "name": "format"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "codec",
+          "name": "codec",
+          "type": "COMBO",
+          "widget": {
+            "name": "codec"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "video",
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": ["video/xdit", "auto", "auto"]
+    }
+  ],
+  "links": [
+    [1, 1, 0, 2, 77, "*"],
+    [2, 1, 2, 3, 24, "*"],
+    [3, 2, 0, 3, 0, "*"],
+    [4, 3, 0, 4, 0, "IMAGE"],
+    [5, 1, 1, 3, 23, "IMAGE"],
+    [6, 3, 1, 5, 0, "VIDEO"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.8,
+      "offset": [120, 120]
+    }
+  },
+  "version": 0.4,
+  "revision": "59810be73b1b",
+  "id": "58c34dbb-ca71-4ab9-bdad-da2c32cebc1f"
+}

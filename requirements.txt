@@ -1,0 +1,2 @@
+pyyaml
+xfuser[cache-dit,opencv-python] @ git+https://github.com/xdit-project/xDiT.git@68bca878f454c718d23b3764ded1de6add474eb4

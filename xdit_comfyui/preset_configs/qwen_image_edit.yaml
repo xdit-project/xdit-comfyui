@@ -1,0 +1,145 @@
+# Copyright Advanced Micro Devices, Inc.
+# SPDX-License-Identifier: MIT
+
+- name: qwen_image_edit.default
+  tags: [release, lucid, mad, instinct, gfx942, gfx950]
+  model: Qwen/Qwen-Image-Edit
+  runner: xdit
+  args:
+    prompt: Add a cool hat to the cat.
+    negative_prompt: ""
+    height: 2048
+    width: 2048
+    input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+    seed: 42
+    num_inference_steps: 50
+    guidance_scale: 4.0
+    num_iterations: 25
+    ulysses_degree: 8
+    use_torch_compile: true
+    attention_backend: aiter
+
+- name: qwen_image_edit.default.hopper
+  tags: [lucid, hopper, h100, h200]
+  model: Qwen/Qwen-Image-Edit
+  runner: xdit
+  args:
+    prompt: Add a cool hat to the cat.
+    negative_prompt: ""
+    height: 2048
+    width: 2048
+    input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+    seed: 42
+    num_inference_steps: 50
+    guidance_scale: 4.0
+    num_iterations: 25
+    ulysses_degree: 8
+    use_torch_compile: true
+    attention_backend: cudnn
+
+- name: qwen_image_edit.default.blackwell
+  tags: [lucid, blackwell, b200, b300]
+  model: Qwen/Qwen-Image-Edit
+  runner: xdit
+  args:
+    prompt: Add a cool hat to the cat.
+    negative_prompt: ""
+    height: 2048
+    width: 2048
+    input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+    seed: 42
+    num_inference_steps: 50
+    guidance_scale: 4.0
+    num_iterations: 25
+    ulysses_degree: 8
+    use_torch_compile: true
+    attention_backend: cudnn
+
+- name: qwen_image_edit.4gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: Qwen/Qwen-Image-Edit
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Add a cool hat to the cat.
+    negative_prompt: ' '
+    height: 2048
+    width: 2048
+    num_inference_steps: 50
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 4.0
+    input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+    attention_backend: aiter_flydsl_fp8
+    use_torch_compile: true
+    use_fp8_gemms: true
+    enable_tiling: true
+    cache_method: dbcache
+    cache_config:
+      residual_diff_threshold: 0.16
+    use_fp8_text_encoder: true
+    ulysses_degree: 4
+    fully_shard_degree: 2
+    memory_efficient_sharding: true
+    use_parallel_vae: true
+    vae_tile_size_height: 352
+    vae_tile_size_width: 2048
+    vae_tile_overlap_height: 88
+    vae_tile_overlap_width: 0
+
+- name: qwen_image_edit.2gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: Qwen/Qwen-Image-Edit
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Add a cool hat to the cat.
+    negative_prompt: ' '
+    height: 2048
+    width: 2048
+    num_inference_steps: 50
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 4.0
+    input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+    attention_backend: aiter_flydsl_fp8
+    use_torch_compile: true
+    use_fp8_gemms: true
+    enable_tiling: true
+    cache_method: dbcache
+    cache_config:
+      residual_diff_threshold: 0.16
+    use_fp8_text_encoder: true
+    ulysses_degree: 2
+    fully_shard_degree: 2
+    memory_efficient_sharding: true
+    use_parallel_vae: true
+    vae_tile_size_height: 352
+    vae_tile_size_width: 2048
+    vae_tile_overlap_height: 88
+    vae_tile_overlap_width: 0
+
+- name: qwen_image_edit.1gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: Qwen/Qwen-Image-Edit
+  runner: xdit
+  args:
+    seed: 42
+    prompt: Add a cool hat to the cat.
+    negative_prompt: ' '
+    height: 2048
+    width: 2048
+    num_inference_steps: 50
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 4.0
+    input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
+    attention_backend: aiter_flydsl_fp8
+    use_torch_compile: true
+    use_fp8_gemms: true
+    enable_model_cpu_offload: true
+    enable_tiling: true
+    cache_method: dbcache
+    cache_config:
+      residual_diff_threshold: 0.16
+    use_fp8_text_encoder: true

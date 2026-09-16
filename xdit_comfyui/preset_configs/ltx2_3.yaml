@@ -1,0 +1,50 @@
+# Copyright Advanced Micro Devices, Inc.
+# SPDX-License-Identifier: MIT
+
+- name: ltx2_3.default
+  tags: [release, mad, lucid, instinct, gfx942, gfx950]
+  model: dg845/LTX-2.3-Diffusers
+  runner: xdit
+  args:
+    seed: 42
+    prompt: "A tight medium close-up opens on a man in his mid-thirties pressed flat against a cracked concrete wall in a narrow alley at blue dusk, his dark hair matted with sweat against his forehead, a torn olive utility jacket smudged with grit and ash, and a fresh cut along his temple bleeding down into his stubble. Sodium streetlights spill amber rim light across one side of his face while the other half stays buried in deep chiaroscuro shadow, volumetric haze drifting through the cold air behind him and dust motes catching the practical glow. He leans an inch toward the lens, his eyes darting once off-frame, and says in a strained, breathless whisper barely louder than the wind, \"We need to run.\" His chest rises and falls in shallow, rapid pulls as the camera executes an aggressive snap zoom directly to his mouth, holding one beat on the tremor of his cracked lower lip and the flash of clenched teeth. He erupts in a raw, throat-tearing scream, \"NOW!\", a fleck of spittle catching the amber light as the camera snaps back out in a violent rack-out pull, restoring the wide framing in a single jolt. He pivots sharply on his heel, his boots scraping wet asphalt, and bolts away from the lens in a low-shouldered sprint, his jacket whipping behind him as the camera transitions into a handheld tracking shot that surges after him with jittery momentum, dust and damp debris kicking up in his wake. The audio bed layers distant sirens, a low pulsing sub-drone, crisp foley of pounding footsteps and ragged breathing, the wet scrape of pivoting boots, and a faint metallic clang receding far behind."
+    height: 1088
+    width: 1920
+    num_inference_steps: 30
+    ulysses_degree: 8
+    use_torch_compile: True
+    guidance_scale: 3.0
+    num_iterations: 1
+    attention_backend: aiter
+
+- name: ltx2_3.default.hopper.h200
+  tags: [lucid, hopper, h200]
+  model: dg845/LTX-2.3-Diffusers
+  runner: xdit
+  args:
+    seed: 42
+    prompt: "A tight medium close-up opens on a man in his mid-thirties pressed flat against a cracked concrete wall in a narrow alley at blue dusk, his dark hair matted with sweat against his forehead, a torn olive utility jacket smudged with grit and ash, and a fresh cut along his temple bleeding down into his stubble. Sodium streetlights spill amber rim light across one side of his face while the other half stays buried in deep chiaroscuro shadow, volumetric haze drifting through the cold air behind him and dust motes catching the practical glow. He leans an inch toward the lens, his eyes darting once off-frame, and says in a strained, breathless whisper barely louder than the wind, \"We need to run.\" His chest rises and falls in shallow, rapid pulls as the camera executes an aggressive snap zoom directly to his mouth, holding one beat on the tremor of his cracked lower lip and the flash of clenched teeth. He erupts in a raw, throat-tearing scream, \"NOW!\", a fleck of spittle catching the amber light as the camera snaps back out in a violent rack-out pull, restoring the wide framing in a single jolt. He pivots sharply on his heel, his boots scraping wet asphalt, and bolts away from the lens in a low-shouldered sprint, his jacket whipping behind him as the camera transitions into a handheld tracking shot that surges after him with jittery momentum, dust and damp debris kicking up in his wake. The audio bed layers distant sirens, a low pulsing sub-drone, crisp foley of pounding footsteps and ragged breathing, the wet scrape of pivoting boots, and a faint metallic clang receding far behind."
+    height: 1088
+    width: 1920
+    num_inference_steps: 30
+    ulysses_degree: 8
+    use_torch_compile: True
+    guidance_scale: 3.0
+    num_iterations: 1
+    attention_backend: flash_3
+
+- name: ltx2_3.default.blackwell
+  tags: [lucid, blackwell, b200, b300]
+  model: dg845/LTX-2.3-Diffusers
+  runner: xdit
+  args:
+    seed: 42
+    prompt: "A tight medium close-up opens on a man in his mid-thirties pressed flat against a cracked concrete wall in a narrow alley at blue dusk, his dark hair matted with sweat against his forehead, a torn olive utility jacket smudged with grit and ash, and a fresh cut along his temple bleeding down into his stubble. Sodium streetlights spill amber rim light across one side of his face while the other half stays buried in deep chiaroscuro shadow, volumetric haze drifting through the cold air behind him and dust motes catching the practical glow. He leans an inch toward the lens, his eyes darting once off-frame, and says in a strained, breathless whisper barely louder than the wind, \"We need to run.\" His chest rises and falls in shallow, rapid pulls as the camera executes an aggressive snap zoom directly to his mouth, holding one beat on the tremor of his cracked lower lip and the flash of clenched teeth. He erupts in a raw, throat-tearing scream, \"NOW!\", a fleck of spittle catching the amber light as the camera snaps back out in a violent rack-out pull, restoring the wide framing in a single jolt. He pivots sharply on his heel, his boots scraping wet asphalt, and bolts away from the lens in a low-shouldered sprint, his jacket whipping behind him as the camera transitions into a handheld tracking shot that surges after him with jittery momentum, dust and damp debris kicking up in his wake. The audio bed layers distant sirens, a low pulsing sub-drone, crisp foley of pounding footsteps and ragged breathing, the wet scrape of pivoting boots, and a faint metallic clang receding far behind."
+    height: 1088
+    width: 1920
+    num_inference_steps: 30
+    ulysses_degree: 8
+    use_torch_compile: True
+    guidance_scale: 3.0
+    num_iterations: 1
+    attention_backend: cudnn

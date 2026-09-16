@@ -1,0 +1,13 @@
+# Development and source-distribution-only files
+.*
+tests/
+docs/
+docker/
+scripts/
+dist/
+build/
+*.egg-info/
+package.json
+pnpm-lock.yaml
+eslint.config.js
+uv.lock

@@ -1,0 +1,15 @@
+.git
+.github
+.ssh
+.cache
+.claude
+.devcontainer
+.pytest_cache
+__pycache__
+*.egg-info
+build
+dist
+tests
+docs
+xdit_outputs_test
+uv.lock

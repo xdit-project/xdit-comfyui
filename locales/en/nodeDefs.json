@@ -1,0 +1,480 @@
+{
+  "xDiT.Preset": {
+    "display_name": "xDiT Preset",
+    "description": "Select a hardware benchmark preset and provide defaults to Model and Sample.",
+    "inputs": {
+      "gpu_detection_info": {
+        "name": "Detected GPUs",
+        "tooltip": "GPUs detected on this machine."
+      },
+      "gpu_tag": {
+        "name": "GPU Tag",
+        "tooltip": "Hardware tag used to filter GPU counts and presets."
+      },
+      "gpu_count": {
+        "name": "GPU Count",
+        "tooltip": "GPU count required by the preset."
+      },
+      "preset": {
+        "name": "Preset",
+        "tooltip": "Benchmark preset for the selected hardware and GPU count."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Model Preset"
+      },
+      "1": {
+        "name": "Reference Images"
+      },
+      "2": {
+        "name": "Sample Preset"
+      }
+    }
+  },
+  "xDiT.Model": {
+    "display_name": "xDiT Model",
+    "description": "Load and warm an xDiT model worker for inference.",
+    "inputs": {
+      "model": {
+        "name": "Model",
+        "tooltip": "Model supported by the installed xDiT version."
+      },
+      "task": {
+        "name": "Task",
+        "tooltip": "Pipeline task for multi-task models, such as i2v or t2v. Leave empty for single-task models."
+      },
+      "gpu_device_ids": {
+        "name": "GPU Device IDs",
+        "tooltip": "Comma-separated GPU indices. Specify one index per process, such as 0,1,2,3 for four processes. Use separate indices for concurrent models."
+      },
+      "residency": {
+        "name": "Residency",
+        "tooltip": "GPU memory policy after sampling. keep_gpu retains the model until you unload it or stop ComfyUI; park_cpu moves weights to system RAM; release stops the worker after the run."
+      },
+      "use_torch_compile": {
+        "name": "Use Torch Compile",
+        "tooltip": "Compile supported model components with torch.compile. The first run is slower; later runs with the same configuration may be faster."
+      },
+      "hf_cache_mode": {
+        "name": "HF Cache Mode",
+        "tooltip": "Hugging Face cache location. auto uses the environment, then ComfyUI/models/huggingface. custom_path uses the directory below."
+      },
+      "hf_cache_dir": {
+        "name": "HF Cache Directory",
+        "tooltip": "Hugging Face cache root used when HF Cache Mode is custom_path."
+      },
+      "scm_policy": {
+        "name": "SCM Policy",
+        "tooltip": "Step computation mask for dbcache. slow computes most steps; medium, fast, and ultra progressively skip more work. default preserves the model preset."
+      },
+      "t2_scm_policy": {
+        "name": "T2 SCM Policy",
+        "tooltip": "Step computation mask for dbcache. slow computes most steps; medium, fast, and ultra progressively skip more work. default preserves the model preset."
+      },
+      "MODEL CACHE": {
+        "name": "MODEL CACHE",
+        "tooltip": "Show or hide MODEL CACHE settings."
+      },
+      "PARALLELISM": {
+        "name": "PARALLELISM",
+        "tooltip": "Show or hide PARALLELISM settings."
+      },
+      "ulysses_degree": {
+        "name": "Ulysses Degree",
+        "tooltip": "Ulysses sequence parallel degree. Used in attention layer. — The first knob to reach for on multiple GPUs: set it to your GPU count. Splits attention heads across GPUs, so it needs the model's head count to divide by it."
+      },
+      "ring_degree": {
+        "name": "Ring Degree",
+        "tooltip": "Ring sequence parallel degree. Used in attention layer. — Splits the sequence instead of the heads. Combine with ulysses_degree when your GPU count does not divide the head count on its own; ulysses alone is faster."
+      },
+      "pipefusion_parallel_degree": {
+        "name": "Pipefusion Parallel Degree",
+        "tooltip": "Pipefusion parallel degree. Indicates the number of pipeline stages. — Pipeline stages across GPUs. Rarely the best use of a GPU on one machine — prefer ulysses_degree."
+      },
+      "tensor_parallel_degree": {
+        "name": "Tensor Parallel Degree",
+        "tooltip": "Tensor parallel degree. — Also saves VRAM by splitting weights, but communicates inside every layer. Try fully_shard_degree first."
+      },
+      "text_encoder_tp_degree": {
+        "name": "Text Encoder TP Degree",
+        "tooltip": "Tensor parallel degree for supported text encoders, reusing the existing model ranks."
+      },
+      "data_parallel_degree": {
+        "name": "Data Parallel Degree",
+        "tooltip": "Data parallel degree. — Creates one model replica per data-parallel rank. This improves throughput but uses more VRAM."
+      },
+      "use_cfg_parallel": {
+        "name": "Use CFG Parallel",
+        "tooltip": "Use split batch in classifier_free_guidance. cfg_degree will be 2 if set — Runs guided and unguided passes on separate GPUs. Requires an even GPU count."
+      },
+      "fully_shard_degree": {
+        "name": "Fully Shard Degree",
+        "tooltip": "Fully sharding (sharding) degree. — Raise it to save VRAM: the weights are split across this many GPUs instead of copied to each. Costs a gather per block, so use the smallest value that fits."
+      },
+      "reshard_after_forward": {
+        "name": "Reshard After Forward",
+        "tooltip": "Keep parameters gathered after each block's forward instead of resharding. Trades memory for latency by eliminating repeated all-gathers. Only valid with --fully_shard_degree > 1."
+      },
+      "MEMORY": {
+        "name": "MEMORY",
+        "tooltip": "Show or hide MEMORY settings."
+      },
+      "memory_efficient_sharding": {
+        "name": "Memory Efficient Sharding",
+        "tooltip": "Reduce peak VRAM during load: shard transformer blocks one at a time on GPU during init, so the full unsharded component never materializes on device. Slightly slower to load - use if the model OOMs on GPU during init. Requires --fully_shard_degree > 1."
+      },
+      "memory_efficient_replicated_load": {
+        "name": "Memory Efficient Replicated Load",
+        "tooltip": "Reduce peak host RAM when a model that fits one GPU is replicated across ranks (pure sequence/CFG/data parallelism): rank0 loads the real weights and peers build on meta and receive them over a GPU->GPU broadcast, so host peak is 1x the model instead of Nx. Use if the load is OOM-killed on host as rank count grows. No effect with weight-splitting parallelism (FSDP/PipeFusion/tensor parallel), which loads per-rank weights anyway, or on a single rank."
+      },
+      "cpu_offload_mode": {
+        "name": "CPU Offload Mode",
+        "tooltip": "CPU offload strategy for model components. — Moves model components to system RAM when idle. Reduces VRAM use but slows inference."
+      },
+      "group_offload_low_cpu_mem": {
+        "name": "Group Offload Low CPU Mem",
+        "tooltip": "With --enable_group_cpu_offload, pin each tensor as it is offloaded instead of pre-pinning whole components. Keeps host RAM flat on hosts where it is the binding constraint, at some of the streaming speedup."
+      },
+      "VAE": {
+        "name": "VAE",
+        "tooltip": "Show or hide VAE settings."
+      },
+      "use_parallel_vae": {
+        "name": "Use Parallel VAE",
+        "tooltip": "Enable parallel VAE. — Distributes VAE decoding across the selected GPUs."
+      },
+      "use_vae_channels_last_format": {
+        "name": "Use VAE Channels Last Format",
+        "tooltip": "Use channels last memory format for the VAE."
+      },
+      "ATTENTION": {
+        "name": "ATTENTION",
+        "tooltip": "Show or hide ATTENTION settings."
+      },
+      "attention_backend": {
+        "name": "Attention Backend",
+        "tooltip": "Attention backend to use. If not specified, the best available backend will be selected automatically. — auto selects a supported backend. Choose another backend for testing or compatibility."
+      },
+      "cross_attention_backend": {
+        "name": "Cross Attention Backend",
+        "tooltip": "Attention backend to use for cross-attention. If not specified, falls back to --attention_backend."
+      },
+      "use_hybrid_attn_schedule": {
+        "name": "Use Hybrid Attn Schedule",
+        "tooltip": "Enable hybrid attention schedule for faster inference and improved quality. — Uses high-precision attention at the start and end of denoising."
+      },
+      "hybrid_attn_low_precision_backend": {
+        "name": "Hybrid Attn Low Precision Backend",
+        "tooltip": "Low-precision attention backend for hybrid schedule. If set, high-precision backend must also be set."
+      },
+      "hybrid_attn_high_precision_backend": {
+        "name": "Hybrid Attn High Precision Backend",
+        "tooltip": "High-precision attention backend for hybrid schedule. If set, low-precision backend must also be set."
+      },
+      "num_hybrid_attn_high_precision_steps": {
+        "name": "Num Hybrid Attn High Precision Steps",
+        "tooltip": "Number of high-precision attention steps in hybrid schedule."
+      },
+      "hybrid_attn_schedule": {
+        "name": "Hybrid Attn Schedule",
+        "tooltip": "An explicit comma-delimited string of attention backend names for the hybrid schedule. Example: 'FLASH_3,FLASH_3_FP8,FLASH_3_FP8,FLASH_3'. Use only if both low-precision and high-precision backends are not set."
+      },
+      "use_ssta_sparse_text_to_image": {
+        "name": "Use SSTA Sparse Text To Image",
+        "tooltip": "Use sparse attention for text-to-image attention path in SSTA."
+      },
+      "spargeattn_simthreshold": {
+        "name": "Spargeattn Simthreshold",
+        "tooltip": "Similarity threshold for sparge attention."
+      },
+      "spargeattn_cdfthreshold": {
+        "name": "Spargeattn Cdfthreshold",
+        "tooltip": "CDF threshold for sparge attention."
+      },
+      "spargeattn_reorder_sequence": {
+        "name": "Spargeattn Reorder Sequence",
+        "tooltip": "Reorder image tokens via the gilbert space-filling curve before Sparge attention. Use --no-spargeattn_reorder_sequence to disable."
+      },
+      "use_spargeattn_static_block_mask": {
+        "name": "Use Spargeattn Static Block Mask",
+        "tooltip": "OR a static gilbert block-neighbor mask into the dynamic Sparge block mask. Only meaningful when --spargeattn_reorder_sequence is set. Use --no-use_spargeattn_static_block_mask to disable."
+      },
+      "use_spargeattn_head_balance": {
+        "name": "Use Spargeattn Head Balance",
+        "tooltip": "Balance per-rank attention work across Ulysses ranks by permuting heads (block-sparse load balancing). Only has an effect with ulysses_degree>1 and a Sparge attention backend."
+      },
+      "vsa_block_size": {
+        "name": "VSA Block Size",
+        "tooltip": "Query/KV block size for the AITER CK-Tile VSA backend."
+      },
+      "vsa_top_k": {
+        "name": "VSA Top K",
+        "tooltip": "Minimum KV blocks selected per query block by AITER VSA."
+      },
+      "vsa_top_k_ratio": {
+        "name": "VSA Top K Ratio",
+        "tooltip": "Minimum selected KV-block fraction for AITER VSA. For Jenga drop rate r, set this to 1-r."
+      },
+      "vsa_drop_rates": {
+        "name": "VSA Drop Rates",
+        "tooltip": "Enable Jenga's per-step sparse schedule. One value applies to all steps; two values switch after the midpoint. Drop rates <=0.25 use dense AITER attention."
+      },
+      "vsa_prob_threshold": {
+        "name": "VSA Prob Threshold",
+        "tooltip": "Jenga cumulative probability threshold for AITER VSA."
+      },
+      "vsa_reorder_sequence": {
+        "name": "VSA Reorder Sequence",
+        "tooltip": "Reorder Wan video tokens with the sliced Gilbert curve before VSA."
+      },
+      "use_vsa_static_block_mask": {
+        "name": "Use VSA Static Block Mask",
+        "tooltip": "Union Gilbert physical-neighbor blocks into the dynamic VSA mask."
+      },
+      "use_vsa_first_frame_mask": {
+        "name": "Use VSA First Frame Mask",
+        "tooltip": "Preserve first-frame block relations in the VSA mask."
+      },
+      "GEMM PRECISION": {
+        "name": "GEMM PRECISION",
+        "tooltip": "Show or hide GEMM PRECISION settings."
+      },
+      "gemm_precision": {
+        "name": "GEMM Precision",
+        "tooltip": "Quantized GEMM precision used by xDiT. — Lower precision reduces memory use and may improve speed, with a possible quality cost."
+      },
+      "use_fp8_text_encoder": {
+        "name": "Use FP8 Text Encoder",
+        "tooltip": "Also quantize the text encoder's linear layers to FP8 (selected models only). Requires --use_fp8_gemms, which covers the transformer alone. Frees several GB for large bf16 text encoders, at whatever output-quality cost FP8 carries for the encoder; off by default because that is a quality trade-off, not a free win."
+      },
+      "fp8_precision_override_prefix_patterns": {
+        "name": "FP8 Precision Override Prefix Patterns",
+        "tooltip": "Comma-delimited FQN prefix patterns to keep in FP8 during FP4 GEMMs."
+      },
+      "fp8_precision_override_suffix_patterns": {
+        "name": "FP8 Precision Override Suffix Patterns",
+        "tooltip": "Comma-delimited FQN suffix patterns to keep in FP8 during FP4 GEMMs."
+      },
+      "use_hybrid_gemm_schedule": {
+        "name": "Use Hybrid GEMM Schedule",
+        "tooltip": "Enable hybrid GEMM schedule: FP8 at start/end and MXFP4 in the middle. — Uses FP8 at the start and end of denoising and MXFP4 between them."
+      },
+      "num_hybrid_gemm_high_precision_steps": {
+        "name": "Num Hybrid GEMM High Precision Steps",
+        "tooltip": "Number of high-precision GEMM steps at both the start and end of denoising."
+      },
+      "STEP CACHE": {
+        "name": "STEP CACHE",
+        "tooltip": "Show or hide STEP CACHE settings."
+      },
+      "cache_method": {
+        "name": "Cache Method",
+        "tooltip": "Step caching method."
+      },
+      "residual_diff_threshold": {
+        "name": "Residual Diff Threshold",
+        "tooltip": "L1 residual threshold for step reuse (all cache methods). — Minimum residual difference required to recompute a step. Higher values reuse more steps."
+      },
+      "Fn_compute_blocks": {
+        "name": "Fn Compute Blocks",
+        "tooltip": "First N blocks used to compute the L1 difference (dbcache)."
+      },
+      "Bn_compute_blocks": {
+        "name": "Bn Compute Blocks",
+        "tooltip": "TaylorSeer calibrator blocks; leave at 0 for most models."
+      },
+      "max_warmup_steps": {
+        "name": "Max Warmup Steps",
+        "tooltip": "Steps before caching activates (dbcache). — Number of initial steps to run before enabling the cache."
+      },
+      "max_cached_steps": {
+        "name": "Max Cached Steps",
+        "tooltip": "Max cached steps (-1 = unlimited). — Maximum consecutive reused steps. -1 applies no limit."
+      },
+      "enable_separate_cfg": {
+        "name": "Enable Separate CFG",
+        "tooltip": "Separate CFG passes (Wan, Qwen-Image-Edit). default = model built-in setting."
+      },
+      "enable_encoder_calibrator": {
+        "name": "Enable Encoder Calibrator",
+        "tooltip": "Encoder calibrator for dbcache. default = model built-in setting."
+      },
+      "enable_taylorseer": {
+        "name": "Enable Taylorseer",
+        "tooltip": "TaylorSeer prediction for dbcache. default = model built-in setting."
+      },
+      "STEP CACHE · DENOISER 2": {
+        "name": "STEP CACHE · DENOISER 2",
+        "tooltip": "Cache settings for the second transformer in dual-transformer models. The main Step Cache settings apply to the first transformer."
+      },
+      "t2_residual_diff_threshold": {
+        "name": "T2 Residual Diff Threshold",
+        "tooltip": "L1 residual threshold for step reuse (all cache methods). — Minimum residual difference required to recompute a step. Higher values reuse more steps."
+      },
+      "t2_Fn_compute_blocks": {
+        "name": "T2 Fn Compute Blocks",
+        "tooltip": "First N blocks used to compute the L1 difference (dbcache)."
+      },
+      "t2_Bn_compute_blocks": {
+        "name": "T2 Bn Compute Blocks",
+        "tooltip": "TaylorSeer calibrator blocks; leave at 0 for most models."
+      },
+      "t2_max_warmup_steps": {
+        "name": "T2 Max Warmup Steps",
+        "tooltip": "Steps before caching activates (dbcache). — Number of initial steps to run before enabling the cache."
+      },
+      "t2_max_cached_steps": {
+        "name": "T2 Max Cached Steps",
+        "tooltip": "Max cached steps (-1 = unlimited). — Maximum consecutive reused steps. -1 applies no limit."
+      },
+      "t2_enable_separate_cfg": {
+        "name": "T2 Enable Separate CFG",
+        "tooltip": "Separate CFG passes (Wan, Qwen-Image-Edit). default = model built-in setting."
+      },
+      "t2_enable_encoder_calibrator": {
+        "name": "T2 Enable Encoder Calibrator",
+        "tooltip": "Encoder calibrator for dbcache. default = model built-in setting."
+      },
+      "t2_enable_taylorseer": {
+        "name": "T2 Enable Taylorseer",
+        "tooltip": "TaylorSeer prediction for dbcache. default = model built-in setting."
+      },
+      "DISTILLED WEIGHTS": {
+        "name": "DISTILLED WEIGHTS",
+        "tooltip": "Local LightX2V transformer files for Wan 2.2 Distilled I2V. Ignored by other models."
+      },
+      "distilled_transformer_path": {
+        "name": "Distilled Transformer Path",
+        "tooltip": "Wan 2.2 Distilled I2V only. Path to the high-noise LightX2V transformer file."
+      },
+      "distilled_transformer_2_path": {
+        "name": "Distilled Transformer 2 Path",
+        "tooltip": "Wan 2.2 Distilled I2V only. Path to the low-noise LightX2V transformer file."
+      },
+      "preset": {
+        "name": "Preset",
+        "tooltip": "Optional preset defaults for model and runtime settings. Local values can override them."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Model"
+      }
+    }
+  },
+  "xDiT.Sample": {
+    "display_name": "xDiT Sample",
+    "description": "Generate images or video with a warmed xDiT model.",
+    "inputs": {
+      "model": {
+        "name": "Model",
+        "tooltip": "Warm xDiT runtime from xDiT Model."
+      },
+      "prompt": {
+        "name": "Prompt",
+        "tooltip": "Text describing the requested output. Changing it does not reload the model."
+      },
+      "negative_prompt": {
+        "name": "Negative Prompt",
+        "tooltip": "Text describing content to avoid. Empty uses the model default."
+      },
+      "output_fps": {
+        "name": "Output FPS",
+        "tooltip": "Playback FPS for VIDEO output. 0 uses the model-native FPS."
+      },
+      "enable_tiling": {
+        "name": "Enable VAE Tiling",
+        "tooltip": "Enable VAE tiling to save GPU memory. — Decodes in tiles to reduce peak VAE memory use."
+      },
+      "enable_slicing": {
+        "name": "Enable VAE Slicing",
+        "tooltip": "Decode one batch item at a time to reduce GPU memory use. This has no effect when the batch size is 1. — Decodes batch items individually to reduce peak VAE memory use."
+      },
+      "width": {
+        "name": "Width",
+        "tooltip": "Output width in 8-pixel increments. Larger values use more VRAM."
+      },
+      "height": {
+        "name": "Height",
+        "tooltip": "Output height in 8-pixel increments. Larger values use more VRAM."
+      },
+      "seed": {
+        "name": "Seed",
+        "tooltip": "Initial noise seed. Reuse it with the same settings for repeatable output."
+      },
+      "num_inference_steps": {
+        "name": "Num Inference Steps",
+        "tooltip": "Number of denoising steps. More steps increase run time; use the preset default."
+      },
+      "guidance_scale": {
+        "name": "Guidance Scale",
+        "tooltip": "Prompt guidance strength. Higher values follow the prompt more strictly."
+      },
+      "Video": {
+        "name": "VIDEO",
+        "tooltip": "Show or hide video-only generation settings."
+      },
+      "num_frames": {
+        "name": "Num Frames",
+        "tooltip": "Frame count for video models. Leave at 1 for still images."
+      },
+      "flow_shift": {
+        "name": "Flow Shift",
+        "tooltip": "0 = model default."
+      },
+      "guidance_scale_2": {
+        "name": "Guidance Scale 2",
+        "tooltip": "0 = model default."
+      },
+      "resize_input_images": {
+        "name": "Resize Input Images",
+        "tooltip": "Ask supported image-conditioned models to resize/crop references to the requested size. When disabled, Wan i2v preserves reference aspect ratio within the requested pixel area."
+      },
+      "max_sequence_length": {
+        "name": "Max Sequence Length",
+        "tooltip": "Maximum prompt tokens processed by the text encoder. Higher values use more memory."
+      },
+      "timeout_seconds": {
+        "name": "Run Timeout",
+        "tooltip": "Maximum time for model loading and one generation run. This does not unload an idle model."
+      },
+      "VAE": {
+        "name": "VAE DECODE",
+        "tooltip": "Show or hide VAE decoding and tiling settings."
+      },
+      "vae_tile_size_height": {
+        "name": "VAE Tile Size Height",
+        "tooltip": "Exact output-pixel height of each VAE tile. Requires --enable_tiling. Must be used with --vae_tile_size_width."
+      },
+      "vae_tile_size_width": {
+        "name": "VAE Tile Size Width",
+        "tooltip": "Exact output-pixel width of each VAE tile. Requires --enable_tiling. Must be used with --vae_tile_size_height."
+      },
+      "vae_tile_overlap_height": {
+        "name": "VAE Tile Overlap Height",
+        "tooltip": "Exact VAE tile overlap along the height axis, in output pixels. Requires --enable_tiling. Must be used with --vae_tile_overlap_width. Height and width may differ; use 0 for an inactive strip axis."
+      },
+      "vae_tile_overlap_width": {
+        "name": "VAE Tile Overlap Width",
+        "tooltip": "Exact VAE tile overlap along the width axis, in output pixels. Requires --enable_tiling. Must be used with --vae_tile_overlap_height. Height and width may differ; use 0 for an inactive strip axis."
+      },
+      "images": {
+        "name": "Images",
+        "tooltip": "Reference images for image-conditioned tasks such as edit, i2i, or i2v."
+      },
+      "preset": {
+        "name": "Preset",
+        "tooltip": "Optional preset defaults for generation settings. Local values can override them."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Images"
+      },
+      "1": {
+        "name": "Video"
+      }
+    }
+  }
+}

@@ -1,0 +1,66 @@
+# Copyright Advanced Micro Devices, Inc.
+# SPDX-License-Identifier: MIT
+
+- name: z_image_turbo.4gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: Tongyi-MAI/Z-Image-Turbo
+  runner: xdit
+  args:
+    seed: 42
+    prompt: A small cat
+    height: 1024
+    width: 1024
+    num_inference_steps: 4
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 0.0
+    attention_backend: aiter_flydsl
+    ulysses_degree: 4
+    use_torch_compile: true
+    memory_efficient_replicated_load: true
+    use_parallel_vae: true
+    enable_tiling: true
+    vae_tile_size_height: 352
+    vae_tile_size_width: 1024
+    vae_tile_overlap_height: 88
+    vae_tile_overlap_width: 0
+
+- name: z_image_turbo.2gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: Tongyi-MAI/Z-Image-Turbo
+  runner: xdit
+  args:
+    seed: 42
+    prompt: A small cat
+    height: 1024
+    width: 1024
+    num_inference_steps: 4
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 0.0
+    attention_backend: aiter_flydsl
+    ulysses_degree: 2
+    use_torch_compile: true
+    memory_efficient_replicated_load: true
+    use_parallel_vae: true
+    enable_tiling: true
+    vae_tile_size_height: 352
+    vae_tile_size_width: 1024
+    vae_tile_overlap_height: 88
+    vae_tile_overlap_width: 0
+
+- name: z_image_turbo.1gpu.rdna4
+  tags: [rdna4, gfx1201]
+  model: Tongyi-MAI/Z-Image-Turbo
+  runner: xdit
+  args:
+    seed: 42
+    prompt: A small cat
+    height: 1024
+    width: 1024
+    num_inference_steps: 4
+    warmup_calls: 2
+    num_iterations: 5
+    guidance_scale: 0.0
+    attention_backend: aiter_flydsl
+    use_torch_compile: true
