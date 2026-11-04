@@ -84,7 +84,7 @@ requires-comfyui = ">=0.28.0"
 
 [tool.xdit-comfyui.preset-configs]
 repository = "https://github.com/AMD-AGI/diffusion-models-inference.git"
-commit = "172fbcce2bf603216771f476fc40002b0640ce8d"
+commit = "e52c1cdcf690ce2c0c9fd8a7be42321ca0841279"
 path = "benchmark_configs/xdit"
 
 [tool.xdit-comfyui.preset-assets]

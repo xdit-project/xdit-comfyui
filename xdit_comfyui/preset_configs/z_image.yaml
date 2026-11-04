@@ -16,6 +16,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: aiter
+    memory_efficient_replicated_load: true
 
 - name: z_image.default.hopper
   tags: [lucid, hopper, h100, h200]
@@ -32,6 +33,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: flash_3
+    memory_efficient_replicated_load: true
 
 - name: z_image.default.blackwell
   tags: [lucid, blackwell, b200, b300]
@@ -48,6 +50,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 - name: z_image.4gpu.rdna4
   tags: [rdna4, gfx1201]

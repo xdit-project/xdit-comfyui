@@ -19,6 +19,7 @@
     guidance_scale: 2.5
     num_iterations: 25
     attention_backend: aiter
+    memory_efficient_replicated_load: true
 
 - name: flux_kontext.default.hopper
   tags: [lucid, hopper, h100, h200]
@@ -38,6 +39,7 @@
     guidance_scale: 2.5
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 - name: flux_kontext.default.blackwell
   tags: [lucid, blackwell, b200, b300]
@@ -57,6 +59,7 @@
     guidance_scale: 2.5
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 - name: flux_kontext.4gpu.rdna4
   tags: [rdna4, gfx1201]

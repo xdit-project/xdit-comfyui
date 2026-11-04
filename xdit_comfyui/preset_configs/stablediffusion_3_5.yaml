@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 - name: stablediffusion_3_5.default
-  tags: [release, mad, lucid, instinct, gfx942, gfx950]
+  tags: [release, instinct, gfx942, gfx950]
   model: stabilityai/stable-diffusion-3.5-large
   runner: xdit
   args:
@@ -15,7 +15,7 @@
     attention_backend: aiter
 
 - name: stablediffusion_3_5.default.hopper
-  tags: [lucid, hopper, h100, h200]
+  tags: [hopper, h100, h200]
   model: stabilityai/stable-diffusion-3.5-large
   runner: xdit
   args:
@@ -28,7 +28,7 @@
     attention_backend: cudnn
 
 - name: stablediffusion_3_5.default.blackwell
-  tags: [lucid, blackwell, b200, b300]
+  tags: [blackwell, b200, b300]
   model: stabilityai/stable-diffusion-3.5-large
   runner: xdit
   args:

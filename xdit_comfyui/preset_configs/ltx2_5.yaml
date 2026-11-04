@@ -1,0 +1,56 @@
+# Copyright Advanced Micro Devices, Inc.
+# SPDX-License-Identifier: MIT
+
+- name: ltx2_5.default
+  tags: [release, mad, lucid, instinct, gfx942, gfx950]
+  model: Lightricks/LTX-2.5-Diffusers
+  runner: xdit
+  args:
+    seed: 42
+    task: t2v
+    prompt: "A cinematic shot of a red fox walking through a snowy forest at dawn, the camera tracking alongside, snow crunching underfoot."
+    height: 1024
+    width: 1536
+    num_frames: 121
+    num_inference_steps: 8
+    ulysses_degree: 8
+    use_torch_compile: true
+    use_parallel_vae: true
+    num_iterations: 25
+    attention_backend: aiter
+
+- name: ltx2_5.default.hopper.h200
+  tags: [lucid, hopper, h200]
+  model: Lightricks/LTX-2.5-Diffusers
+  runner: xdit
+  args:
+    seed: 42
+    task: t2v
+    prompt: "A cinematic shot of a red fox walking through a snowy forest at dawn, the camera tracking alongside, snow crunching underfoot."
+    height: 1024
+    width: 1536
+    num_frames: 121
+    num_inference_steps: 8
+    ulysses_degree: 8
+    use_torch_compile: true
+    use_parallel_vae: true
+    num_iterations: 25
+    attention_backend: flash_3
+
+- name: ltx2_5.default.blackwell
+  tags: [lucid, blackwell, b200, b300]
+  model: Lightricks/LTX-2.5-Diffusers
+  runner: xdit
+  args:
+    seed: 42
+    task: t2v
+    prompt: "A cinematic shot of a red fox walking through a snowy forest at dawn, the camera tracking alongside, snow crunching underfoot."
+    height: 1024
+    width: 1536
+    num_frames: 121
+    num_inference_steps: 8
+    ulysses_degree: 8
+    use_torch_compile: true
+    use_parallel_vae: true
+    num_iterations: 25
+    attention_backend: cudnn

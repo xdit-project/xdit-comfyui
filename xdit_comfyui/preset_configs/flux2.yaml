@@ -19,6 +19,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: aiter
+    memory_efficient_replicated_load: true
 
 - name: flux2.default.hopper.h100
   tags: [lucid, hopper, h100]
@@ -58,6 +59,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 - name: flux2.default.blackwell
   tags: [lucid, blackwell, b200, b300]
@@ -77,6 +79,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 - name: flux2.quantgemm.gfx942
   tags: [release, mad, lucid, instinct, gfx942]
@@ -90,13 +93,14 @@
     num_inference_steps: 50
     max_sequence_length: 512
     warmup_calls: 5
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     ulysses_degree: 8
     use_torch_compile: true
     input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: aiter
+    memory_efficient_replicated_load: true
 
 - name: flux2.quantgemm.gfx950
   tags: [release, mad, lucid, instinct, gfx950]
@@ -110,13 +114,14 @@
     num_inference_steps: 50
     max_sequence_length: 512
     warmup_calls: 5
-    use_fp4_gemms: true
+    gemm_quantization: fp4
     ulysses_degree: 8
     use_torch_compile: true
     input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: aiter
+    memory_efficient_replicated_load: true
 
 - name: flux2.quantgemm.hopper.h100
   tags: [lucid, hopper, h100]
@@ -130,7 +135,7 @@
     num_inference_steps: 50
     max_sequence_length: 512
     warmup_calls: 5
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     ulysses_degree: 8
     fully_shard_degree: 8
     use_torch_compile: true
@@ -151,13 +156,14 @@
     num_inference_steps: 50
     max_sequence_length: 512
     warmup_calls: 5
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     ulysses_degree: 8
     use_torch_compile: true
     input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 - name: flux2.quantgemm.blackwell
   tags: [lucid, blackwell, b200, b300]
@@ -171,15 +177,16 @@
     num_inference_steps: 50
     max_sequence_length: 512
     warmup_calls: 5
-    use_fp4_gemms: true
+    gemm_quantization: fp4
     ulysses_degree: 8
     use_torch_compile: true
     input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
-- name: flux2.quantgemm_sageattn.gfx942
+- name: flux2.quantgemm_quantattn.gfx942
   tags: [release, instinct, gfx942]
   model: black-forest-labs/FLUX.2-dev
   runner: xdit
@@ -196,10 +203,11 @@
     input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
     guidance_scale: 4.0
     num_iterations: 25
-    attention_backend: aiter_i8fp8
-    use_fp8_gemms: true
+    attention_backend: aiter_fp8
+    gemm_quantization: fp8
+    memory_efficient_replicated_load: true
 
-- name: flux2.quantgemm_sageattn.gfx950
+- name: flux2.quantgemm_quantattn.gfx950
   tags: [release, instinct, gfx950]
   model: black-forest-labs/FLUX.2-dev
   runner: xdit
@@ -216,8 +224,9 @@
     input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
     guidance_scale: 4.0
     num_iterations: 25
-    attention_backend: aiter_i8fp8
-    use_fp4_gemms: true
+    attention_backend: aiter_mxfp6
+    gemm_quantization: fp4
+    memory_efficient_replicated_load: true
 
 # TI2V 2K
 - name: flux2.ti2i_2k
@@ -238,6 +247,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: aiter
+    memory_efficient_replicated_load: true
 
 - name: flux2.ti2i_2k.hopper.h100
   tags: [lucid, hopper, h100]
@@ -277,6 +287,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 - name: flux2.ti2i_2k.blackwell
   tags: [lucid, blackwell, b200, b300]
@@ -296,6 +307,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 # T2V 1K
 - name: flux2.t2i_1k
@@ -315,6 +327,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: aiter
+    memory_efficient_replicated_load: true
 
 - name: flux2.t2i_1k.hopper.h100
   tags: [lucid, hopper, h100]
@@ -352,6 +365,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 - name: flux2.t2i_1k.blackwell
   tags: [lucid, blackwell, b200, b300]
@@ -370,6 +384,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 # T2V 2K
 - name: flux2.t2i_2k
@@ -389,6 +404,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: aiter
+    memory_efficient_replicated_load: true
 
 - name: flux2.t2i_2k.hopper.h100
   tags: [lucid, hopper, h100]
@@ -426,6 +442,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 - name: flux2.t2i_2k.blackwell
   tags: [lucid, blackwell, b200, b300]
@@ -444,6 +461,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 # TmultiI2V 1K
 - name: flux2.t-multi-i2i_1k
@@ -466,6 +484,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: aiter
+    memory_efficient_replicated_load: true
 
 - name: flux2.t-multi-i2i_1k.hopper.h100
   tags: [lucid, hopper, h100]
@@ -509,6 +528,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 - name: flux2.t-multi-i2i_1k.blackwell
   tags: [lucid, blackwell, b200, b300]
@@ -530,6 +550,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 # TmultiI2V 2K
 - name: flux2.t-multi-i2i_2k
@@ -552,6 +573,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: aiter
+    memory_efficient_replicated_load: true
 
 - name: flux2.t-multi-i2i_2k.hopper.h100
   tags: [lucid, hopper, h100]
@@ -595,6 +617,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 - name: flux2.t-multi-i2i_2k.blackwell
   tags: [lucid, blackwell, b200, b300]
@@ -616,6 +639,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 - name: flux2.i2i_1k.4gpu.rdna4
   tags: [rdna4, gfx1201]

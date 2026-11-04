@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
+import yaml
 
 from ..helpers import (
     build_preset_spec_for_tag,
@@ -122,7 +125,7 @@ def test_wan_preset_keeps_input_images_for_cli_not_comfy_widgets():
     assert preset is not None
     assert (
         preset.args.get("input_images")
-        == "https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/172fbcce2bf603216771f476fc40002b0640ce8d/assets/data/wan_input.jpg"
+        == "https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/e52c1cdcf690ce2c0c9fd8a7be42321ca0841279/assets/data/wan_input.jpg"
     )
     assert "input_images" not in preset_to_generation_widgets(preset.args)
 
@@ -135,3 +138,44 @@ def test_wan_preset_keeps_input_images_for_cli_not_comfy_widgets():
     assert "input_images" not in (zimage_spec.get("generation_defaults") or {})
     assert zimage_spec["image_input_preset"]["required"] is False
     assert zimage_spec["image_input_preset"]["paths"] == []
+
+
+@pytest.mark.contract
+def test_ltx25_is_not_an_rdna4_preset():
+    from xdit_comfyui.presets import list_presets_for_gpu_tag, preset_by_name
+
+    preset = preset_by_name("ltx2_5.default")
+    assert preset is not None
+    assert set(preset.tags) == {"gfx942", "gfx950"}
+    assert "ltx2_5.default" not in list_presets_for_gpu_tag("gfx1201")
+
+
+@pytest.mark.contract
+def test_every_release_preset_argument_is_accounted_for():
+    import xdit_comfyui.presets as presets
+    from xdit_comfyui.runner_contract import (
+        preset_args_to_runtime,
+        preset_to_generation_widgets,
+        preset_to_image_input_preset,
+        runner_cli_dests,
+    )
+
+    failures = {}
+    config_dir = Path(presets.__file__).with_name("preset_configs")
+    cli_dests = set(runner_cli_dests())
+    for path in config_dir.glob("*.yaml"):
+        for entry in yaml.safe_load(path.read_text(encoding="utf-8")) or []:
+            args = dict(entry.get("args") or {})
+            unknown = set(args) - cli_dests - {"no_reshard_after_forward"}
+            runtime = preset_args_to_runtime(args)
+            generation = preset_to_generation_widgets(args)
+            represented = set(runtime) | set(generation)
+            if preset_to_image_input_preset(args)["paths"]:
+                represented.add("input_images")
+            dropped = set(args) - represented - presets._COMFY_IGNORED_BENCHMARK_ARGS - unknown
+            if unknown or dropped:
+                failures[str(entry["name"])] = {
+                    "unknown": sorted(unknown),
+                    "dropped": sorted(dropped),
+                }
+    assert failures == {}

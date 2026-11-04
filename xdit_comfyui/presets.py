@@ -250,7 +250,7 @@ def list_hardware_matching_preset_names(
     names: list[str] = []
     for preset in load_benchmark_presets():
         hardware = preset.hardware_tags()
-        if hardware and not hardware.issubset(tags):
+        if hardware and hardware.isdisjoint(tags):
             continue
         if gpu_count is not None and preset.gpu_count != gpu_count:
             continue
@@ -360,7 +360,7 @@ def _score_preset(preset: BenchmarkPreset, gpu_count: int, gpu_tags: set[str]) -
     if preset.gpu_count != gpu_count:
         return -1
     hardware = preset.hardware_tags()
-    if hardware and not hardware.issubset(gpu_tags):
+    if hardware and hardware.isdisjoint(gpu_tags):
         return -1
     score = 1 if hardware & gpu_tags else 0
     name = preset.name.lower()

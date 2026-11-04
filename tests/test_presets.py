@@ -96,6 +96,21 @@ class PresetTest(unittest.TestCase):
         self.assertNotIn("hopper", tags)
         self.assertNotIn("blackwell", tags)
 
+    def test_multi_arch_instinct_preset_matches_either_architecture(self):
+        from xdit_comfyui.presets import BenchmarkPreset, _score_preset
+
+        preset = BenchmarkPreset(
+            name="ltx2_5.default",
+            tags=("gfx942", "gfx950"),
+            model="Lightricks/LTX-2.5-Diffusers",
+            gpu_count=8,
+            args={},
+            source_file="ltx2_5.yaml",
+        )
+        self.assertGreaterEqual(_score_preset(preset, 8, {"gfx942"}), 0)
+        self.assertGreaterEqual(_score_preset(preset, 8, {"gfx950"}), 0)
+        self.assertEqual(_score_preset(preset, 8, {"gfx1201"}), -1)
+
     def test_preset_picker_seeds_default_tag_presets(self):
 
         preset_spec = _preset_picker_input_types()["required"]["preset"]

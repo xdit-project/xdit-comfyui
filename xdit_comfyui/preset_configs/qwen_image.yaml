@@ -16,6 +16,7 @@
     ulysses_degree: 8
     use_torch_compile: true
     attention_backend: aiter
+    memory_efficient_replicated_load: true
 
 - name: qwen_image.default.hopper
   tags: [lucid, hopper, h100, h200]
@@ -32,6 +33,7 @@
     ulysses_degree: 8
     use_torch_compile: true
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 - name: qwen_image.default.blackwell
   tags: [lucid, blackwell, b200, b300]
@@ -48,6 +50,7 @@
     ulysses_degree: 8
     use_torch_compile: true
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 - name: qwen_image.4gpu.rdna4
   tags: [rdna4, gfx1201]

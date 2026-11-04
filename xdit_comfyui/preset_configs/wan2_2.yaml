@@ -1,15 +1,15 @@
 # Copyright Advanced Micro Devices, Inc.
 # SPDX-License-Identifier: MIT
 
-- name: wan2_2.default
-  tags: [release, mad, lucid, instinct, gfx942, gfx950]
+- name: wan2_2.default.gfx942
+  tags: [release, mad, lucid, instinct, gfx942]
   model: Wan-AI/Wan2.2-I2V-A14B-Diffusers
   runner: xdit
   args:
     prompt: Summer beach vacation style, a white cat wearing sunglasses sits on a surfboard. The fluffy-furred feline gazes directly at the camera with a relaxed expression. Blurred beach scenery forms the background featuring crystal-clear waters, distant green hills, and a blue sky dotted with white clouds. The cat assumes a naturally relaxed posture, as if savoring the sea breeze and warm sunlight. A close-up shot highlights the feline's intricate details and the refreshing atmosphere of the seaside.
     height: 720
     width: 1280
-    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/172fbcce2bf603216771f476fc40002b0640ce8d/assets/data/wan_input.jpg
+    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/e52c1cdcf690ce2c0c9fd8a7be42321ca0841279/assets/data/wan_input.jpg
     num_frames: 81
     ulysses_degree: 8
     use_parallel_vae: true
@@ -18,6 +18,25 @@
     num_inference_steps: 40
     use_torch_compile: true
     attention_backend: aiter
+    memory_efficient_replicated_load: true
+
+- name: wan2_2.default.gfx950
+  tags: [release, mad, lucid, instinct, gfx950]
+  model: Wan-AI/Wan2.2-I2V-A14B-Diffusers
+  runner: xdit
+  args:
+    prompt: Summer beach vacation style, a white cat wearing sunglasses sits on a surfboard. The fluffy-furred feline gazes directly at the camera with a relaxed expression. Blurred beach scenery forms the background featuring crystal-clear waters, distant green hills, and a blue sky dotted with white clouds. The cat assumes a naturally relaxed posture, as if savoring the sea breeze and warm sunlight. A close-up shot highlights the feline's intricate details and the refreshing atmosphere of the seaside.
+    height: 720
+    width: 1280
+    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/e52c1cdcf690ce2c0c9fd8a7be42321ca0841279/assets/data/wan_input.jpg
+    num_frames: 81
+    ulysses_degree: 8
+    use_parallel_vae: true
+    seed: 42
+    num_iterations: 1
+    num_inference_steps: 40
+    use_torch_compile: true
+    attention_backend: aiter_bf16
 
 - name: wan2_2.default.hopper.h100
   tags: [lucid, hopper, h100]
@@ -27,7 +46,7 @@
     prompt: Summer beach vacation style, a white cat wearing sunglasses sits on a surfboard. The fluffy-furred feline gazes directly at the camera with a relaxed expression. Blurred beach scenery forms the background featuring crystal-clear waters, distant green hills, and a blue sky dotted with white clouds. The cat assumes a naturally relaxed posture, as if savoring the sea breeze and warm sunlight. A close-up shot highlights the feline's intricate details and the refreshing atmosphere of the seaside.
     height: 720
     width: 1280
-    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/172fbcce2bf603216771f476fc40002b0640ce8d/assets/data/wan_input.jpg
+    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/e52c1cdcf690ce2c0c9fd8a7be42321ca0841279/assets/data/wan_input.jpg
     num_frames: 81
     ulysses_degree: 8
     use_parallel_vae: true
@@ -36,7 +55,7 @@
     num_inference_steps: 40
     use_torch_compile: true
     attention_backend: flash_3
-    fully_shard_degree: 8
+    memory_efficient_replicated_load: true
 
 - name: wan2_2.default.hopper.h200
   tags: [lucid, hopper, h200]
@@ -46,7 +65,7 @@
     prompt: Summer beach vacation style, a white cat wearing sunglasses sits on a surfboard. The fluffy-furred feline gazes directly at the camera with a relaxed expression. Blurred beach scenery forms the background featuring crystal-clear waters, distant green hills, and a blue sky dotted with white clouds. The cat assumes a naturally relaxed posture, as if savoring the sea breeze and warm sunlight. A close-up shot highlights the feline's intricate details and the refreshing atmosphere of the seaside.
     height: 720
     width: 1280
-    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/172fbcce2bf603216771f476fc40002b0640ce8d/assets/data/wan_input.jpg
+    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/e52c1cdcf690ce2c0c9fd8a7be42321ca0841279/assets/data/wan_input.jpg
     num_frames: 81
     ulysses_degree: 8
     use_parallel_vae: true
@@ -55,6 +74,7 @@
     num_inference_steps: 40
     use_torch_compile: true
     attention_backend: flash_3
+    memory_efficient_replicated_load: true
 
 - name: wan2_2.default.blackwell
   tags: [lucid, blackwell, b200, b300]
@@ -64,7 +84,7 @@
     prompt: Summer beach vacation style, a white cat wearing sunglasses sits on a surfboard. The fluffy-furred feline gazes directly at the camera with a relaxed expression. Blurred beach scenery forms the background featuring crystal-clear waters, distant green hills, and a blue sky dotted with white clouds. The cat assumes a naturally relaxed posture, as if savoring the sea breeze and warm sunlight. A close-up shot highlights the feline's intricate details and the refreshing atmosphere of the seaside.
     height: 720
     width: 1280
-    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/172fbcce2bf603216771f476fc40002b0640ce8d/assets/data/wan_input.jpg
+    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/e52c1cdcf690ce2c0c9fd8a7be42321ca0841279/assets/data/wan_input.jpg
     num_frames: 81
     ulysses_degree: 8
     use_parallel_vae: true
@@ -73,6 +93,7 @@
     num_inference_steps: 40
     use_torch_compile: true
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 - name: wan2_2.quantgemm.gfx942
   tags: [release, mad, lucid, instinct, gfx942]
@@ -82,15 +103,16 @@
     prompt: Summer beach vacation style, a white cat wearing sunglasses sits on a surfboard. The fluffy-furred feline gazes directly at the camera with a relaxed expression. Blurred beach scenery forms the background featuring crystal-clear waters, distant green hills, and a blue sky dotted with white clouds. The cat assumes a naturally relaxed posture, as if savoring the sea breeze and warm sunlight. A close-up shot highlights the feline's intricate details and the refreshing atmosphere of the seaside.
     height: 720
     width: 1280
-    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/172fbcce2bf603216771f476fc40002b0640ce8d/assets/data/wan_input.jpg
+    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/e52c1cdcf690ce2c0c9fd8a7be42321ca0841279/assets/data/wan_input.jpg
     num_frames: 81
     ulysses_degree: 8
     use_parallel_vae: true
     num_iterations: 1
     num_inference_steps: 40
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     attention_backend: aiter
+    memory_efficient_replicated_load: true
 
 - name: wan2_2.quantgemm.gfx950 # MXFP4 only supported on gfx950
   tags: [release, mad, lucid, instinct, gfx950]
@@ -100,15 +122,15 @@
     prompt: Summer beach vacation style, a white cat wearing sunglasses sits on a surfboard. The fluffy-furred feline gazes directly at the camera with a relaxed expression. Blurred beach scenery forms the background featuring crystal-clear waters, distant green hills, and a blue sky dotted with white clouds. The cat assumes a naturally relaxed posture, as if savoring the sea breeze and warm sunlight. A close-up shot highlights the feline's intricate details and the refreshing atmosphere of the seaside.
     height: 720
     width: 1280
-    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/172fbcce2bf603216771f476fc40002b0640ce8d/assets/data/wan_input.jpg
+    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/e52c1cdcf690ce2c0c9fd8a7be42321ca0841279/assets/data/wan_input.jpg
     num_frames: 81
     ulysses_degree: 8
     use_parallel_vae: true
     num_iterations: 1
     num_inference_steps: 40
     use_torch_compile: true
-    use_fp4_gemms: true
-    attention_backend: aiter
+    gemm_quantization: low=fp4,high=fp6
+    attention_backend: aiter_bf16
 
 - name: wan2_2.quantgemm.hopper.h100
   tags: [lucid, hopper, h100]
@@ -118,17 +140,16 @@
     prompt: Summer beach vacation style, a white cat wearing sunglasses sits on a surfboard. The fluffy-furred feline gazes directly at the camera with a relaxed expression. Blurred beach scenery forms the background featuring crystal-clear waters, distant green hills, and a blue sky dotted with white clouds. The cat assumes a naturally relaxed posture, as if savoring the sea breeze and warm sunlight. A close-up shot highlights the feline's intricate details and the refreshing atmosphere of the seaside.
     height: 720
     width: 1280
-    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/172fbcce2bf603216771f476fc40002b0640ce8d/assets/data/wan_input.jpg
+    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/e52c1cdcf690ce2c0c9fd8a7be42321ca0841279/assets/data/wan_input.jpg
     num_frames: 81
     ulysses_degree: 8
     use_parallel_vae: false
     num_iterations: 1
     num_inference_steps: 40
     use_torch_compile: true
-    fully_shard_degree: 8
-    no_reshard_after_forward: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     attention_backend: flash_3
+    memory_efficient_replicated_load: true
 
 - name: wan2_2.quantgemm.hopper.h200
   tags: [lucid, hopper, h200]
@@ -138,15 +159,16 @@
     prompt: Summer beach vacation style, a white cat wearing sunglasses sits on a surfboard. The fluffy-furred feline gazes directly at the camera with a relaxed expression. Blurred beach scenery forms the background featuring crystal-clear waters, distant green hills, and a blue sky dotted with white clouds. The cat assumes a naturally relaxed posture, as if savoring the sea breeze and warm sunlight. A close-up shot highlights the feline's intricate details and the refreshing atmosphere of the seaside.
     height: 720
     width: 1280
-    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/172fbcce2bf603216771f476fc40002b0640ce8d/assets/data/wan_input.jpg
+    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/e52c1cdcf690ce2c0c9fd8a7be42321ca0841279/assets/data/wan_input.jpg
     num_frames: 81
     ulysses_degree: 8
     use_parallel_vae: true
     num_iterations: 1
     num_inference_steps: 40
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     attention_backend: flash_3
+    memory_efficient_replicated_load: true
 
 - name: wan2_2.quantgemm.blackwell
   tags: [lucid, blackwell, b200, b300]
@@ -156,17 +178,18 @@
     prompt: Summer beach vacation style, a white cat wearing sunglasses sits on a surfboard. The fluffy-furred feline gazes directly at the camera with a relaxed expression. Blurred beach scenery forms the background featuring crystal-clear waters, distant green hills, and a blue sky dotted with white clouds. The cat assumes a naturally relaxed posture, as if savoring the sea breeze and warm sunlight. A close-up shot highlights the feline's intricate details and the refreshing atmosphere of the seaside.
     height: 720
     width: 1280
-    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/172fbcce2bf603216771f476fc40002b0640ce8d/assets/data/wan_input.jpg
+    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/e52c1cdcf690ce2c0c9fd8a7be42321ca0841279/assets/data/wan_input.jpg
     num_frames: 81
     ulysses_degree: 8
     use_parallel_vae: true
     num_iterations: 1
     num_inference_steps: 40
     use_torch_compile: true
-    use_fp4_gemms: true
+    gemm_quantization: low=fp4,high=fp8
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
-- name: wan2_2.quantgemm_fp8attn.gfx942
+- name: wan2_2.quantgemm_quantattn.gfx942
   tags: [release, mad, lucid, instinct, gfx942]
   model: Wan-AI/Wan2.2-I2V-A14B-Diffusers
   runner: xdit
@@ -174,17 +197,18 @@
     prompt: Summer beach vacation style, a white cat wearing sunglasses sits on a surfboard. The fluffy-furred feline gazes directly at the camera with a relaxed expression. Blurred beach scenery forms the background featuring crystal-clear waters, distant green hills, and a blue sky dotted with white clouds. The cat assumes a naturally relaxed posture, as if savoring the sea breeze and warm sunlight. A close-up shot highlights the feline's intricate details and the refreshing atmosphere of the seaside.
     height: 720
     width: 1280
-    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/172fbcce2bf603216771f476fc40002b0640ce8d/assets/data/wan_input.jpg
+    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/e52c1cdcf690ce2c0c9fd8a7be42321ca0841279/assets/data/wan_input.jpg
     num_frames: 81
     ulysses_degree: 8
     use_parallel_vae: true
     num_iterations: 1
     num_inference_steps: 40
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     attention_backend: aiter_fp8
+    memory_efficient_replicated_load: true
 
-- name: wan2_2.quantgemm_fp8attn.gfx950
+- name: wan2_2.quantgemm_quantattn.gfx950
   tags: [release, mad, lucid, instinct, gfx950]
   model: Wan-AI/Wan2.2-I2V-A14B-Diffusers
   runner: xdit
@@ -192,18 +216,19 @@
     prompt: Summer beach vacation style, a white cat wearing sunglasses sits on a surfboard. The fluffy-furred feline gazes directly at the camera with a relaxed expression. Blurred beach scenery forms the background featuring crystal-clear waters, distant green hills, and a blue sky dotted with white clouds. The cat assumes a naturally relaxed posture, as if savoring the sea breeze and warm sunlight. A close-up shot highlights the feline's intricate details and the refreshing atmosphere of the seaside.
     height: 720
     width: 1280
-    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/172fbcce2bf603216771f476fc40002b0640ce8d/assets/data/wan_input.jpg
+    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/e52c1cdcf690ce2c0c9fd8a7be42321ca0841279/assets/data/wan_input.jpg
     num_frames: 81
     ulysses_degree: 8
     use_parallel_vae: true
     num_iterations: 1
     num_inference_steps: 40
     use_torch_compile: true
-    attention_backend: aiter_fp8
-    cross_attention_backend: aiter
-    use_fp4_gemms: true
+    attention_backend: aiter_mxfp6
+    cross_attention_backend: aiter_bf16
+    gemm_quantization: low=fp4,high=fp6
+    memory_efficient_replicated_load: true
 
-- name: wan2_2.quantgemm_fp8attn.hopper.h100  
+- name: wan2_2.quantgemm_quantattn.hopper.h100
   tags: [lucid, hopper, h100]
   model: Wan-AI/Wan2.2-I2V-A14B-Diffusers
   runner: xdit
@@ -211,19 +236,18 @@
     prompt: Summer beach vacation style, a white cat wearing sunglasses sits on a surfboard. The fluffy-furred feline gazes directly at the camera with a relaxed expression. Blurred beach scenery forms the background featuring crystal-clear waters, distant green hills, and a blue sky dotted with white clouds. The cat assumes a naturally relaxed posture, as if savoring the sea breeze and warm sunlight. A close-up shot highlights the feline's intricate details and the refreshing atmosphere of the seaside.
     height: 720
     width: 1280
-    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/172fbcce2bf603216771f476fc40002b0640ce8d/assets/data/wan_input.jpg
+    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/e52c1cdcf690ce2c0c9fd8a7be42321ca0841279/assets/data/wan_input.jpg
     num_frames: 81
     ulysses_degree: 8
     use_parallel_vae: false
     num_iterations: 1
     num_inference_steps: 40
     use_torch_compile: true
-    fully_shard_degree: 8
-    no_reshard_after_forward: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     attention_backend: flash_3_fp8
+    memory_efficient_replicated_load: true
 
-- name: wan2_2.quantgemm_fp8attn.hopper.h200  
+- name: wan2_2.quantgemm_quantattn.hopper.h200
   tags: [lucid, hopper, h200]
   model: Wan-AI/Wan2.2-I2V-A14B-Diffusers
   runner: xdit
@@ -231,17 +255,18 @@
     prompt: Summer beach vacation style, a white cat wearing sunglasses sits on a surfboard. The fluffy-furred feline gazes directly at the camera with a relaxed expression. Blurred beach scenery forms the background featuring crystal-clear waters, distant green hills, and a blue sky dotted with white clouds. The cat assumes a naturally relaxed posture, as if savoring the sea breeze and warm sunlight. A close-up shot highlights the feline's intricate details and the refreshing atmosphere of the seaside.
     height: 720
     width: 1280
-    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/172fbcce2bf603216771f476fc40002b0640ce8d/assets/data/wan_input.jpg
+    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/e52c1cdcf690ce2c0c9fd8a7be42321ca0841279/assets/data/wan_input.jpg
     num_frames: 81
     ulysses_degree: 8
     use_parallel_vae: true
     num_iterations: 1
     num_inference_steps: 40
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     attention_backend: flash_3_fp8
+    memory_efficient_replicated_load: true
 
-- name: wan2_2.quantgemm_fp8attn.blackwell
+- name: wan2_2.quantgemm_quantattn.blackwell
   tags: [lucid, blackwell, b200, b300]
   model: Wan-AI/Wan2.2-I2V-A14B-Diffusers
   runner: xdit
@@ -249,17 +274,18 @@
     prompt: Summer beach vacation style, a white cat wearing sunglasses sits on a surfboard. The fluffy-furred feline gazes directly at the camera with a relaxed expression. Blurred beach scenery forms the background featuring crystal-clear waters, distant green hills, and a blue sky dotted with white clouds. The cat assumes a naturally relaxed posture, as if savoring the sea breeze and warm sunlight. A close-up shot highlights the feline's intricate details and the refreshing atmosphere of the seaside.
     height: 720
     width: 1280
-    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/172fbcce2bf603216771f476fc40002b0640ce8d/assets/data/wan_input.jpg
+    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/e52c1cdcf690ce2c0c9fd8a7be42321ca0841279/assets/data/wan_input.jpg
     num_frames: 81
     ulysses_degree: 8
     use_parallel_vae: true
     num_iterations: 1
     num_inference_steps: 40
     use_torch_compile: true
-    use_fp4_gemms: true
+    gemm_quantization: low=fp4,high=fp8
     attention_backend: nvte_fp8
+    memory_efficient_replicated_load: true
 
-- name: wan2_2.quantgemm_sageattn.gfx942
+- name: wan2_2.quantgemm_sparseattn.gfx942
   tags: [release, mad, lucid, instinct, gfx942]
   model: Wan-AI/Wan2.2-I2V-A14B-Diffusers
   runner: xdit
@@ -267,83 +293,7 @@
     prompt: Summer beach vacation style, a white cat wearing sunglasses sits on a surfboard. The fluffy-furred feline gazes directly at the camera with a relaxed expression. Blurred beach scenery forms the background featuring crystal-clear waters, distant green hills, and a blue sky dotted with white clouds. The cat assumes a naturally relaxed posture, as if savoring the sea breeze and warm sunlight. A close-up shot highlights the feline's intricate details and the refreshing atmosphere of the seaside.
     height: 720
     width: 1280
-    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/172fbcce2bf603216771f476fc40002b0640ce8d/assets/data/wan_input.jpg
-    num_frames: 81
-    ulysses_degree: 8
-    use_parallel_vae: true
-    num_iterations: 1
-    num_inference_steps: 40
-    use_torch_compile: true
-    attention_backend: aiter_i8fp8
-    cross_attention_backend: aiter
-    use_fp8_gemms: true
-
-- name: wan2_2.quantgemm_sageattn.gfx950
-  tags: [release, mad, lucid, instinct, gfx950]
-  model: Wan-AI/Wan2.2-I2V-A14B-Diffusers
-  runner: xdit
-  args:
-    prompt: Summer beach vacation style, a white cat wearing sunglasses sits on a surfboard. The fluffy-furred feline gazes directly at the camera with a relaxed expression. Blurred beach scenery forms the background featuring crystal-clear waters, distant green hills, and a blue sky dotted with white clouds. The cat assumes a naturally relaxed posture, as if savoring the sea breeze and warm sunlight. A close-up shot highlights the feline's intricate details and the refreshing atmosphere of the seaside.
-    height: 720
-    width: 1280
-    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/172fbcce2bf603216771f476fc40002b0640ce8d/assets/data/wan_input.jpg
-    num_frames: 81
-    ulysses_degree: 8
-    use_parallel_vae: true
-    num_iterations: 1
-    num_inference_steps: 40
-    use_torch_compile: true
-    attention_backend: aiter_i8fp8
-    cross_attention_backend: aiter
-    use_fp4_gemms: true
-
-- name: wan2_2.quantgemm_sageattn.hopper.h100
-  tags: [lucid, hopper, h100]
-  model: Wan-AI/Wan2.2-I2V-A14B-Diffusers
-  runner: xdit
-  args:
-    prompt: Summer beach vacation style, a white cat wearing sunglasses sits on a surfboard. The fluffy-furred feline gazes directly at the camera with a relaxed expression. Blurred beach scenery forms the background featuring crystal-clear waters, distant green hills, and a blue sky dotted with white clouds. The cat assumes a naturally relaxed posture, as if savoring the sea breeze and warm sunlight. A close-up shot highlights the feline's intricate details and the refreshing atmosphere of the seaside.
-    height: 720
-    width: 1280
-    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/172fbcce2bf603216771f476fc40002b0640ce8d/assets/data/wan_input.jpg
-    num_frames: 81
-    ulysses_degree: 8
-    use_parallel_vae: false
-    num_iterations: 1
-    num_inference_steps: 40
-    use_torch_compile: true
-    fully_shard_degree: 8
-    no_reshard_after_forward: true
-    attention_backend: sage
-    use_fp8_gemms: true
-
-- name: wan2_2.quantgemm_sageattn.hopper.h200
-  tags: [lucid, hopper, h200]
-  model: Wan-AI/Wan2.2-I2V-A14B-Diffusers
-  runner: xdit
-  args:
-    prompt: Summer beach vacation style, a white cat wearing sunglasses sits on a surfboard. The fluffy-furred feline gazes directly at the camera with a relaxed expression. Blurred beach scenery forms the background featuring crystal-clear waters, distant green hills, and a blue sky dotted with white clouds. The cat assumes a naturally relaxed posture, as if savoring the sea breeze and warm sunlight. A close-up shot highlights the feline's intricate details and the refreshing atmosphere of the seaside.
-    height: 720
-    width: 1280
-    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/172fbcce2bf603216771f476fc40002b0640ce8d/assets/data/wan_input.jpg
-    num_frames: 81
-    ulysses_degree: 8
-    use_parallel_vae: true
-    num_iterations: 1
-    num_inference_steps: 40
-    use_torch_compile: true
-    attention_backend: sage
-    use_fp8_gemms: true
-
-- name: wan2_2.quantgemm_spargeattn.gfx942
-  tags: [release, mad, lucid, instinct, gfx942]
-  model: Wan-AI/Wan2.2-I2V-A14B-Diffusers
-  runner: xdit
-  args:
-    prompt: Summer beach vacation style, a white cat wearing sunglasses sits on a surfboard. The fluffy-furred feline gazes directly at the camera with a relaxed expression. Blurred beach scenery forms the background featuring crystal-clear waters, distant green hills, and a blue sky dotted with white clouds. The cat assumes a naturally relaxed posture, as if savoring the sea breeze and warm sunlight. A close-up shot highlights the feline's intricate details and the refreshing atmosphere of the seaside.
-    height: 720
-    width: 1280
-    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/172fbcce2bf603216771f476fc40002b0640ce8d/assets/data/wan_input.jpg
+    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/e52c1cdcf690ce2c0c9fd8a7be42321ca0841279/assets/data/wan_input.jpg
     num_frames: 81
     ulysses_degree: 8
     use_parallel_vae: true
@@ -352,12 +302,13 @@
     use_torch_compile: true
     attention_backend: aiter_fp8_sparge
     cross_attention_backend: aiter
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     spargeattn_simthreshold: 0.2
     spargeattn_cdfthreshold: 0.9
     use_spargeattn_head_balance: true
+    memory_efficient_replicated_load: true
 
-- name: wan2_2.quantgemm_spargeattn.gfx950
+- name: wan2_2.quantgemm_sparseattn.gfx950
   tags: [release, mad, lucid, instinct, gfx950]
   model: Wan-AI/Wan2.2-I2V-A14B-Diffusers
   runner: xdit
@@ -365,7 +316,7 @@
     prompt: Summer beach vacation style, a white cat wearing sunglasses sits on a surfboard. The fluffy-furred feline gazes directly at the camera with a relaxed expression. Blurred beach scenery forms the background featuring crystal-clear waters, distant green hills, and a blue sky dotted with white clouds. The cat assumes a naturally relaxed posture, as if savoring the sea breeze and warm sunlight. A close-up shot highlights the feline's intricate details and the refreshing atmosphere of the seaside.
     height: 720
     width: 1280
-    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/172fbcce2bf603216771f476fc40002b0640ce8d/assets/data/wan_input.jpg
+    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/e52c1cdcf690ce2c0c9fd8a7be42321ca0841279/assets/data/wan_input.jpg
     num_frames: 81
     ulysses_degree: 8
     use_parallel_vae: true
@@ -373,13 +324,14 @@
     num_inference_steps: 40
     use_torch_compile: true
     attention_backend: aiter_fp8_sparge
-    cross_attention_backend: aiter
-    use_fp4_gemms: true
+    cross_attention_backend: aiter_bf16
+    gemm_quantization: low=fp4,high=fp6
     spargeattn_simthreshold: 0.2
     spargeattn_cdfthreshold: 0.9
     use_spargeattn_head_balance: true
+    memory_efficient_replicated_load: true
 
-- name: wan2_2.quantgemm_spargeattn.hopper.h100
+- name: wan2_2.quantgemm_sparseattn.hopper.h100
   tags: [lucid, hopper, h100]
   model: Wan-AI/Wan2.2-I2V-A14B-Diffusers
   runner: xdit
@@ -387,23 +339,22 @@
     prompt: Summer beach vacation style, a white cat wearing sunglasses sits on a surfboard. The fluffy-furred feline gazes directly at the camera with a relaxed expression. Blurred beach scenery forms the background featuring crystal-clear waters, distant green hills, and a blue sky dotted with white clouds. The cat assumes a naturally relaxed posture, as if savoring the sea breeze and warm sunlight. A close-up shot highlights the feline's intricate details and the refreshing atmosphere of the seaside.
     height: 720
     width: 1280
-    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/172fbcce2bf603216771f476fc40002b0640ce8d/assets/data/wan_input.jpg
+    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/e52c1cdcf690ce2c0c9fd8a7be42321ca0841279/assets/data/wan_input.jpg
     num_frames: 81
     ulysses_degree: 8
     use_parallel_vae: true
     num_iterations: 1
     num_inference_steps: 40
     use_torch_compile: true
-    fully_shard_degree: 8
-    no_reshard_after_forward: true
     attention_backend: flex_block_sparge
     cross_attention_backend: flash_3
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     spargeattn_simthreshold: 0.2
     spargeattn_cdfthreshold: 0.9
     use_spargeattn_head_balance: true
+    memory_efficient_replicated_load: true
 
-- name: wan2_2.quantgemm_spargeattn.hopper.h200
+- name: wan2_2.quantgemm_sparseattn.hopper.h200
   tags: [lucid, hopper, h200]
   model: Wan-AI/Wan2.2-I2V-A14B-Diffusers
   runner: xdit
@@ -411,7 +362,7 @@
     prompt: Summer beach vacation style, a white cat wearing sunglasses sits on a surfboard. The fluffy-furred feline gazes directly at the camera with a relaxed expression. Blurred beach scenery forms the background featuring crystal-clear waters, distant green hills, and a blue sky dotted with white clouds. The cat assumes a naturally relaxed posture, as if savoring the sea breeze and warm sunlight. A close-up shot highlights the feline's intricate details and the refreshing atmosphere of the seaside.
     height: 720
     width: 1280
-    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/172fbcce2bf603216771f476fc40002b0640ce8d/assets/data/wan_input.jpg
+    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/e52c1cdcf690ce2c0c9fd8a7be42321ca0841279/assets/data/wan_input.jpg
     num_frames: 81
     ulysses_degree: 8
     use_parallel_vae: true
@@ -420,10 +371,11 @@
     use_torch_compile: true
     attention_backend: flex_block_sparge
     cross_attention_backend: flash_3
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     spargeattn_simthreshold: 0.2
     spargeattn_cdfthreshold: 0.9
     use_spargeattn_head_balance: true
+    memory_efficient_replicated_load: true
 
 - name: wan2_2_ti2v_5b.i2v.4gpu.rdna4
   tags: [rdna4, gfx1201]
@@ -441,7 +393,7 @@
     guidance_scale: 5.0
     flow_shift: 5
     task: i2v
-    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/172fbcce2bf603216771f476fc40002b0640ce8d/assets/data/wan_input.jpg
+    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/e52c1cdcf690ce2c0c9fd8a7be42321ca0841279/assets/data/wan_input.jpg
     attention_backend: aiter_flydsl_fp8
     ulysses_degree: 4
     use_torch_compile: true
@@ -476,7 +428,7 @@
     guidance_scale: 5.0
     flow_shift: 5
     task: i2v
-    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/172fbcce2bf603216771f476fc40002b0640ce8d/assets/data/wan_input.jpg
+    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/e52c1cdcf690ce2c0c9fd8a7be42321ca0841279/assets/data/wan_input.jpg
     attention_backend: aiter_flydsl_fp8
     use_torch_compile: true
     use_fp8_gemms: true
@@ -511,7 +463,7 @@
     guidance_scale: 5.0
     flow_shift: 5
     task: i2v
-    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/172fbcce2bf603216771f476fc40002b0640ce8d/assets/data/wan_input.jpg
+    input_images: https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/e52c1cdcf690ce2c0c9fd8a7be42321ca0841279/assets/data/wan_input.jpg
     attention_backend: aiter_flydsl_fp8
     use_torch_compile: true
     use_fp8_gemms: true
