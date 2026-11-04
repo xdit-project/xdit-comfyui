@@ -67,7 +67,20 @@ def _supported_cache_methods(caps: Any, settings: Any) -> tuple[str, ...]:
     """Return the cache methods the xDiT runner declares for this model."""
     if not caps.supports_step_caching:
         return ()
-    return tuple(settings.step_cache_config or ())
+    configs = settings.step_cache_config or {}
+    methods = list(configs)
+    if "dbcache" in methods:
+        try:
+            from .runner_contract import cache_method_choices
+
+            pipefusion_available = "pipefusion" in cache_method_choices()
+        except RuntimeError:
+            pipefusion_available = False
+        dbcache = configs.get("dbcache")
+        adapters = getattr(dbcache, "adapter", None)
+        if pipefusion_available and not isinstance(adapters, (list, tuple)):
+            methods.append("pipefusion")
+    return tuple(methods)
 
 
 def sanitize_runtime_cache_for_model(registry_model: str, runtime: dict[str, Any]) -> None:
@@ -580,10 +593,14 @@ def model_cache_transformers(registry_model: str, cache_method: str | None) -> l
     if not isinstance(cache_configs, dict):
         return []
     method_cfg = cache_configs.get(str(cache_method))
+    if method_cfg is None and str(cache_method) == "pipefusion":
+        method_cfg = cache_configs.get("dbcache")
     if method_cfg is None:
         return []
 
     adapters = getattr(method_cfg, "adapter", None)
+    if str(cache_method) == "pipefusion" and isinstance(adapters, (list, tuple)):
+        return []
     presets = getattr(method_cfg, "preset", None)
     if not isinstance(adapters, (list, tuple)):
         adapters = [adapters]

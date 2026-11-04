@@ -57,6 +57,21 @@ class ModelInfoTest(unittest.TestCase):
         settings = SimpleNamespace(step_cache_config={"dbcache": object()})
         self.assertEqual(_supported_cache_methods(caps, settings), ())
 
+    @mock.patch(
+        "xdit_comfyui.runner_contract.cache_method_choices",
+        return_value=["none", "dbcache", "pipefusion"],
+    )
+    def test_single_transformer_dbcache_models_support_pipefusion_cache(self, _choices):
+        from xdit_comfyui.model_info import _supported_cache_methods
+
+        caps = SimpleNamespace(supports_step_caching=True)
+        dbcache = SimpleNamespace(adapter=object())
+        settings = SimpleNamespace(step_cache_config={"dbcache": dbcache})
+        self.assertEqual(_supported_cache_methods(caps, settings), ("dbcache", "pipefusion"))
+
+        dbcache.adapter = [object(), object()]
+        self.assertEqual(_supported_cache_methods(caps, settings), ("dbcache",))
+
     def test_z_image_model_cache_defaults(self):
         defaults = model_cache_preset_defaults("Tongyi-MAI/Z-Image", "dbcache")
         self.assertEqual(defaults.get("Fn_compute_blocks"), 3)

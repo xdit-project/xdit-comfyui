@@ -51,6 +51,7 @@ const TOP_LEVEL_WIDGETS = ["model", "task", "residency", "use_torch_compile"];
 let configWidgets = null;
 let payloadWidgets = null;
 let widgetGroups = null;
+let widgetVisibility = {};
 
 async function ensureLoaderSchema() {
   if (configWidgets && widgetGroups) {
@@ -73,6 +74,7 @@ async function ensureLoaderSchema() {
   ensureLoaderSchema._widgetDefaults = schema.widget_defaults ?? {};
   ensureLoaderSchema._comboOptions = schema.combo_options ?? {};
   ensureLoaderSchema._widgetConstraints = schema.widget_constraints ?? {};
+  widgetVisibility = schema.widget_visibility ?? {};
   payloadWidgets = [...TRIGGER_WIDGETS, ...configWidgets];
   return { config_widgets: configWidgets, widget_groups: widgetGroups };
 }
@@ -104,6 +106,30 @@ function setWidgetHidden(node, widgetOrName, hidden) {
     hidden,
     expandWidgetNames(node),
   );
+}
+
+function visibilityConditionMatches(node, condition) {
+  if (Array.isArray(condition?.all)) {
+    return condition.all.every((entry) =>
+      visibilityConditionMatches(node, entry),
+    );
+  }
+  if (Array.isArray(condition?.any)) {
+    return condition.any.some((entry) =>
+      visibilityConditionMatches(node, entry),
+    );
+  }
+  const value = widgetValue(node, condition?.widget);
+  if ("equals" in (condition || {})) return value === condition.equals;
+  if ("contains" in (condition || {})) {
+    return String(value ?? "").includes(String(condition.contains));
+  }
+  if ("greater_than" in (condition || {})) {
+    return Number(value) > Number(condition.greater_than);
+  }
+  if (condition?.truthy) return !!value;
+  if (condition?.nonempty) return String(value ?? "").trim().length > 0;
+  return true;
 }
 
 function ensureLoaderMinWidth(node) {
@@ -506,6 +532,11 @@ function applyConditionalVisibility(node) {
   }
   if (widgetValue(node, "hf_cache_mode") !== "custom_path") {
     setWidgetHidden(node, "hf_cache_dir", true);
+  }
+  for (const [name, condition] of Object.entries(widgetVisibility)) {
+    if (!visibilityConditionMatches(node, condition)) {
+      setWidgetHidden(node, name, true);
+    }
   }
   if (node._xditTaskUnsupported) setWidgetHidden(node, "task", true);
   applyCapabilityGates(node);

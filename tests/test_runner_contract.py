@@ -145,6 +145,59 @@ class RunnerContractTest(unittest.TestCase):
         self.assertIn("use_fp8_text_encoder", groups["quantization"])
         self.assertIn("vsa_drop_rates", groups["attention"])
 
+    def test_branch_specific_runner_flags_have_semantic_groups(self):
+        groups = {group["id"]: set(group["widgets"]) for group in loader_widget_groups()}
+        self.assertTrue(
+            {
+                "attn_layer_num_for_pp",
+                "fully_shard_components",
+                "num_pipeline_patch",
+                "warmup_steps",
+            }
+            <= groups["parallelism"]
+        )
+        self.assertTrue(
+            {
+                "bsa_cdf_threshold",
+                "bsa_sparsity",
+                "sol_attn_kv_splits",
+                "sol_attn_sink_start",
+                "sol_attn_sink_tokens",
+                "sol_attn_tau",
+                "sol_attn_thresh_type",
+            }
+            <= groups["attention"]
+        )
+        self.assertEqual(groups["lora"], {"lora_path", "lora_scale", "lora_weight_name"})
+        self.assertIn("share_pipefusion_decisions", groups["cache"])
+        self.assertIn("t2_share_pipefusion_decisions", groups["cache_denoiser_2"])
+
+    def test_dependent_widgets_have_declarative_visibility_rules(self):
+        from xdit_comfyui.runner_contract import _WIDGET_VISIBILITY_RULES
+
+        rules = _WIDGET_VISIBILITY_RULES
+        self.assertEqual(
+            rules["sol_attn_tau"]["any"][0],
+            {"widget": "attention_backend", "contains": "sol_attn"},
+        )
+        self.assertEqual(
+            rules["num_pipeline_patch"],
+            {"widget": "pipefusion_parallel_degree", "greater_than": 1},
+        )
+        self.assertEqual(
+            rules["vae_tile_size_height"],
+            {"widget": "enable_tiling", "truthy": True},
+        )
+        self.assertEqual(
+            rules["group_offload_low_cpu_mem"],
+            {"widget": "cpu_offload_mode", "equals": "group"},
+        )
+        schema = loader_schema()
+        self.assertEqual(
+            set(schema["widget_visibility"]),
+            set(rules) & set(schema["config_widgets"]),
+        )
+
     def test_model_groups_match_comfyui_user_tasks(self):
         groups = {group["id"]: set(group["widgets"]) for group in loader_schema()["widget_groups"]}
         self.assertEqual(groups["model_cache"], {"hf_cache_mode", "hf_cache_dir"})
@@ -181,6 +234,22 @@ class RunnerContractTest(unittest.TestCase):
         self.assertEqual(
             _cache_config_to_widgets('{"enable_taylorseer": false}')["enable_taylorseer"],
             "false",
+        )
+
+    def test_pipefusion_cache_fields_follow_the_installed_runner(self):
+        from xdit_comfyui.runner_contract import cache_method_choices
+
+        if "pipefusion" not in cache_method_choices():
+            self.skipTest("installed xDiT does not expose PipeFusion caching")
+        self.assertIn("steps_computation_policy", cache_config_widget_names())
+        self.assertIn("alternating", cache_config_widget_spec("scm_policy")[0])
+        self.assertEqual(
+            cache_config_widget_spec("steps_computation_policy")[0],
+            ["default", "dynamic", "static"],
+        )
+        self.assertIn(
+            "steps_computation_policy",
+            cache_config_fields_for_method("pipefusion"),
         )
 
     def test_preset_preserves_upstream_tiling(self):
@@ -388,14 +457,13 @@ class RunnerContractTest(unittest.TestCase):
             self.assertIsNotNone(defaults[name], f"{name} defaults to null")
 
     def test_each_denoiser_group_offers_the_same_fields_as_the_first(self):
-        from xdit_comfyui.runner_contract import denoiser_cache_widget_field
-
         groups = {group["id"]: group for group in loader_widget_groups()}
         first = [name for name in groups["cache"]["widgets"] if name != "cache_method"]
         for group_id, group in groups.items():
             if not group_id.startswith("cache_denoiser_"):
                 continue
-            fields = [denoiser_cache_widget_field(name)[1] for name in group["widgets"]]
+            prefix = f"t{group_id.rsplit('_', 1)[1]}_"
+            fields = [name.removeprefix(prefix) for name in group["widgets"]]
             self.assertEqual(fields, first, f"{group_id} drifted from the first group")
 
     def test_a_second_denoiser_starts_from_its_own_cache_preset(self):

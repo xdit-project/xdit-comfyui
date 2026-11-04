@@ -197,12 +197,151 @@ _DISTILLED_WEIGHT_TOOLTIPS = {
     ),
 }
 
+_CACHE_WIDGET_GROUP_FIELDS = (
+    "residual_diff_threshold",
+    "Fn_compute_blocks",
+    "Bn_compute_blocks",
+    "max_warmup_steps",
+    "max_cached_steps",
+    "scm_policy",
+    "enable_separate_cfg",
+    "enable_encoder_calibrator",
+    "enable_taylorseer",
+    "steps_computation_policy",
+    "share_pipefusion_decisions",
+)
+
+
+def _backend_family_visibility(name: str) -> dict[str, Any]:
+    return {
+        "any": [
+            {"widget": "attention_backend", "contains": name},
+            {
+                "all": [
+                    {"widget": "use_hybrid_attn_schedule", "truthy": True},
+                    {
+                        "any": [
+                            {
+                                "widget": "hybrid_attn_low_precision_backend",
+                                "contains": name,
+                            },
+                            {
+                                "widget": "hybrid_attn_high_precision_backend",
+                                "contains": name,
+                            },
+                        ]
+                    },
+                ]
+            },
+        ]
+    }
+
+
+_WIDGET_VISIBILITY_RULES = {
+    **{
+        name: _backend_family_visibility("sol_attn")
+        for name in (
+            "sol_attn_kv_splits",
+            "sol_attn_sink_start",
+            "sol_attn_sink_tokens",
+            "sol_attn_tau",
+            "sol_attn_thresh_type",
+        )
+    },
+    **{
+        name: _backend_family_visibility("triton_bsa")
+        for name in ("bsa_sparsity", "bsa_cdf_threshold")
+    },
+    **{
+        name: _backend_family_visibility("vsa")
+        for name in (
+            "vsa_block_size",
+            "vsa_top_k",
+            "vsa_top_k_ratio",
+            "vsa_drop_rates",
+            "vsa_prob_threshold",
+            "vsa_reorder_sequence",
+            "use_vsa_static_block_mask",
+            "use_vsa_first_frame_mask",
+            "vsa_collect_density",
+        )
+    },
+    **{
+        name: _backend_family_visibility("sparge")
+        for name in (
+            "spargeattn_simthreshold",
+            "spargeattn_cdfthreshold",
+            "spargeattn_reorder_sequence",
+            "use_spargeattn_static_block_mask",
+            "use_spargeattn_head_balance",
+        )
+    },
+    **{
+        name: {"widget": "use_hybrid_attn_schedule", "truthy": True}
+        for name in (
+            "hybrid_attn_low_precision_backend",
+            "hybrid_attn_high_precision_backend",
+            "num_hybrid_attn_high_precision_steps",
+            "hybrid_attn_schedule",
+        )
+    },
+    **{
+        name: {"widget": "pipefusion_parallel_degree", "greater_than": 1}
+        for name in ("num_pipeline_patch", "attn_layer_num_for_pp", "warmup_steps")
+    },
+    **{
+        name: {"widget": "fully_shard_degree", "greater_than": 1}
+        for name in (
+            "fully_shard_components",
+            "reshard_after_forward",
+            "memory_efficient_sharding",
+        )
+    },
+    **{
+        name: {"widget": "enable_tiling", "truthy": True}
+        for name in (
+            "vae_tile_size_height",
+            "vae_tile_size_width",
+            "vae_tile_overlap_height",
+            "vae_tile_overlap_width",
+        )
+    },
+    "group_offload_low_cpu_mem": {"widget": "cpu_offload_mode", "equals": "group"},
+    "lora_weight_name": {"widget": "lora_path", "nonempty": True},
+    "lora_scale": {"widget": "lora_path", "nonempty": True},
+    "fp8_comms_scale": {"widget": "use_fp8_comms", "truthy": True},
+    "fp8_comms_safety_factor": {"widget": "use_fp8_comms", "truthy": True},
+    "num_hybrid_gemm_high_precision_steps": {
+        "widget": "use_hybrid_gemm_schedule",
+        "truthy": True,
+    },
+    "steps_computation_policy": {"widget": "cache_method", "equals": "pipefusion"},
+    "share_pipefusion_decisions": {
+        "all": [
+            {"widget": "cache_method", "equals": "dbcache"},
+            {"widget": "pipefusion_parallel_degree", "greater_than": 1},
+        ]
+    },
+    "t2_share_pipefusion_decisions": {
+        "all": [
+            {"widget": "cache_method", "equals": "dbcache"},
+            {"widget": "pipefusion_parallel_degree", "greater_than": 1},
+        ]
+    },
+}
+
 _LOADER_WIDGET_GROUPS = (
     {
         "id": "model_cache",
         "label": "MODEL CACHE",
         "collapsed": True,
         "widgets": ("hf_cache_mode", "hf_cache_dir"),
+    },
+    {
+        "id": "lora",
+        "label": "LORA",
+        "collapsed": True,
+        "widgets": ("lora_path", "lora_weight_name", "lora_scale"),
     },
     {
         "id": "parallelism",
@@ -218,7 +357,11 @@ _LOADER_WIDGET_GROUPS = (
             "data_parallel_degree",
             "use_cfg_parallel",
             "fully_shard_degree",
+            "fully_shard_components",
             "reshard_after_forward",
+            "num_pipeline_patch",
+            "attn_layer_num_for_pp",
+            "warmup_steps",
         ),
     },
     {
@@ -269,6 +412,13 @@ _LOADER_WIDGET_GROUPS = (
             "use_vsa_static_block_mask",
             "use_vsa_first_frame_mask",
             "vsa_collect_density",
+            "bsa_sparsity",
+            "bsa_cdf_threshold",
+            "sol_attn_kv_splits",
+            "sol_attn_sink_start",
+            "sol_attn_sink_tokens",
+            "sol_attn_tau",
+            "sol_attn_thresh_type",
         ),
     },
     {
@@ -292,18 +442,7 @@ _LOADER_WIDGET_GROUPS = (
         "id": "cache",
         "label": "STEP CACHE",
         "collapsed": True,
-        "widgets": (
-            "cache_method",
-            "residual_diff_threshold",
-            "Fn_compute_blocks",
-            "Bn_compute_blocks",
-            "max_warmup_steps",
-            "max_cached_steps",
-            "scm_policy",
-            "enable_separate_cfg",
-            "enable_encoder_calibrator",
-            "enable_taylorseer",
-        ),
+        "widgets": ("cache_method", *_CACHE_WIDGET_GROUP_FIELDS),
     },
     {
         "id": "cache_denoiser_2",
@@ -313,20 +452,7 @@ _LOADER_WIDGET_GROUPS = (
             "The main Step Cache settings apply to the first transformer."
         ),
         "collapsed": True,
-        "widgets": tuple(
-            f"t2_{field_name}"
-            for field_name in (
-                "residual_diff_threshold",
-                "Fn_compute_blocks",
-                "Bn_compute_blocks",
-                "max_warmup_steps",
-                "max_cached_steps",
-                "scm_policy",
-                "enable_separate_cfg",
-                "enable_encoder_calibrator",
-                "enable_taylorseer",
-            )
-        ),
+        "widgets": tuple(f"t2_{field_name}" for field_name in _CACHE_WIDGET_GROUP_FIELDS),
     },
     {
         "id": "distilled_weights",
@@ -428,6 +554,9 @@ def loader_schema() -> dict[str, Any]:
         "widget_groups": groups,
         "widget_defaults": default_loader_widget_values(),
         "widget_constraints": widget_constraints,
+        "widget_visibility": {
+            name: rule for name, rule in _WIDGET_VISIBILITY_RULES.items() if name in widget_names
+        },
         "combo_widgets": combo_widgets,
         "combo_options": combo_options,
     }
@@ -522,7 +651,17 @@ def _dbcache_preset_defaults() -> dict[str, Any]:
 
 @lru_cache(maxsize=1)
 def cache_config_widget_names() -> tuple[str, ...]:
-    return tuple(_dbcache_preset_defaults().keys())
+    names = list(_dbcache_preset_defaults())
+    if "pipefusion" in cache_method_choices():
+        try:
+            from cache_dit import DBCacheConfig
+
+            config_fields = {field.name for field in dataclasses.fields(DBCacheConfig)}
+        except (ImportError, TypeError):
+            config_fields = set()
+        if "steps_computation_policy" in config_fields:
+            names.append("steps_computation_policy")
+    return tuple(names)
 
 
 # Wan 2.2 is the deepest stack xfuser caches today: a high-noise expert and a low-noise
@@ -589,6 +728,8 @@ def cache_config_fields_for_method(cache_method: str | None) -> frozenset[str]:
     if method in ("", "none"):
         return frozenset()
     if method == "dbcache":
+        return frozenset(_dbcache_preset_defaults())
+    if method == "pipefusion":
         return frozenset(cache_config_widget_names())
     if method in ("teacache", "fbcache"):
         return frozenset({"residual_diff_threshold"})
@@ -698,7 +839,12 @@ def _cache_config_help(field_name: str) -> str:
         "max_cached_steps": "Max cached steps (-1 = unlimited).",
         "scm_policy": (
             "Step computation mask for dbcache. slow computes most steps; medium, fast, "
-            "and ultra progressively skip more work. default preserves the model preset."
+            "and ultra progressively skip more work; alternating is the PipeFusion "
+            "isolated-reuse schedule. default preserves the model preset."
+        ),
+        "steps_computation_policy": (
+            "How cache-dit applies the step mask. static preserves the preset's fixed "
+            "PipeFusion schedule; dynamic allows runtime adaptation."
         ),
         "enable_taylorseer": "TaylorSeer prediction for dbcache. default = model built-in setting.",
         "enable_separate_cfg": "Separate CFG passes (Wan, Qwen-Image-Edit). default = model built-in setting.",
@@ -722,8 +868,16 @@ def cache_config_widget_spec(field_name: str) -> tuple[str, dict[str, Any]]:
             {"default": "default", "tooltip": tooltip},
         )
     if field_name == "scm_policy":
+        choices = list(_SCM_POLICY_CHOICES)
+        if "pipefusion" in cache_method_choices():
+            choices.append("alternating")
         return (
-            list(_SCM_POLICY_CHOICES),
+            choices,
+            {"default": "default", "tooltip": tooltip},
+        )
+    if field_name == "steps_computation_policy":
+        return (
+            ["default", "dynamic", "static"],
             {"default": "default", "tooltip": tooltip},
         )
     if isinstance(default, int):
@@ -769,6 +923,8 @@ def _cache_override_value(field_name: str, widget_value: Any) -> Any | None:
         return _optional_bool_widget_to_json(widget_value)
     if field_name == "scm_policy":
         return _scm_policy_widget_to_json(widget_value)
+    if field_name == "steps_computation_policy":
+        return None if widget_value == "default" else str(widget_value)
     if field_name == "residual_diff_threshold":
         if str(widget_value).strip().lower() in ("none", ""):
             return None
