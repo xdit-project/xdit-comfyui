@@ -21,6 +21,7 @@ from xdit_comfyui.runtime_config import (
     _preset_picker_input_types,
     _runtime_loader_input_types,
 )
+from xdit_comfyui.save_outputs import save_image_input_types, save_video_input_types
 
 _REPO = Path(__file__).parents[2]
 _HARNESS = Path(__file__).parents[1] / "web_lifecycle_harness.mjs"
@@ -60,7 +61,7 @@ def test_english_localization_uses_comfyui_layout():
     locales = _REPO / "locales" / "en"
     node_defs = json.loads((locales / "nodeDefs.json").read_text(encoding="utf-8"))
     commands = json.loads((locales / "commands.json").read_text(encoding="utf-8"))
-    json.loads((locales / "main.json").read_text(encoding="utf-8"))
+    main = json.loads((locales / "main.json").read_text(encoding="utf-8"))
     assert set(node_defs) == {
         "xDiT.Preset",
         "xDiT.Model",
@@ -75,32 +76,28 @@ def test_english_localization_uses_comfyui_layout():
         assert "description" not in localized
         assert "inputs" not in localized
 
+    def flatten(value, prefix=""):
+        result = {}
+        for key, child in value.items():
+            path = f"{prefix}.{key}" if prefix else key
+            if isinstance(child, dict):
+                result.update(flatten(child, path))
+            else:
+                result[path] = child
+        return result
+
+    fallback_source = (_WEB / "xdit_i18n.js").read_text(encoding="utf-8")
+    fallback = dict(re.findall(r'"(xdit\.[^"]+)":\s*"([^"]*)"', fallback_source))
+    assert fallback == flatten(main)
+
 
 def _object_info():
     specs = {
         "xDiT.Preset": (_preset_picker_input_types(), ["model", "images", "sample"]),
         "xDiT.Model": (_runtime_loader_input_types(), ["model"]),
         "xDiT.Sample": (_generation_input_types(), ["images", "video", "result"]),
-        "xDiT.SaveImage": (
-            {
-                "required": {
-                    "result": ("*", {}),
-                    "filename_prefix": ("STRING", {"default": "xdit"}),
-                }
-            },
-            [],
-        ),
-        "xDiT.SaveVideo": (
-            {
-                "required": {
-                    "result": ("*", {}),
-                    "filename_prefix": ("STRING", {"default": "video/xdit"}),
-                    "format": (["auto"], {"default": "auto"}),
-                    "codec": (["auto"], {"default": "auto"}),
-                }
-            },
-            [],
-        ),
+        "xDiT.SaveImage": (save_image_input_types(), []),
+        "xDiT.SaveVideo": (save_video_input_types(), []),
         "SaveImage": (
             {"required": {"images": ("IMAGE", {}), "filename_prefix": ("STRING", {})}},
             ["images"],

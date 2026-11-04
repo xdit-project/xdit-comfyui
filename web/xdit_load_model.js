@@ -1,28 +1,34 @@
 import { app } from "../../scripts/app.js";
 import {
+  expandWidgetName,
+  fitNodeHeight,
   groupExpanded,
   installDisclosureGroups,
   refreshVueWidgetSnapshot,
-  usesModernNodeWidgets,
+  setDisclosureWidgetHidden,
 } from "./xdit_disclosure.js";
+import { hookNamedWidgetSerialization } from "./xdit_widget_serialization.js";
 import {
-  restoreWidgetsByName,
-  serializeWidgetsByName,
-} from "./xdit_widget_serialization.js";
+  installNodeLifecycle,
+  registeredNodeName,
+} from "./xdit_node_lifecycle.js";
 import { applyWidgetOrder } from "./xdit_widget_order.js";
 import { t } from "./xdit_i18n.js";
 import {
   describeDenoiserGroups,
   isDenoiserGroup,
 } from "./xdit_cache_transformers.js";
-import { connectedPresetNode, presetSelection } from "./xdit_preset_bus.js";
+import {
+  connectedPresetNode,
+  connectedPresetTrigger,
+  presetSelection,
+} from "./xdit_preset_bus.js";
 import {
   comboChoices,
   litegraphWidget,
   requestSequence,
   setComboChoices,
   setWidgetDisabled,
-  setWidgetHidden as setWidgetHiddenState,
   setWidgetTooltip,
   setWidgetValue,
   targetNodesFromOutput,
@@ -92,11 +98,12 @@ function setNodeWidgetValue(node, name, value) {
 }
 
 function setWidgetHidden(node, widgetOrName, hidden) {
-  const name =
-    typeof widgetOrName === "string" ? widgetOrName : widgetOrName?.name;
-  setWidgetHiddenState(node, widgetOrName, hidden, {
-    canvasOnly: usesModernNodeWidgets() && expandWidgetNames(node).has(name),
-  });
+  setDisclosureWidgetHidden(
+    node,
+    widgetOrName,
+    hidden,
+    expandWidgetNames(node),
+  );
 }
 
 function ensureLoaderMinWidth(node) {
@@ -107,25 +114,12 @@ function ensureLoaderMinWidth(node) {
 }
 
 function hookLoaderSerialization(node) {
-  if (node._xditSerializationHooked) return;
-  node._xditSerializationHooked = true;
-
-  const previousSerialize = node.onSerialize;
-  node.onSerialize = function (data) {
-    previousSerialize?.call(this, data);
-    serializeWidgetsByName(this, data);
-  };
-
-  const previousConfigure = node.onConfigure;
-  node.onConfigure = function (data) {
-    previousConfigure?.call(this, data);
-    const restored = restoreWidgetsByName(this, data, (name, value) =>
-      setWidgetValue(this, name, value, { comboGuard: false }),
-    );
-    // A restored value is the user's, so a later capability refresh must not
-    // replace it with the model's default.
-    this._xditUserEdited = new Set(restored);
-  };
+  hookNamedWidgetSerialization(
+    node,
+    (target, name, value) =>
+      setWidgetValue(target, name, value, { comboGuard: false }),
+    { trackUserEdits: true },
+  );
 }
 
 function loaderWidgetGroups() {
@@ -171,17 +165,12 @@ function reorderLoaderWidgets(node) {
   return applyWidgetOrder(node, desiredWidgetOrder());
 }
 
-function expandWidgetName(group) {
-  return group.expand_widget || group.label;
-}
-
 function findWidgetGroup(id) {
   return (widgetGroups || []).find((group) => group.id === id) || null;
 }
 
 function hookExpandWidgets(node) {
   installDisclosureGroups(node, widgetGroups, {
-    setWidgetHidden,
     onToggle: () => applyConditionalVisibility(node),
   });
 }
@@ -268,11 +257,6 @@ function sanitizeConfigWidgets(node) {
 function sanitizeLoaderWidgets(node) {
   sanitizePinnedWidgets(node);
   sanitizeConfigWidgets(node);
-}
-
-function connectedPresetTrigger(node) {
-  const presetNode = connectedPresetNode(node);
-  return presetNode ? presetSelection(presetNode).trigger : null;
 }
 
 function persistPresetTrigger(node, trigger) {
@@ -503,11 +487,7 @@ function configureTaskWidget(node, payload) {
  * the height of all ~50 of them and collapsing a group leaves the empty space behind.
  */
 function fitLoaderHeight(node) {
-  const computed = node.computeSize?.();
-  if (!computed) return;
-  const width = Math.max(node.size?.[0] ?? 0, MIN_NODE_WIDTH);
-  if (node.size?.[1] === computed[1] && node.size?.[0] === width) return;
-  node.setSize([width, computed[1]]);
+  fitNodeHeight(node, MIN_NODE_WIDTH);
 }
 
 function applyConditionalVisibility(node) {
@@ -856,40 +836,20 @@ app.registerExtension({
     },
   ],
   async beforeRegisterNodeDef(nodeType, nodeData) {
-    const registeredName =
-      nodeData?.name ?? nodeData?.class_type ?? nodeType?.comfyClass;
+    const registeredName = registeredNodeName(nodeType, nodeData);
     if (registeredName !== NODE_NAME) return;
     await ensureLoaderSchema();
 
-    // Nodes 2.0 no longer reliably dispatches the extension-level `nodeCreated`
-    // callback. Hook the node class itself so every newly constructed Model node
-    // initializes its groups regardless of which frontend lifecycle created it.
-    if (!nodeType.prototype._xditNodeCreatedHooked) {
-      nodeType.prototype._xditNodeCreatedHooked = true;
-      const originalNodeCreated = nodeType.prototype.onNodeCreated;
-      nodeType.prototype.onNodeCreated = function (...args) {
-        const result = originalNodeCreated?.apply(this, args);
-        setupLoaderNode(this);
-        return result;
-      };
-    }
-
-    const origConfigure = nodeType.prototype.configure;
-    if (
-      typeof origConfigure === "function" &&
-      !nodeType.prototype._xditConfigureHooked
-    ) {
-      nodeType.prototype._xditConfigureHooked = true;
-      nodeType.prototype.configure = function (data, ...rest) {
-        // Values arrive by name via onConfigure, which litegraph calls at the
-        // end of configure().
-        hookLoaderSerialization(this);
-        const result = origConfigure.apply(this, [data, ...rest]);
-        this._xditGroupsReady = false;
-        setupLoaderNode(this);
-        return result;
-      };
-    }
+    installNodeLifecycle(nodeType, "Loader", {
+      onCreated: setupLoaderNode,
+      // Values arrive by name via onConfigure, which litegraph calls at the end
+      // of configure(), so install that hook before the original implementation.
+      beforeConfigure: hookLoaderSerialization,
+      onConfigured(node) {
+        node._xditGroupsReady = false;
+        setupLoaderNode(node);
+      },
+    });
   },
   getCanvasMenuItems() {
     return [

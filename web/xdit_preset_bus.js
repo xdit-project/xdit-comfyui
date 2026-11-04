@@ -1,12 +1,10 @@
 import { originNodeFromInput, widgetValue } from "./xdit_widget_state.js";
+import { presetTrigger } from "./xdit_preset_filters.js";
+
+export { presetTrigger } from "./xdit_preset_filters.js";
 
 export const PRESET_NODE = "xDiT.Preset";
 export const PRESET_NONE = "none";
-
-/** Identifies a selection, so a repeat of the same one is not re-applied. */
-export function presetTrigger(gpuTag, gpuCount, preset) {
-  return `${gpuTag}:${gpuCount}:${preset}`;
-}
 
 export function isPresetNode(node) {
   return (

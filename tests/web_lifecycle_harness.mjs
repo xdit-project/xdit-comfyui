@@ -342,14 +342,14 @@ for (const extension of extensions) await extension.setup?.();
 // Nodes 2.0 constructs nodes through the registered class hook and does not reliably
 // dispatch the extension-level nodeCreated callback. Exercise that lifecycle directly.
 const nodeTypes = Object.fromEntries(
-  ["xDiT.Model", "SaveImage", "SaveVideo"].map((name) => [
-    name,
-    { prototype: {} },
-  ]),
+  ["xDiT.Preset", "xDiT.Model", "xDiT.Sample", "SaveImage", "SaveVideo"].map(
+    (name) => [name, { prototype: {} }],
+  ),
 );
 for (const [name, nodeType] of Object.entries(nodeTypes)) {
   for (const extension of extensions) {
-    await extension.beforeRegisterNodeDef?.(nodeType, { name });
+    const nodeData = name.startsWith("xDiT.") ? { class_type: name } : { name };
+    await extension.beforeRegisterNodeDef?.(nodeType, nodeData);
   }
 }
 
@@ -390,9 +390,11 @@ function link(originNode, originSlot, targetNode, inputName) {
 }
 
 const presetNode = makeNode("xDiT.Preset", 1);
+Object.setPrototypeOf(presetNode, nodeTypes["xDiT.Preset"].prototype);
 const modelNode = makeNode("xDiT.Model", 2);
 Object.setPrototypeOf(modelNode, nodeTypes["xDiT.Model"].prototype);
 const sampleNode = makeNode("xDiT.Sample", 3);
+Object.setPrototypeOf(sampleNode, nodeTypes["xDiT.Sample"].prototype);
 const saveImageNode = makeNode("SaveImage", 4);
 Object.setPrototypeOf(saveImageNode, nodeTypes.SaveImage.prototype);
 const saveVideoNode = makeNode("SaveVideo", 5);
@@ -414,10 +416,14 @@ link(modelNode, 0, sampleNode, "model");
 link(sampleNode, 0, saveImageNode, "images");
 link(sampleNode, 1, saveVideoNode, "video");
 
-modelNode.onNodeCreated?.();
+for (const node of [presetNode, modelNode, sampleNode]) {
+  node.onNodeCreated?.();
+}
 for (const extension of extensions) {
   for (const node of graph._nodes) {
-    if (node !== modelNode) extension.nodeCreated?.(node);
+    if (![presetNode, modelNode, sampleNode].includes(node)) {
+      extension.nodeCreated?.(node);
+    }
   }
 }
 await settle();

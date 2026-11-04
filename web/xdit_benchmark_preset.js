@@ -6,10 +6,11 @@ import {
 } from "./xdit_preset_bus.js";
 import { resolvePresetFilters } from "./xdit_preset_filters.js";
 import { notifyResidencyChange } from "./xdit_residency_info.js";
+import { hookNamedWidgetSerialization } from "./xdit_widget_serialization.js";
 import {
-  restoreWidgetsByName,
-  serializeWidgetsByName,
-} from "./xdit_widget_serialization.js";
+  installNodeLifecycle,
+  registeredNodeName,
+} from "./xdit_node_lifecycle.js";
 import {
   litegraphWidget,
   requestSequence,
@@ -69,22 +70,9 @@ function styleGpuDetectionWidget(node) {
 }
 
 function hookPresetSerialization(node) {
-  if (node._xditSerializationHooked) return;
-  node._xditSerializationHooked = true;
-
-  const previousSerialize = node.onSerialize;
-  node.onSerialize = function (data) {
-    previousSerialize?.call(this, data);
-    serializeWidgetsByName(this, data);
-  };
-
-  const previousConfigure = node.onConfigure;
-  node.onConfigure = function (data) {
-    previousConfigure?.call(this, data);
-    restoreWidgetsByName(this, data, (name, value) =>
-      setWidgetValue(this, name, value, { comboGuard: false }),
-    );
-  };
+  hookNamedWidgetSerialization(node, (target, name, value) =>
+    setWidgetValue(target, name, value, { comboGuard: false }),
+  );
 }
 
 function reorderPresetWidgets(node) {
@@ -398,19 +386,11 @@ async function setupPresetNode(node) {
 app.registerExtension({
   name: "xdit.preset",
   beforeRegisterNodeDef(nodeType, nodeData) {
-    if (nodeData.name !== NODE_NAME) return;
-    const origConfigure = nodeType.prototype.configure;
-    if (
-      typeof origConfigure === "function" &&
-      !nodeType.prototype._xditPresetConfigureHooked
-    ) {
-      nodeType.prototype._xditPresetConfigureHooked = true;
-      nodeType.prototype.configure = function (...args) {
-        const result = origConfigure.apply(this, args);
-        setupPresetNode(this);
-        return result;
-      };
-    }
+    if (registeredNodeName(nodeType, nodeData) !== NODE_NAME) return;
+    installNodeLifecycle(nodeType, "Preset", {
+      onCreated: setupPresetNode,
+      onConfigured: setupPresetNode,
+    });
   },
   nodeCreated(node) {
     setupPresetNode(node);

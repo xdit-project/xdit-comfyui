@@ -1,9 +1,11 @@
 import { app } from "../../scripts/app.js";
 import {
   expandGroup,
+  fitNodeHeight,
   groupExpanded,
   installDisclosureGroups,
   refreshVueWidgetSnapshot,
+  setDisclosureWidgetHidden,
   usesModernNodeWidgets,
 } from "./xdit_disclosure.js";
 import {
@@ -11,15 +13,15 @@ import {
   fetchPresetPreview,
   presetSelection,
 } from "./xdit_preset_bus.js";
+import { hookNamedWidgetSerialization } from "./xdit_widget_serialization.js";
 import {
-  restoreWidgetsByName,
-  serializeWidgetsByName,
-} from "./xdit_widget_serialization.js";
+  installNodeLifecycle,
+  registeredNodeName,
+} from "./xdit_node_lifecycle.js";
 import {
   litegraphWidget,
   originNodeFromInput,
   requestSequence,
-  setWidgetHidden as setWidgetHiddenState,
   setWidgetValue,
   userEdited,
   widgetValue,
@@ -92,11 +94,7 @@ const WIDGET_GROUPS = [VIDEO_GROUP, VAE_GROUP];
 const EXPAND_WIDGETS = WIDGET_GROUPS.map((group) => group.expand_widget);
 
 function setWidgetHidden(node, widgetOrName, hidden) {
-  const name =
-    typeof widgetOrName === "string" ? widgetOrName : widgetOrName?.name;
-  setWidgetHiddenState(node, widgetOrName, hidden, {
-    canvasOnly: usesModernNodeWidgets() && EXPAND_WIDGETS.includes(name),
-  });
+  setDisclosureWidgetHidden(node, widgetOrName, hidden, EXPAND_WIDGETS);
 }
 
 function findSeedControlWidget(node, seedWidget) {
@@ -227,11 +225,7 @@ function scheduleSchemaWidgetOrder(node) {
 }
 
 function fitSampleHeight(node) {
-  const computed = node.computeSize?.();
-  if (!computed) return;
-  const width = Math.max(node.size?.[0] ?? 0, 320);
-  if (node.size?.[0] === width && node.size?.[1] === computed[1]) return;
-  node.setSize([width, computed[1]]);
+  fitNodeHeight(node, 320);
 }
 
 /**
@@ -243,7 +237,6 @@ function fitSampleHeight(node) {
  */
 function hookExpandWidgets(node) {
   installDisclosureGroups(node, WIDGET_GROUPS, {
-    setWidgetHidden,
     onToggle: () => applyGroupVisibility(node),
   });
   applyGroupVisibility(node);
@@ -420,25 +413,12 @@ async function applyPreset(node, trigger, payload) {
 }
 
 function hookGenerateSerialization(node) {
-  if (node._xditSerializationHooked) return;
-  node._xditSerializationHooked = true;
-
-  const previousSerialize = node.onSerialize;
-  node.onSerialize = function (data) {
-    previousSerialize?.call(this, data);
-    serializeWidgetsByName(this, data);
-  };
-
-  const previousConfigure = node.onConfigure;
-  node.onConfigure = function (data) {
-    previousConfigure?.call(this, data);
-    const restored = restoreWidgetsByName(this, data, (name, value) =>
-      setWidgetValue(this, name, value, { comboGuard: false }),
-    );
-    // A saved graph holds the values the user ran with, so a model's defaults must
-    // not replace them when the node reconnects.
-    this._xditUserEdited = new Set(restored);
-  };
+  hookNamedWidgetSerialization(
+    node,
+    (target, name, value) =>
+      setWidgetValue(target, name, value, { comboGuard: false }),
+    { trackUserEdits: true },
+  );
 }
 
 /** Record edits so a model change fills in only what the user left alone. */
@@ -526,8 +506,7 @@ function adoptRestoredPresetTrigger(node) {
 app.registerExtension({
   name: "xdit.sample",
   async beforeRegisterNodeDef(nodeType, nodeData) {
-    const registeredName =
-      nodeData?.name ?? nodeData?.class_type ?? nodeType?.comfyClass;
+    const registeredName = registeredNodeName(nodeType, nodeData);
     if (
       SAVE_OUTPUT_NODES.has(registeredName) &&
       !nodeType.prototype._xditEmptyOutputHooked
@@ -542,30 +521,14 @@ app.registerExtension({
     }
     if (!GENERATE_NODES.has(registeredName)) return;
 
-    if (!nodeType.prototype._xditGenerateNodeCreatedHooked) {
-      nodeType.prototype._xditGenerateNodeCreatedHooked = true;
-      const originalNodeCreated = nodeType.prototype.onNodeCreated;
-      nodeType.prototype.onNodeCreated = function (...args) {
-        const result = originalNodeCreated?.apply(this, args);
-        ensureGenerateSetup(this);
-        return result;
-      };
-    }
-
-    const origConfigure = nodeType.prototype.configure;
-    if (
-      typeof origConfigure === "function" &&
-      !nodeType.prototype._xditGenerateConfigureHooked
-    ) {
-      nodeType.prototype._xditGenerateConfigureHooked = true;
-      nodeType.prototype.configure = function (...args) {
-        const result = origConfigure.apply(this, args);
-        this._xditGenerateGroupsReady = false;
-        adoptRestoredPresetTrigger(this);
-        ensureGenerateSetup(this);
-        return result;
-      };
-    }
+    installNodeLifecycle(nodeType, "Generate", {
+      onCreated: ensureGenerateSetup,
+      onConfigured(node) {
+        node._xditGenerateGroupsReady = false;
+        adoptRestoredPresetTrigger(node);
+        ensureGenerateSetup(node);
+      },
+    });
   },
   nodeCreated(node) {
     ensureGenerateSetup(node);

@@ -60,13 +60,3 @@ def test_restore_by_name_tolerates_a_graph_saved_without_the_named_map():
         ]));
         """)
     assert payload == [[], []]
-
-
-def test_clear_vram_button_is_non_serializable():
-    payload = _run_js(f"""
-        import {{ markWidgetNonSerializable }} from {json.dumps(HELPER.as_uri())};
-        const widget = markWidgetNonSerializable({{ options: {{ disabled: false }} }});
-        console.log(JSON.stringify(widget));
-        """)
-    assert payload["serialize"] is False
-    assert payload["options"]["serialize"] is False

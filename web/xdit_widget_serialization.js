@@ -32,14 +32,27 @@ export function restoreWidgetsByName(node, data, applyValue) {
   return applied;
 }
 
-/**
- * Hide a widget from the saved workflow and the queued prompt.
- *
- * `serialize` governs the workflow, `options.serialize` the prompt, so widgets the
- * plugin adds for display only (info blocks, disclosure headers, buttons) need both.
- */
-export function markWidgetNonSerializable(widget) {
-  widget.options = { ...(widget.options || {}), serialize: false };
-  widget.serialize = false;
-  return widget;
+/** Install the named-value save/restore contract once on a node instance. */
+export function hookNamedWidgetSerialization(
+  node,
+  applyValue,
+  { trackUserEdits = false } = {},
+) {
+  if (node._xditSerializationHooked) return;
+  node._xditSerializationHooked = true;
+
+  const previousSerialize = node.onSerialize;
+  node.onSerialize = function (data) {
+    previousSerialize?.call(this, data);
+    serializeWidgetsByName(this, data);
+  };
+
+  const previousConfigure = node.onConfigure;
+  node.onConfigure = function (data) {
+    previousConfigure?.call(this, data);
+    const restored = restoreWidgetsByName(this, data, (name, value) =>
+      applyValue(this, name, value),
+    );
+    if (trackUserEdits) this._xditUserEdited = new Set(restored);
+  };
 }
