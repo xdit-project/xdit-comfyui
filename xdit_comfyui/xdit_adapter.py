@@ -29,5 +29,14 @@ def run(runner, args):
     return runner.run(args)
 
 
+def output_audio_sample_rate(runner) -> int | None:
+    """Best-effort sample rate for audiovisual runners such as LTX-2.5."""
+    model = getattr(runner, "model", None)
+    pipe = getattr(model, "pipe", None)
+    vocoder = getattr(pipe, "vocoder", None)
+    value = getattr(getattr(vocoder, "config", None), "output_sampling_rate", None)
+    return int(value) if value else None
+
+
 def cleanup(runner) -> None:
     runner.cleanup()

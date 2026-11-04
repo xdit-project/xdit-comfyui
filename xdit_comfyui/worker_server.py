@@ -36,6 +36,25 @@ def _write_pickle(conn, obj):
     conn.sendall(struct.pack("!I", len(data)) + data)
 
 
+def _move_output_audio_to_cpu(output):
+    """Keep CUDA tensors out of the cross-process pickle."""
+
+    def to_cpu(value):
+        if isinstance(value, list):
+            return [to_cpu(item) for item in value]
+        if isinstance(value, tuple):
+            return tuple(to_cpu(item) for item in value)
+        if hasattr(value, "detach") and hasattr(value, "to"):
+            return value.detach().to("cpu")
+        return value
+
+    owners = [output, *(getattr(output, "videos", None) or [])]
+    for owner in owners:
+        if hasattr(owner, "audio") and getattr(owner, "audio") is not None:
+            owner.audio = to_cpu(owner.audio)
+    return output
+
+
 def _broadcast_job(job, src, control_group=None):
     import torch.distributed as dist
 
@@ -263,10 +282,13 @@ def main():
                         pipe._interrupt = False
             run_memory = _gather_memory_stats(world, retry_baseline)
             if rank == output_rank:
+                _move_output_audio_to_cpu(output)
                 _write_stats_file(stats_path, {"warm": warm_memory, "run": run_memory})
                 settings = getattr(runner.model, "settings", None)
                 metadata = {
                     "fps": getattr(settings, "fps", None),
+                    "audio_sample_rate": getattr(output, "audio_sample_rate", None)
+                    or xdit_adapter.output_audio_sample_rate(runner),
                     "model_output_type": getattr(settings, "model_output_type", None),
                     "preprocessed_height": input_args.get("height"),
                     "preprocessed_width": input_args.get("width"),

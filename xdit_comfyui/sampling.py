@@ -175,10 +175,10 @@ def _execute_sample(
         metadata.get("fps") or model_capabilities(config.get("model") or "").get("fps") or 24
     )
     selected_fps = int(output_fps or native_fps)
+    audio = metadata.pop("audio", None)
+    audio_args = () if audio is None else (audio,)
     image_output, video_output = _generation_outputs_from_frames(
-        frames,
-        output_kind,
-        selected_fps,
+        frames, output_kind, selected_fps, *audio_args
     )
     metadata["native_fps"] = native_fps
     metadata["selected_fps"] = selected_fps

@@ -19,7 +19,11 @@ from contextlib import contextmanager
 from copy import deepcopy
 from pathlib import Path
 
-from .images import _diffusion_output_kind, _diffusion_output_to_comfy_image
+from .images import (
+    _diffusion_output_audio,
+    _diffusion_output_kind,
+    _diffusion_output_to_comfy_image,
+)
 from .log_context import (
     copy_run_context,
     residency_logger,
@@ -1509,6 +1513,9 @@ def _run_xdit_distributed(
                     output, timings, metadata = worker_result
                 output_kind = _diffusion_output_kind(output)
                 frames = _diffusion_output_to_comfy_image(output)
+                metadata["audio"] = _diffusion_output_audio(
+                    output, metadata.get("audio_sample_rate")
+                )
                 metadata["output_kind"] = output_kind
                 metadata["actual_height"] = int(frames.shape[1])
                 metadata["actual_width"] = int(frames.shape[2])
