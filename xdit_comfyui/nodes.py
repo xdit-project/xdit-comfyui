@@ -2,7 +2,13 @@
 
 from functools import lru_cache
 
-from .identity import COMFY_CATEGORY
+from .identity import (
+    COMFY_CATEGORY,
+    MODEL_NODE_ID,
+    NODE_DISPLAY_NAMES,
+    PRESET_NODE_ID,
+    SAMPLE_NODE_ID,
+)
 from .images import _load_preset_reference_image
 from .log_context import worker_logger
 from .presets import (
@@ -34,8 +40,8 @@ from .runtime_config import (
     _validate_world_size,
 )
 from .runtime_env import _build_hf_cache_env, _resolve_hf_cache_root
-from .save_outputs import XDiTSaveImage, XDiTSaveVideo
 from .sampling import _execute_sample
+from .save_outputs import XDiTSaveImage, XDiTSaveVideo
 from .v3 import ComfyExtension, inputs_from_legacy, io
 from .worker import (
     _ensure_loader_worker,
@@ -52,8 +58,8 @@ class XDiTPreset(io.ComfyNode):
     def define_schema(cls):
         inputs, hidden = inputs_from_legacy(_preset_picker_input_types())
         return io.Schema(
-            node_id="xDiT.Preset",
-            display_name="xDiT Preset",
+            node_id=PRESET_NODE_ID,
+            display_name=NODE_DISPLAY_NAMES[PRESET_NODE_ID],
             category=COMFY_CATEGORY,
             description="Select a tested xDiT configuration for the available GPUs.",
             inputs=inputs,
@@ -137,8 +143,8 @@ class XDiTModel(io.ComfyNode):
     def define_schema(cls):
         inputs, hidden = inputs_from_legacy(_runtime_loader_input_types())
         return io.Schema(
-            node_id="xDiT.Model",
-            display_name="xDiT Model",
+            node_id=MODEL_NODE_ID,
+            display_name=NODE_DISPLAY_NAMES[MODEL_NODE_ID],
             category=COMFY_CATEGORY,
             description=(
                 "Configure an xDiT model worker. It warms immediately when possible, "
@@ -281,8 +287,8 @@ class XDiTSample(io.ComfyNode):
     def define_schema(cls):
         inputs, hidden = inputs_from_legacy(_generation_input_types())
         return io.Schema(
-            node_id="xDiT.Sample",
-            display_name="xDiT Sample",
+            node_id=SAMPLE_NODE_ID,
+            display_name=NODE_DISPLAY_NAMES[SAMPLE_NODE_ID],
             category=COMFY_CATEGORY,
             description="Generate an image or video with a configured xDiT model worker.",
             inputs=inputs,

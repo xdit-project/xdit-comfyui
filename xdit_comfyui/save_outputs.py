@@ -5,46 +5,42 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from .identity import COMFY_CATEGORY
+from .identity import (
+    COMFY_CATEGORY,
+    NODE_DISPLAY_NAMES,
+    SAVE_IMAGE_NODE_ID,
+    SAVE_VIDEO_NODE_ID,
+)
 from .v3 import Types, inputs_from_legacy, io, ui
+
+IMAGE_FILENAME_PREFIX = "xdit"
+VIDEO_FILENAME_PREFIX = "video/xdit"
+
+
+def _save_input_types(filename_prefix: str) -> dict[str, Any]:
+    return {
+        "result": (
+            "*",
+            {"tooltip": "Image or video result from xDiT Sample."},
+        ),
+        "filename_prefix": (
+            "STRING",
+            {
+                "default": filename_prefix,
+                "tooltip": "Output filename prefix. Date and node-value substitutions are supported.",
+            },
+        ),
+    }
 
 
 def save_image_input_types() -> dict[str, Any]:
-    return {
-        "required": {
-            "result": (
-                "*",
-                {"tooltip": "Image or video result from xDiT Sample."},
-            ),
-            "filename_prefix": (
-                "STRING",
-                {
-                    "default": "xdit",
-                    "tooltip": (
-                        "Output filename prefix. Date and node-value substitutions are supported."
-                    ),
-                },
-            ),
-        }
-    }
+    return {"required": _save_input_types(IMAGE_FILENAME_PREFIX)}
 
 
 def save_video_input_types() -> dict[str, Any]:
     return {
         "required": {
-            "result": (
-                "*",
-                {"tooltip": "Image or video result from xDiT Sample."},
-            ),
-            "filename_prefix": (
-                "STRING",
-                {
-                    "default": "video/xdit",
-                    "tooltip": (
-                        "Output filename prefix. Date and node-value substitutions are supported."
-                    ),
-                },
-            ),
+            **_save_input_types(VIDEO_FILENAME_PREFIX),
             "format": (
                 Types.VideoContainer.as_input(),
                 {
@@ -63,25 +59,52 @@ def save_video_input_types() -> dict[str, Any]:
     }
 
 
+def _save_schema(node_id: str, description: str, input_types: dict[str, Any]):
+    inputs, _hidden = inputs_from_legacy(input_types)
+    return io.Schema(
+        node_id=node_id,
+        display_name=NODE_DISPLAY_NAMES[node_id],
+        category=COMFY_CATEGORY,
+        description=description,
+        inputs=inputs,
+        hidden=[io.Hidden.prompt, io.Hidden.extra_pnginfo],
+        is_output_node=True,
+    )
+
+
+def _result_value(result: Any, name: str):
+    return result.get(name) if isinstance(result, dict) else None
+
+
+def _empty_media_output():
+    return io.NodeOutput(ui=ui.SavedImages([]))
+
+
+def _output_metadata(node_type: type) -> dict[str, Any] | None:
+    from comfy.cli_args import args  # type: ignore[reportMissingImports]
+
+    if args.disable_metadata:
+        return None
+    metadata = dict(node_type.hidden.extra_pnginfo or {})
+    if node_type.hidden.prompt is not None:
+        metadata["prompt"] = node_type.hidden.prompt
+    return metadata or None
+
+
 class XDiTSaveImage(io.ComfyNode):
     @classmethod
     def define_schema(cls):
-        inputs, _hidden = inputs_from_legacy(save_image_input_types())
-        return io.Schema(
-            node_id="xDiT.SaveImage",
-            display_name="Save xDiT Image",
-            category=COMFY_CATEGORY,
-            description="Save image results and clear this output after a video run.",
-            inputs=inputs,
-            hidden=[io.Hidden.prompt, io.Hidden.extra_pnginfo],
-            is_output_node=True,
+        return _save_schema(
+            SAVE_IMAGE_NODE_ID,
+            "Save image results and clear this output after a video run.",
+            save_image_input_types(),
         )
 
     @classmethod
-    def execute(cls, result, filename_prefix="xdit"):
-        images = result.get("images") if isinstance(result, dict) else None
+    def execute(cls, result, filename_prefix=IMAGE_FILENAME_PREFIX):
+        images = _result_value(result, "images")
         if images is None:
-            return io.NodeOutput(ui=ui.SavedImages([]))
+            return _empty_media_output()
         saved = ui.ImageSaveHelper.get_save_images_ui(images, filename_prefix, cls)
         return io.NodeOutput(ui=saved)
 
@@ -89,25 +112,19 @@ class XDiTSaveImage(io.ComfyNode):
 class XDiTSaveVideo(io.ComfyNode):
     @classmethod
     def define_schema(cls):
-        inputs, _hidden = inputs_from_legacy(save_video_input_types())
-        return io.Schema(
-            node_id="xDiT.SaveVideo",
-            display_name="Save xDiT Video",
-            category=COMFY_CATEGORY,
-            description="Save video results and clear this output after an image run.",
-            inputs=inputs,
-            hidden=[io.Hidden.prompt, io.Hidden.extra_pnginfo],
-            is_output_node=True,
+        return _save_schema(
+            SAVE_VIDEO_NODE_ID,
+            "Save video results and clear this output after an image run.",
+            save_video_input_types(),
         )
 
     @classmethod
-    def execute(cls, result, filename_prefix="video/xdit", format="auto", codec="auto"):
-        video = result.get("video") if isinstance(result, dict) else None
+    def execute(cls, result, filename_prefix=VIDEO_FILENAME_PREFIX, format="auto", codec="auto"):
+        video = _result_value(result, "video")
         if video is None:
-            return io.NodeOutput(ui=ui.SavedImages([]))
+            return _empty_media_output()
 
         import folder_paths  # type: ignore[reportMissingImports]
-        from comfy.cli_args import args  # type: ignore[reportMissingImports]
 
         width, height = video.get_dimensions()
         full_output_folder, filename, counter, subfolder, _ = folder_paths.get_save_image_path(
@@ -116,15 +133,7 @@ class XDiTSaveVideo(io.ComfyNode):
             width,
             height,
         )
-        metadata = None
-        if not args.disable_metadata:
-            metadata = {}
-            if cls.hidden.extra_pnginfo is not None:
-                metadata.update(cls.hidden.extra_pnginfo)
-            if cls.hidden.prompt is not None:
-                metadata["prompt"] = cls.hidden.prompt
-            if not metadata:
-                metadata = None
+        metadata = _output_metadata(cls)
         file = f"{filename}_{counter:05}_.{Types.VideoContainer.get_extension(format)}"
         video.save_to(
             os.path.join(full_output_folder, file),

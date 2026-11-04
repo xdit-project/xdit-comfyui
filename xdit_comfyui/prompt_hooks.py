@@ -4,6 +4,16 @@ from __future__ import annotations
 
 from typing import Any
 
+from .identity import (
+    MODEL_NODE_ID,
+    PRESET_NODE_ID,
+    SAMPLE_IMAGE_OUTPUT,
+    SAMPLE_NODE_ID,
+    SAMPLE_RESULT_OUTPUT,
+    SAMPLE_VIDEO_OUTPUT,
+    SAVE_IMAGE_NODE_ID,
+    SAVE_VIDEO_NODE_ID,
+)
 from .presets import PRESET_NONE, build_preset_spec, default_gpu_device_ids
 from .runtime_config import (
     _gpu_device_ids_need_preset_sync,
@@ -17,13 +27,13 @@ from .runtime_config import (
     _runtime_loader_model_choices,
 )
 
-_LOADER_NODE_TYPES = frozenset({"xDiT.Model"})
+_LOADER_NODE_TYPES = frozenset({MODEL_NODE_ID})
 
-_GENERATE_NODE_TYPES = frozenset({"xDiT.Sample"})
+_GENERATE_NODE_TYPES = frozenset({SAMPLE_NODE_ID})
 
 _LEGACY_SAVE_OUTPUTS = {
-    "SaveImage": ("images", 0, "xDiT.SaveImage"),
-    "SaveVideo": ("video", 1, "xDiT.SaveVideo"),
+    "SaveImage": ("images", SAMPLE_IMAGE_OUTPUT, SAVE_IMAGE_NODE_ID),
+    "SaveVideo": ("video", SAMPLE_VIDEO_OUTPUT, SAVE_VIDEO_NODE_ID),
 }
 
 _GENERATION_SAFE_DEFAULTS = {
@@ -47,7 +57,7 @@ def _resolve_preset_spec_from_link(prompt: dict[str, Any], link) -> dict[str, An
     if not isinstance(link, list) or len(link) != 2:
         return {}
     preset_node = prompt.get(str(link[0]))
-    if not isinstance(preset_node, dict) or preset_node.get("class_type") != "xDiT.Preset":
+    if not isinstance(preset_node, dict) or preset_node.get("class_type") != PRESET_NODE_ID:
         return {}
     inputs = preset_node.get("inputs") or {}
     gpu_tag = inputs.get("gpu_tag", "")
@@ -332,7 +342,7 @@ def _rewrite_legacy_save_outputs(prompt: dict[str, Any]) -> None:
         if not isinstance(sample, dict) or sample.get("class_type") not in _GENERATE_NODE_TYPES:
             continue
         node["class_type"] = replacement
-        inputs["result"] = [link[0], 2]
+        inputs["result"] = [link[0], SAMPLE_RESULT_OUTPUT]
         inputs.pop(input_name, None)
 
 

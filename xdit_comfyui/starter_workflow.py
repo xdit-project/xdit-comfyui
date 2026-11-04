@@ -8,6 +8,14 @@ import uuid
 from pathlib import Path
 from typing import Any
 
+from .identity import (
+    MODEL_NODE_ID,
+    NODE_OUTPUTS,
+    PRESET_NODE_ID,
+    SAMPLE_NODE_ID,
+    SAVE_IMAGE_NODE_ID,
+    SAVE_VIDEO_NODE_ID,
+)
 from .presets import format_gpu_detection_summary
 from .runner_contract import default_loader_widget_values, loader_pinned_input_types
 from .runtime_config import (
@@ -17,7 +25,12 @@ from .runtime_config import (
     _runtime_loader_model_choices,
     any_typ,
 )
-from .save_outputs import save_image_input_types, save_video_input_types
+from .save_outputs import (
+    IMAGE_FILENAME_PREFIX,
+    VIDEO_FILENAME_PREFIX,
+    save_image_input_types,
+    save_video_input_types,
+)
 
 # Must match NAMED_VALUES_KEY in web/xdit_widget_serialization.js.
 NAMED_WIDGET_VALUES_KEY = "xdit_widget_values"
@@ -26,27 +39,11 @@ _COMFY_INPUT_SLOTS: dict[str, dict[str, int]] = {}
 
 
 _XDIT_INPUT_TYPES = {
-    "xDiT.Preset": _preset_picker_input_types,
-    "xDiT.Model": _runtime_loader_input_types,
-    "xDiT.Sample": _generation_input_types,
-    "xDiT.SaveImage": save_image_input_types,
-    "xDiT.SaveVideo": save_video_input_types,
-}
-
-_XDIT_OUTPUT_NAMES = {
-    "xDiT.Preset": ("model", "images", "sample"),
-    "xDiT.Model": ("model",),
-    "xDiT.Sample": ("images", "video", "result"),
-    "xDiT.SaveImage": (),
-    "xDiT.SaveVideo": (),
-}
-
-_XDIT_OUTPUT_TYPES = {
-    "xDiT.Preset": ("*", "IMAGE", "*"),
-    "xDiT.Model": ("*",),
-    "xDiT.Sample": ("IMAGE", "VIDEO", "*"),
-    "xDiT.SaveImage": (),
-    "xDiT.SaveVideo": (),
+    PRESET_NODE_ID: _preset_picker_input_types,
+    MODEL_NODE_ID: _runtime_loader_input_types,
+    SAMPLE_NODE_ID: _generation_input_types,
+    SAVE_IMAGE_NODE_ID: save_image_input_types,
+    SAVE_VIDEO_NODE_ID: save_video_input_types,
 }
 
 _SOCKET_INPUT_TYPES = frozenset(
@@ -80,8 +77,7 @@ def _input_slot(class_type: str, input_name: str) -> int:
 
 
 def _output_slot(class_type: str, output_name: str) -> int:
-    names = _XDIT_OUTPUT_NAMES[class_type]
-    for index, name in enumerate(names):
+    for index, (name, _type_name) in enumerate(NODE_OUTPUTS[class_type]):
         if name == output_name:
             return index
     raise KeyError(f"{class_type} has no output {output_name!r}")
@@ -175,10 +171,7 @@ def _build_workflow_node(
             inputs_json.append(entry)
 
     outputs_json: list[dict[str, Any]] = []
-    return_names = _XDIT_OUTPUT_NAMES[class_type]
-    return_types = _XDIT_OUTPUT_TYPES[class_type]
-    for index, name in enumerate(return_names):
-        type_name = return_types[index] if index < len(return_types) else "*"
+    for name, type_name in NODE_OUTPUTS[class_type]:
         if type_name is any_typ:
             type_name = "*"
         links = output_links.get(name)
@@ -312,133 +305,126 @@ def _sample_widget_values(**kwargs: Any) -> dict[str, Any]:
     return values
 
 
-def build_starter_workflow_dict(
+def _starter_graph(
     *,
     preset_name: str = "flux.1gpu.rdna4",
     gpu_tag: str = "gfx1201",
-) -> dict[str, Any]:
+) -> tuple[list[dict[str, Any]], list[tuple[int, str, int, str, str]]]:
     from .presets import preset_by_name
 
     selected_preset = preset_by_name(preset_name)
     preset_gpu_count = selected_preset.gpu_count if selected_preset is not None else 1
-    preset_id = 1
-    load_model_id = 2
-    sample_id = 3
-    save_image_id = 4
-    save_video_id = 5
-
-    links = [
-        _workflow_link(1, preset_id, "xDiT.Preset", "model", load_model_id, "xDiT.Model", "preset"),
-        _workflow_link(2, preset_id, "xDiT.Preset", "sample", sample_id, "xDiT.Sample", "preset"),
-        _workflow_link(3, load_model_id, "xDiT.Model", "model", sample_id, "xDiT.Sample", "model"),
-        _workflow_link(
-            4,
-            sample_id,
-            "xDiT.Sample",
-            "result",
-            save_image_id,
-            "xDiT.SaveImage",
-            "result",
-            type_name="*",
-        ),
-        _workflow_link(
-            5,
-            preset_id,
-            "xDiT.Preset",
-            "images",
-            sample_id,
-            "xDiT.Sample",
-            "images",
-            type_name="IMAGE",
-        ),
-        _workflow_link(
-            6,
-            sample_id,
-            "xDiT.Sample",
-            "result",
-            save_video_id,
-            "xDiT.SaveVideo",
-            "result",
-            type_name="*",
-        ),
-    ]
-
     nodes = [
-        _build_workflow_node(
-            preset_id,
-            "xDiT.Preset",
-            [40, 40],
-            [420, 180],
-            0,
-            widget_overrides={
+        {
+            "id": 1,
+            "class_type": PRESET_NODE_ID,
+            "pos": [40, 40],
+            "size": [420, 180],
+            "widgets": {
                 "gpu_tag": gpu_tag,
                 "gpu_count": str(preset_gpu_count),
                 "preset": preset_name,
                 "gpu_detection_info": "",
             },
-            output_links={
-                "model": [1],
-                "images": [5],
-                "sample": [2],
-            },
-        ),
-        _build_workflow_node(
-            load_model_id,
-            "xDiT.Model",
-            [520, 40],
-            [420, 420],
-            1,
-            linked={"preset": 1},
-            widget_overrides=_loader_widget_defaults(
-                preset_name=preset_name,
-                gpu_tag=gpu_tag,
-            ),
-            output_links={"model": [3]},
-            properties={
+        },
+        {
+            "id": 2,
+            "class_type": MODEL_NODE_ID,
+            "pos": [520, 40],
+            "size": [420, 420],
+            "widgets": _loader_widget_defaults(preset_name=preset_name, gpu_tag=gpu_tag),
+            "properties": {
                 "_xdit_model_preset_trigger": (f"{gpu_tag}:{preset_gpu_count}:{preset_name}"),
             },
-        ),
-        _build_workflow_node(
-            sample_id,
-            "xDiT.Sample",
-            [1000, 40],
-            [420, 520],
-            2,
-            linked={"model": 3, "preset": 2, "images": 5},
-            widget_overrides=_sample_starter_widget_overrides(
-                preset_name=preset_name,
-                gpu_tag=gpu_tag,
-            ),
-            output_links={"result": [4, 6]},
-        ),
-        _build_workflow_node(
-            save_image_id,
-            "xDiT.SaveImage",
-            [1480, 40],
-            [320, 220],
-            3,
-            linked={"result": 4},
-            widget_overrides={"filename_prefix": "xdit"},
-            named_widgets=False,
-        ),
-        _build_workflow_node(
-            save_video_id,
-            "xDiT.SaveVideo",
-            [1480, 420],
-            [320, 220],
-            4,
-            linked={"result": 6},
-            widget_overrides={
-                "filename_prefix": "video/xdit",
+        },
+        {
+            "id": 3,
+            "class_type": SAMPLE_NODE_ID,
+            "pos": [1000, 40],
+            "size": [420, 520],
+            "widgets": _sample_widget_values(preset_name=preset_name, gpu_tag=gpu_tag),
+        },
+        {
+            "id": 4,
+            "class_type": SAVE_IMAGE_NODE_ID,
+            "pos": [1480, 40],
+            "size": [320, 220],
+            "widgets": {"filename_prefix": IMAGE_FILENAME_PREFIX},
+            "named_widgets": False,
+        },
+        {
+            "id": 5,
+            "class_type": SAVE_VIDEO_NODE_ID,
+            "pos": [1480, 420],
+            "size": [320, 220],
+            "widgets": {
+                "filename_prefix": VIDEO_FILENAME_PREFIX,
                 "format": "auto",
                 "codec": "auto",
             },
-            named_widgets=False,
-        ),
+            "named_widgets": False,
+        },
     ]
+    edges = [
+        (1, "model", 2, "preset", "*"),
+        (1, "sample", 3, "preset", "*"),
+        (2, "model", 3, "model", "*"),
+        (3, "result", 4, "result", "*"),
+        (1, "images", 3, "images", "IMAGE"),
+        (3, "result", 5, "result", "*"),
+    ]
+    return nodes, edges
+
+
+def build_starter_workflow_dict(
+    *,
+    preset_name: str = "flux.1gpu.rdna4",
+    gpu_tag: str = "gfx1201",
+) -> dict[str, Any]:
+    graph_nodes, graph_edges = _starter_graph(preset_name=preset_name, gpu_tag=gpu_tag)
+    by_id = {node["id"]: node for node in graph_nodes}
+    linked: dict[int, dict[str, int]] = {node["id"]: {} for node in graph_nodes}
+    output_links: dict[int, dict[str, list[int]]] = {node["id"]: {} for node in graph_nodes}
+    links = []
+    for link_id, (origin_id, origin_name, target_id, target_name, type_name) in enumerate(
+        graph_edges, 1
+    ):
+        origin = by_id[origin_id]
+        target = by_id[target_id]
+        links.append(
+            _workflow_link(
+                link_id,
+                origin_id,
+                origin["class_type"],
+                origin_name,
+                target_id,
+                target["class_type"],
+                target_name,
+                type_name=type_name,
+            )
+        )
+        linked[target_id][target_name] = link_id
+        output_links[origin_id].setdefault(origin_name, []).append(link_id)
+
+    nodes = [
+        _build_workflow_node(
+            node["id"],
+            node["class_type"],
+            node["pos"],
+            node["size"],
+            order,
+            linked=linked[node["id"]],
+            widget_overrides=node["widgets"],
+            output_links=output_links[node["id"]],
+            properties=node.get("properties"),
+            named_widgets=node.get("named_widgets", True),
+        )
+        for order, node in enumerate(graph_nodes)
+    ]
+    last_node_id = max(by_id)
 
     workflow = {
-        "last_node_id": save_video_id,
+        "last_node_id": last_node_id,
         "last_link_id": len(links),
         "nodes": nodes,
         "links": links,
@@ -462,48 +448,23 @@ def build_starter_api_prompt(
     preset_name: str = "flux.1gpu.rdna4",
     gpu_tag: str = "gfx1201",
 ) -> dict[str, Any]:
-    from .presets import preset_by_name
-
-    selected_preset = preset_by_name(preset_name)
-    preset_gpu_count = selected_preset.gpu_count if selected_preset is not None else 1
-    loader_values = _loader_widget_defaults(preset_name=preset_name, gpu_tag=gpu_tag)
-    return {
-        "1": {
-            "class_type": "xDiT.Preset",
-            "inputs": {
-                "gpu_tag": gpu_tag,
-                "gpu_count": str(preset_gpu_count),
-                "preset": preset_name,
-                "gpu_detection_info": format_gpu_detection_summary(),
-            },
-        },
-        "2": {
-            "class_type": "xDiT.Model",
-            "inputs": {"preset": ["1", 0], **loader_values},
-        },
-        "3": {
-            "class_type": "xDiT.Sample",
-            "inputs": {
-                "model": ["2", 0],
-                "images": ["1", 1],
-                "preset": ["1", 2],
-                **_sample_widget_values(preset_name=preset_name, gpu_tag=gpu_tag),
-            },
-        },
-        "4": {
-            "class_type": "xDiT.SaveImage",
-            "inputs": {"result": ["3", 2], "filename_prefix": "xdit"},
-        },
-        "5": {
-            "class_type": "xDiT.SaveVideo",
-            "inputs": {
-                "result": ["3", 2],
-                "filename_prefix": "video/xdit",
-                "format": "auto",
-                "codec": "auto",
-            },
-        },
+    graph_nodes, graph_edges = _starter_graph(preset_name=preset_name, gpu_tag=gpu_tag)
+    by_id = {node["id"]: node for node in graph_nodes}
+    prompt = {
+        str(node["id"]): {
+            "class_type": node["class_type"],
+            "inputs": dict(node["widgets"]),
+        }
+        for node in graph_nodes
     }
+    prompt["1"]["inputs"]["gpu_detection_info"] = format_gpu_detection_summary()
+    for origin_id, origin_name, target_id, target_name, _type_name in graph_edges:
+        origin_type = by_id[origin_id]["class_type"]
+        prompt[str(target_id)]["inputs"][target_name] = [
+            str(origin_id),
+            _output_slot(origin_type, origin_name),
+        ]
+    return prompt
 
 
 def write_starter_workflow(
