@@ -50,6 +50,20 @@ RUN if [ -n "${XDIT_REPOSITORY}" ] && [ -n "${XDIT_REF}" ]; then \
       fi; \
     fi
 
+# Base images may install xfuser without its optional runtime dependencies.
+# Resolve those through the exact xDiT source bundled in the image so its
+# compatibility bounds remain authoritative.
+RUN if [ -z "${XDIT_REPOSITORY}" ] && [ -z "${XDIT_REF}" ]; then \
+      test -f /app/xDiT/pyproject.toml; \
+      xdit_spec="/app/xDiT[cache-dit,opencv-python]"; \
+      if [ -f /opt/build-constraints.txt ]; then \
+        PIP_CONSTRAINT=/opt/build-constraints.txt \
+          python -m pip install --no-cache-dir "${xdit_spec}"; \
+      else \
+        python -m pip install --no-cache-dir "${xdit_spec}"; \
+      fi; \
+    fi
+
 COPY . ${PLUGIN_ROOT}
 
 WORKDIR ${COMFYUI_ROOT}
