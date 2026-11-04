@@ -36,11 +36,6 @@ from .graph_live import (
 from .helpers import build_preset_spec_for_tag, evict_all_workers_and_wait
 
 
-@pytest.fixture
-def enable_quick_run(monkeypatch):
-    monkeypatch.setenv("XDIT_QUICK_RUN", "1")
-
-
 @pytest.mark.gpu_init
 @pytest.mark.long_gpu
 def test_gfx1201_quick_worker_loop(enable_quick_run, require_gpu_headroom):

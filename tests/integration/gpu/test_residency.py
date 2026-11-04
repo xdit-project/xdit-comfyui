@@ -45,11 +45,6 @@ def require_gpu_residency(require_gpu_headroom):
 
 
 @pytest.fixture
-def enable_quick_run(monkeypatch):
-    monkeypatch.setenv("XDIT_QUICK_RUN", "1")
-
-
-@pytest.fixture
 def gpu_residency_harness(require_gpu_residency, enable_quick_run):
     harness = GpuResidencyHarness()
     harness.cleanup()

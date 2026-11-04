@@ -18,9 +18,9 @@ from tests.node_test_helpers import (
 )
 from xdit_comfyui.nodes import (
     XDiTModel,
+    XDiTSample,
     XDiTSaveImage,
     XDiTSaveVideo,
-    XDiTSample,
 )
 from xdit_comfyui.presets import build_preset_spec
 from xdit_comfyui.sampling import _execute_sample
