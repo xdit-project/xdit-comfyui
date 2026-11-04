@@ -46,7 +46,7 @@ def test_served_extensions_register_unique_names():
 def test_sidebar_and_modern_submenu_register(harness):
     report, _ = harness
     assert report["sidebar_tabs"] == [{"id": "xdit", "title": "xDiT", "hasRender": True}]
-    assert {"content": "xDiT", "submenuItems": ["Unload all models"]} in report["canvas_menus"]
+    assert {"content": "xDiT", "submenuItems": ["Unload all xDiT models"]} in report["canvas_menus"]
 
 
 def test_model_unload_action_is_kept_in_the_sidebar_card_header():
@@ -61,32 +61,61 @@ def test_english_localization_uses_comfyui_layout():
     node_defs = json.loads((locales / "nodeDefs.json").read_text(encoding="utf-8"))
     commands = json.loads((locales / "commands.json").read_text(encoding="utf-8"))
     json.loads((locales / "main.json").read_text(encoding="utf-8"))
-    assert set(node_defs) == {"xDiT.Preset", "xDiT.Model", "xDiT.Sample"}
-    assert node_defs["xDiT.Model"]["inputs"]["scm_policy"]["name"] == "SCM Policy"
+    assert set(node_defs) == {
+        "xDiT.Preset",
+        "xDiT.Model",
+        "xDiT.Sample",
+        "xDiT.SaveImage",
+        "xDiT.SaveVideo",
+    }
     assert "xdit_unloadAllModels" in commands
 
-    schemas = {
-        "xDiT.Preset": _preset_picker_input_types(),
-        "xDiT.Model": _runtime_loader_input_types(),
-        "xDiT.Sample": _generation_input_types(),
-    }
-    for node_id, schema in schemas.items():
-        localized = node_defs[node_id]
+    for localized in node_defs.values():
         assert localized.get("display_name")
-        assert localized.get("description")
-        for section in ("required", "optional"):
-            for input_name, (_input_type, options) in schema.get(section, {}).items():
-                entry = localized["inputs"].get(input_name)
-                assert entry and entry.get("name"), f"missing locale name: {node_id}.{input_name}"
-                if options.get("tooltip"):
-                    assert entry.get("tooltip"), f"missing locale tooltip: {node_id}.{input_name}"
+        assert "description" not in localized
+        assert "inputs" not in localized
 
 
 def _object_info():
     specs = {
         "xDiT.Preset": (_preset_picker_input_types(), ["model", "images", "sample"]),
         "xDiT.Model": (_runtime_loader_input_types(), ["model"]),
-        "xDiT.Sample": (_generation_input_types(), ["images", "video"]),
+        "xDiT.Sample": (_generation_input_types(), ["images", "video", "result"]),
+        "xDiT.SaveImage": (
+            {
+                "required": {
+                    "result": ("*", {}),
+                    "filename_prefix": ("STRING", {"default": "xdit"}),
+                }
+            },
+            [],
+        ),
+        "xDiT.SaveVideo": (
+            {
+                "required": {
+                    "result": ("*", {}),
+                    "filename_prefix": ("STRING", {"default": "video/xdit"}),
+                    "format": (["auto"], {"default": "auto"}),
+                    "codec": (["auto"], {"default": "auto"}),
+                }
+            },
+            [],
+        ),
+        "SaveImage": (
+            {"required": {"images": ("IMAGE", {}), "filename_prefix": ("STRING", {})}},
+            ["images"],
+        ),
+        "SaveVideo": (
+            {
+                "required": {
+                    "video": ("VIDEO", {}),
+                    "filename_prefix": ("STRING", {}),
+                    "format": (["auto"], {}),
+                    "codec": (["auto"], {}),
+                }
+            },
+            ["video"],
+        ),
     }
     info = {}
     for class_type, (inputs, outputs) in specs.items():
@@ -440,12 +469,11 @@ def test_sample_only_offers_the_frame_count_to_a_model_that_makes_video(harness)
     assert not video_model["heading_hidden"], "a video model cannot reach its frame count"
 
 
-def test_each_run_clears_both_connected_save_outputs(harness):
-    """The blocked image/video branch must not retain the previous run's preview."""
+def test_empty_save_results_clear_rendered_media_without_deleting_output_state(harness):
+    """Backend results own canonical state; the hook only clears stale rendered media."""
     report, _ = harness
-    cleared = report["outputs_after_execution_start"]
-    assert cleared["stored_output_ids"] == []
-    assert cleared["stored_preview_ids"] == []
+    cleared = report["outputs_after_empty_results"]
+    assert cleared["stored_outputs"] == {"4": {"images": []}, "5": {"images": []}}
     for output_type in ("image", "video"):
         output = cleared[output_type]
         assert output["images"] is None

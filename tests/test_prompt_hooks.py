@@ -642,7 +642,7 @@ def test_prompt_hook_preserves_converted_widget_links():
     assert payload["prompt"]["3"]["inputs"] == links
 
 
-def test_prompt_hook_keeps_save_image_for_video_preset():
+def test_prompt_hook_upgrades_save_image_for_video_preset():
     payload = apply_preset_prompt_overrides(
         {
             "prompt": {
@@ -661,10 +661,12 @@ def test_prompt_hook_keeps_save_image_for_video_preset():
             }
         }
     )
-    assert payload["prompt"]["4"]["class_type"] == "SaveImage"
+    assert payload["prompt"]["4"]["class_type"] == "xDiT.SaveImage"
+    assert payload["prompt"]["4"]["inputs"]["result"] == ["3", 2]
+    assert "images" not in payload["prompt"]["4"]["inputs"]
 
 
-def test_prompt_hook_keeps_save_image_for_image_preset():
+def test_prompt_hook_upgrades_save_image_for_image_preset():
     payload = apply_preset_prompt_overrides(
         {
             "prompt": {
@@ -683,10 +685,11 @@ def test_prompt_hook_keeps_save_image_for_image_preset():
             }
         }
     )
-    assert payload["prompt"]["4"]["class_type"] == "SaveImage"
+    assert payload["prompt"]["4"]["class_type"] == "xDiT.SaveImage"
+    assert payload["prompt"]["4"]["inputs"]["result"] == ["3", 2]
 
 
-def test_prompt_hook_keeps_save_video_for_image_preset():
+def test_prompt_hook_upgrades_save_video_for_image_preset():
     payload = apply_preset_prompt_overrides(
         {
             "prompt": {
@@ -710,10 +713,12 @@ def test_prompt_hook_keeps_save_video_for_image_preset():
             }
         }
     )
-    assert payload["prompt"]["5"]["class_type"] == "SaveVideo"
+    assert payload["prompt"]["5"]["class_type"] == "xDiT.SaveVideo"
+    assert payload["prompt"]["5"]["inputs"]["result"] == ["3", 2]
+    assert "video" not in payload["prompt"]["5"]["inputs"]
 
 
-def test_prompt_hook_keeps_save_video_for_video_preset():
+def test_prompt_hook_upgrades_save_video_for_video_preset():
     payload = apply_preset_prompt_overrides(
         {
             "prompt": {
@@ -737,7 +742,42 @@ def test_prompt_hook_keeps_save_video_for_video_preset():
             }
         }
     )
-    assert payload["prompt"]["5"]["class_type"] == "SaveVideo"
+    assert payload["prompt"]["5"]["class_type"] == "xDiT.SaveVideo"
+    assert payload["prompt"]["5"]["inputs"]["result"] == ["3", 2]
+
+
+def test_prompt_hook_leaves_unrelated_save_nodes_alone():
+    payload = apply_preset_prompt_overrides(
+        {
+            "prompt": {
+                "9": {"class_type": "OtherImageNode", "inputs": {}},
+                "10": {
+                    "class_type": "SaveImage",
+                    "inputs": {"images": ["9", 0], "filename_prefix": "other"},
+                },
+            }
+        }
+    )
+    assert payload["prompt"]["10"]["class_type"] == "SaveImage"
+    assert payload["prompt"]["10"]["inputs"]["images"] == ["9", 0]
+
+
+def test_prompt_hook_does_not_upgrade_a_different_sample_output_slot():
+    payload = apply_preset_prompt_overrides(
+        {
+            "prompt": {
+                "3": {"class_type": "xDiT.Sample", "inputs": {}},
+                "4": {
+                    "class_type": "SaveImage",
+                    "inputs": {"images": ["3", 1], "filename_prefix": "other"},
+                },
+            }
+        }
+    )
+    assert payload["prompt"]["4"]["class_type"] == "SaveImage"
+
+
+def test_prompt_hook_backfills_loader_defaults():
     payload = apply_preset_prompt_overrides(
         {
             "prompt": {

@@ -18,6 +18,8 @@ from tests.node_test_helpers import (
 )
 from xdit_comfyui.nodes import (
     XDiTModel,
+    XDiTSaveImage,
+    XDiTSaveVideo,
     XDiTSample,
 )
 from xdit_comfyui.presets import build_preset_spec
@@ -142,8 +144,17 @@ class RunnerNodesTest(unittest.TestCase):
 
         self.assertIs(image_result[0], image)
         self.assertIsInstance(image_result[1], ExecutionBlocker)
+        self.assertEqual(image_result[2], {"images": image, "video": None})
         self.assertIsInstance(video_result[0], ExecutionBlocker)
         self.assertIs(video_result[1], video)
+        self.assertEqual(video_result[2], {"images": None, "video": video})
+
+    def test_inactive_save_nodes_emit_an_explicit_empty_ui_result(self):
+        image_result = XDiTSaveImage.execute({"images": None, "video": mock.sentinel.video})
+        video_result = XDiTSaveVideo.execute({"images": mock.sentinel.image, "video": None})
+
+        self.assertEqual(image_result.ui.as_dict(), {"images": []})
+        self.assertEqual(video_result.ui.as_dict(), {"images": []})
 
     def test_loader_init_config_includes_generation_stubs(self):
         from xdit_comfyui.model_info import model_generation_defaults

@@ -21,6 +21,11 @@ _LOADER_NODE_TYPES = frozenset({"xDiT.Model"})
 
 _GENERATE_NODE_TYPES = frozenset({"xDiT.Sample"})
 
+_LEGACY_SAVE_OUTPUTS = {
+    "SaveImage": ("images", 0, "xDiT.SaveImage"),
+    "SaveVideo": ("video", 1, "xDiT.SaveVideo"),
+}
+
 _GENERATION_SAFE_DEFAULTS = {
     "num_frames": 1,
     "timeout_seconds": 900,
@@ -303,8 +308,32 @@ def apply_preset_prompt_overrides(json_data: dict[str, Any]) -> dict[str, Any]:
             spec = _resolve_preset_spec_from_link(prompt, inputs.get("preset"))
             _sanitize_generate_inputs(inputs, spec if spec.get("matched") else {})
 
+    _rewrite_legacy_save_outputs(prompt)
     _register_loader_consumers(prompt)
     return json_data
+
+
+def _rewrite_legacy_save_outputs(prompt: dict[str, Any]) -> None:
+    """Give older starter graphs the explicit empty-result behavior of the new savers."""
+    for node in prompt.values():
+        if not isinstance(node, dict):
+            continue
+        legacy = _LEGACY_SAVE_OUTPUTS.get(node.get("class_type"))
+        if legacy is None:
+            continue
+        input_name, output_slot, replacement = legacy
+        inputs = node.get("inputs")
+        if not isinstance(inputs, dict):
+            continue
+        link = inputs.get(input_name)
+        if not _is_prompt_link(link) or link[1] != output_slot:
+            continue
+        sample = prompt.get(str(link[0]))
+        if not isinstance(sample, dict) or sample.get("class_type") not in _GENERATE_NODE_TYPES:
+            continue
+        node["class_type"] = replacement
+        inputs["result"] = [link[0], 2]
+        inputs.pop(input_name, None)
 
 
 def _register_loader_consumers(prompt: dict[str, Any]) -> None:

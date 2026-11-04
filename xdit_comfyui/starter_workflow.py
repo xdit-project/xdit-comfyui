@@ -17,35 +17,41 @@ from .runtime_config import (
     _runtime_loader_model_choices,
     any_typ,
 )
+from .save_outputs import save_image_input_types, save_video_input_types
 
 # Must match NAMED_VALUES_KEY in web/xdit_widget_serialization.js.
 NAMED_WIDGET_VALUES_KEY = "xdit_widget_values"
 
-_COMFY_INPUT_SLOTS = {
-    "SaveImage": {"images": 0},
-    "SaveVideo": {"video": 0},
-}
+_COMFY_INPUT_SLOTS: dict[str, dict[str, int]] = {}
+
 
 _XDIT_INPUT_TYPES = {
     "xDiT.Preset": _preset_picker_input_types,
     "xDiT.Model": _runtime_loader_input_types,
     "xDiT.Sample": _generation_input_types,
+    "xDiT.SaveImage": save_image_input_types,
+    "xDiT.SaveVideo": save_video_input_types,
 }
 
 _XDIT_OUTPUT_NAMES = {
     "xDiT.Preset": ("model", "images", "sample"),
     "xDiT.Model": ("model",),
-    "xDiT.Sample": ("images", "video"),
+    "xDiT.Sample": ("images", "video", "result"),
+    "xDiT.SaveImage": (),
+    "xDiT.SaveVideo": (),
 }
 
 _XDIT_OUTPUT_TYPES = {
     "xDiT.Preset": ("*", "IMAGE", "*"),
     "xDiT.Model": ("*",),
-    "xDiT.Sample": ("IMAGE", "VIDEO"),
+    "xDiT.Sample": ("IMAGE", "VIDEO", "*"),
+    "xDiT.SaveImage": (),
+    "xDiT.SaveVideo": (),
 }
 
 _SOCKET_INPUT_TYPES = frozenset(
     {
+        "*",
         "IMAGE",
         "VIDEO",
         "MASK",
@@ -133,6 +139,7 @@ def _build_workflow_node(
     widget_overrides: dict[str, Any] | None = None,
     output_links: dict[str, list[int] | None] | None = None,
     properties: dict[str, Any] | None = None,
+    named_widgets: bool = True,
 ) -> dict[str, Any]:
     linked = linked or {}
     widget_overrides = widget_overrides or {}
@@ -183,7 +190,7 @@ def _build_workflow_node(
             }
         )
 
-    return {
+    node = {
         "id": node_id,
         "type": class_type,
         "pos": pos,
@@ -194,115 +201,13 @@ def _build_workflow_node(
         "inputs": inputs_json,
         "outputs": outputs_json,
         "properties": {"Node name for S&R": class_type, **(properties or {})},
-        # xDiT nodes reorder and group their widgets, so values are keyed by name
-        # (see web/xdit_widget_serialization.js). The positional array is unused.
-        "widgets_values": [],
-        NAMED_WIDGET_VALUES_KEY: widget_values,
+        "widgets_values": [] if named_widgets else list(widget_values.values()),
     }
-
-
-def _save_image_node(
-    node_id: int,
-    pos: list[float],
-    size: list[float],
-    order: int,
-    *,
-    images_link: int,
-    filename_prefix: str = "xdit",
-) -> dict[str, Any]:
-    return {
-        "id": node_id,
-        "type": "SaveImage",
-        "pos": pos,
-        "size": size,
-        "flags": {},
-        "order": order,
-        "mode": 0,
-        "inputs": [
-            {
-                "localized_name": "images",
-                "name": "images",
-                "type": "IMAGE",
-                "link": images_link,
-            },
-            {
-                "localized_name": "filename_prefix",
-                "name": "filename_prefix",
-                "type": "STRING",
-                "widget": {"name": "filename_prefix"},
-                "link": None,
-            },
-        ],
-        "outputs": [
-            {
-                "localized_name": "images",
-                "name": "images",
-                "type": "IMAGE",
-                "links": None,
-            }
-        ],
-        "properties": {"Node name for S&R": "SaveImage"},
-        "widgets_values": [filename_prefix],
-    }
-
-
-def _save_video_node(
-    node_id: int,
-    pos: list[float],
-    size: list[float],
-    order: int,
-    *,
-    video_link: int,
-    filename_prefix: str = "video/xdit",
-) -> dict[str, Any]:
-    return {
-        "id": node_id,
-        "type": "SaveVideo",
-        "pos": pos,
-        "size": size,
-        "flags": {},
-        "order": order,
-        "mode": 0,
-        "inputs": [
-            {
-                "localized_name": "video",
-                "name": "video",
-                "type": "VIDEO",
-                "link": video_link,
-            },
-            {
-                "localized_name": "filename_prefix",
-                "name": "filename_prefix",
-                "type": "STRING",
-                "widget": {"name": "filename_prefix"},
-                "link": None,
-            },
-            {
-                "localized_name": "format",
-                "name": "format",
-                "type": "COMBO",
-                "widget": {"name": "format"},
-                "link": None,
-            },
-            {
-                "localized_name": "codec",
-                "name": "codec",
-                "type": "COMBO",
-                "widget": {"name": "codec"},
-                "link": None,
-            },
-        ],
-        "outputs": [
-            {
-                "localized_name": "video",
-                "name": "video",
-                "type": "VIDEO",
-                "links": None,
-            }
-        ],
-        "properties": {"Node name for S&R": "SaveVideo"},
-        "widgets_values": [filename_prefix, "auto", "auto"],
-    }
+    if named_widgets:
+        # Model, Preset, and Sample reorder and group their widgets, so values are
+        # keyed by name (see web/xdit_widget_serialization.js).
+        node[NAMED_WIDGET_VALUES_KEY] = widget_values
+    return node
 
 
 def _workflow_link(
@@ -430,11 +335,11 @@ def build_starter_workflow_dict(
             4,
             sample_id,
             "xDiT.Sample",
-            "images",
+            "result",
             save_image_id,
-            "SaveImage",
-            "images",
-            type_name="IMAGE",
+            "xDiT.SaveImage",
+            "result",
+            type_name="*",
         ),
         _workflow_link(
             5,
@@ -450,11 +355,11 @@ def build_starter_workflow_dict(
             6,
             sample_id,
             "xDiT.Sample",
-            "video",
+            "result",
             save_video_id,
-            "SaveVideo",
-            "video",
-            type_name="VIDEO",
+            "xDiT.SaveVideo",
+            "result",
+            type_name="*",
         ),
     ]
 
@@ -504,10 +409,32 @@ def build_starter_workflow_dict(
                 preset_name=preset_name,
                 gpu_tag=gpu_tag,
             ),
-            output_links={"images": [4], "video": [6]},
+            output_links={"result": [4, 6]},
         ),
-        _save_image_node(save_image_id, [1480, 40], [320, 220], 3, images_link=4),
-        _save_video_node(save_video_id, [1480, 420], [320, 220], 4, video_link=6),
+        _build_workflow_node(
+            save_image_id,
+            "xDiT.SaveImage",
+            [1480, 40],
+            [320, 220],
+            3,
+            linked={"result": 4},
+            widget_overrides={"filename_prefix": "xdit"},
+            named_widgets=False,
+        ),
+        _build_workflow_node(
+            save_video_id,
+            "xDiT.SaveVideo",
+            [1480, 420],
+            [320, 220],
+            4,
+            linked={"result": 6},
+            widget_overrides={
+                "filename_prefix": "video/xdit",
+                "format": "auto",
+                "codec": "auto",
+            },
+            named_widgets=False,
+        ),
     ]
 
     workflow = {
@@ -564,13 +491,13 @@ def build_starter_api_prompt(
             },
         },
         "4": {
-            "class_type": "SaveImage",
-            "inputs": {"images": ["3", 0], "filename_prefix": "xdit"},
+            "class_type": "xDiT.SaveImage",
+            "inputs": {"result": ["3", 2], "filename_prefix": "xdit"},
         },
         "5": {
-            "class_type": "SaveVideo",
+            "class_type": "xDiT.SaveVideo",
             "inputs": {
-                "video": ["3", 1],
+                "result": ["3", 2],
                 "filename_prefix": "video/xdit",
                 "format": "auto",
                 "codec": "auto",

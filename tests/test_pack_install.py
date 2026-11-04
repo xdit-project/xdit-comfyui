@@ -57,7 +57,13 @@ class ComfyUILoadTest(unittest.TestCase):
         extension = asyncio.run(module.comfy_entrypoint())
         nodes = asyncio.run(extension.get_node_list())
         self.assertEqual(
-            {"xDiT.Preset", "xDiT.Model", "xDiT.Sample"},
+            {
+                "xDiT.Preset",
+                "xDiT.Model",
+                "xDiT.Sample",
+                "xDiT.SaveImage",
+                "xDiT.SaveVideo",
+            },
             {node.define_schema().node_id for node in nodes},
         )
         self.assertEqual("./web", module.WEB_DIRECTORY)

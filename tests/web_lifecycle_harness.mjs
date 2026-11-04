@@ -261,20 +261,6 @@ function makeNode(classType, id) {
   return node;
 }
 
-function makeSaveNode(classType, id, inputName) {
-  return {
-    id,
-    type: classType,
-    comfyClass: classType,
-    widgets: [],
-    inputs: [{ name: inputName, link: null }],
-    outputs: [],
-    properties: {},
-    size: [300, 300],
-    graph: null,
-  };
-}
-
 const graph = {
   id: "test-graph",
   _nodes: [],
@@ -355,11 +341,16 @@ for (const extension of extensions) await extension.setup?.();
 
 // Nodes 2.0 constructs nodes through the registered class hook and does not reliably
 // dispatch the extension-level nodeCreated callback. Exercise that lifecycle directly.
-const modelNodeType = { prototype: {} };
-for (const extension of extensions) {
-  await extension.beforeRegisterNodeDef?.(modelNodeType, {
-    name: "xDiT.Model",
-  });
+const nodeTypes = Object.fromEntries(
+  ["xDiT.Model", "SaveImage", "SaveVideo"].map((name) => [
+    name,
+    { prototype: {} },
+  ]),
+);
+for (const [name, nodeType] of Object.entries(nodeTypes)) {
+  for (const extension of extensions) {
+    await extension.beforeRegisterNodeDef?.(nodeType, { name });
+  }
 }
 
 /**
@@ -400,10 +391,12 @@ function link(originNode, originSlot, targetNode, inputName) {
 
 const presetNode = makeNode("xDiT.Preset", 1);
 const modelNode = makeNode("xDiT.Model", 2);
-Object.setPrototypeOf(modelNode, modelNodeType.prototype);
+Object.setPrototypeOf(modelNode, nodeTypes["xDiT.Model"].prototype);
 const sampleNode = makeNode("xDiT.Sample", 3);
-const saveImageNode = makeSaveNode("SaveImage", 4, "images");
-const saveVideoNode = makeSaveNode("SaveVideo", 5, "video");
+const saveImageNode = makeNode("SaveImage", 4);
+Object.setPrototypeOf(saveImageNode, nodeTypes.SaveImage.prototype);
+const saveVideoNode = makeNode("SaveVideo", 5);
+Object.setPrototypeOf(saveVideoNode, nodeTypes.SaveVideo.prototype);
 for (const node of [
   presetNode,
   modelNode,
@@ -430,11 +423,7 @@ for (const extension of extensions) {
 await settle();
 
 for (const node of [saveImageNode, saveVideoNode]) {
-  appStub.nodeOutputs[String(node.id)] = {
-    images: [{ filename: `old-${node.id}` }],
-  };
-  appStub.nodePreviewImages[String(node.id)] = [`preview-${node.id}`];
-  node.images = appStub.nodeOutputs[String(node.id)].images;
+  node.images = [{ filename: `old-${node.id}` }];
   node.imgs = [{ src: `old-${node.id}` }];
   node.imageIndex = 0;
   node.animatedImages = true;
@@ -445,11 +434,12 @@ for (const node of [saveImageNode, saveVideoNode]) {
       this.childCount = 0;
     },
   };
+  // ComfyUI stores the executed payload before invoking node.onExecuted.
+  appStub.nodeOutputs[String(node.id)] = { images: [] };
+  node.onExecuted?.(appStub.nodeOutputs[String(node.id)]);
 }
-sampleNode.onExecutionStart?.();
-const outputsAfterExecutionStart = {
-  stored_output_ids: Object.keys(appStub.nodeOutputs),
-  stored_preview_ids: Object.keys(appStub.nodePreviewImages),
+const outputsAfterEmptyResults = {
+  stored_outputs: appStub.nodeOutputs,
   image: {
     images: saveImageNode.images ?? null,
     imgs: saveImageNode.imgs ?? null,
@@ -782,7 +772,7 @@ console.log(
       model_preset_trigger:
         modelNode.properties._xdit_model_preset_trigger ?? null,
       sample_model_constraints: sampleNode._xditModelConstraints ?? null,
-      outputs_after_execution_start: outputsAfterExecutionStart,
+      outputs_after_empty_results: outputsAfterEmptyResults,
       sample_resolution_step:
         widgetByName(sampleNode, "height")?.options?.step2 ?? null,
       sample_layout: sampleLayout(),

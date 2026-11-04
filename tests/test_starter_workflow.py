@@ -13,8 +13,8 @@ STARTER_NODE_TYPES = frozenset(
         "xDiT.Preset",
         "xDiT.Model",
         "xDiT.Sample",
-        "SaveImage",
-        "SaveVideo",
+        "xDiT.SaveImage",
+        "xDiT.SaveVideo",
     }
 )
 STARTER_FILENAME = "xDiT-Starter.json"
@@ -66,8 +66,17 @@ def test_starter_workflow_carries_no_positional_widget_values():
     """Positions shift as widgets are grouped; only the named map is authoritative."""
     workflow = build_starter_workflow_dict()
     for node in workflow["nodes"]:
-        if node["type"].startswith("XDiT"):
+        if node["type"] in {"xDiT.Preset", "xDiT.Model", "xDiT.Sample"}:
             assert node["widgets_values"] == []
+
+
+def test_starter_save_nodes_use_standard_positional_widget_values():
+    workflow = build_starter_workflow_dict()
+    by_type = {node["type"]: node for node in workflow["nodes"]}
+    assert by_type["xDiT.SaveImage"]["widgets_values"] == ["xdit"]
+    assert by_type["xDiT.SaveVideo"]["widgets_values"] == ["video/xdit", "auto", "auto"]
+    assert NAMED_WIDGET_VALUES_KEY not in by_type["xDiT.SaveImage"]
+    assert NAMED_WIDGET_VALUES_KEY not in by_type["xDiT.SaveVideo"]
 
 
 def test_starter_workflow_sets_preset_gpu_count_by_name():
@@ -98,14 +107,15 @@ def test_starter_api_prompt_samples_a_video_preset_as_video():
     assert sample["width"] == 736
 
 
-def test_starter_workflow_sample_wires_video_to_save_video():
+def test_starter_workflow_wires_one_result_to_both_save_nodes():
     workflow = build_starter_workflow_dict()
     sample = next(node for node in workflow["nodes"] if node["type"] == "xDiT.Sample")
-    assert sample["outputs"][1]["name"] == "video"
-    assert sample["outputs"][1]["links"] == [6]
-    save_video = next(node for node in workflow["nodes"] if node["type"] == "SaveVideo")
-    video_input = next(entry for entry in save_video["inputs"] if entry["name"] == "video")
-    assert video_input["link"] == 6
+    assert sample["outputs"][2]["name"] == "result"
+    assert sample["outputs"][2]["links"] == [4, 6]
+    for class_type, link_id in (("xDiT.SaveImage", 4), ("xDiT.SaveVideo", 6)):
+        save_node = next(node for node in workflow["nodes"] if node["type"] == class_type)
+        result_input = next(entry for entry in save_node["inputs"] if entry["name"] == "result")
+        assert result_input["link"] == link_id
 
 
 def test_starter_workflow_wires_image_preset_to_sample():

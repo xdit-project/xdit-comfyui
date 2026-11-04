@@ -21,7 +21,6 @@ import {
   requestSequence,
   setWidgetHidden as setWidgetHiddenState,
   setWidgetValue,
-  targetNodesFromOutput,
   userEdited,
   widgetValue,
 } from "./xdit_widget_state.js";
@@ -29,10 +28,12 @@ import { applyWidgetOrder } from "./xdit_widget_order.js";
 import { t } from "./xdit_i18n.js";
 
 const GENERATE_NODES = new Set(["xDiT.Sample"]);
-const SAVE_OUTPUTS = {
-  images: new Set(["SaveImage"]),
-  video: new Set(["SaveVideo"]),
-};
+const SAVE_OUTPUT_NODES = new Set([
+  "SaveImage",
+  "SaveVideo",
+  "xDiT.SaveImage",
+  "xDiT.SaveVideo",
+]);
 
 const PRESET_WIDGETS = [
   "prompt",
@@ -469,52 +470,16 @@ function hookConnectionChanges(node) {
   };
 }
 
-/**
- * Drop the result from a previous run before either output branch executes.
- *
- * Sample blocks the branch it did not produce, so that Save node receives no new
- * `executed` event and ComfyUI would otherwise keep drawing its previous result.
- * Clearing both here is intentional: the active Save node is populated again by
- * this run, while the blocked one stays empty.
- */
-function clearConnectedSaveOutputs(node) {
-  for (const [outputName, saveTypes] of Object.entries(SAVE_OUTPUTS)) {
-    for (const target of targetNodesFromOutput(node, outputName)) {
-      if (!saveTypes.has(target.comfyClass) && !saveTypes.has(target.type))
-        continue;
-
-      const id = String(target.id);
-      delete app.nodeOutputs?.[id];
-
-      const previews = app.nodePreviewImages?.[id];
-      if (previews?.[Symbol.iterator]) {
-        for (const url of previews) {
-          if (typeof url === "string" && url.startsWith("blob:"))
-            URL.revokeObjectURL?.(url);
-        }
-      }
-      delete app.nodePreviewImages?.[id];
-
-      target.images = undefined;
-      target.imgs = undefined;
-      target.imageIndex = null;
-      target.animatedImages = false;
-      target.preview = undefined;
-      target.videoContainer?.replaceChildren?.();
-      app.canvas?.setDirty?.(true, true);
-    }
-  }
-}
-
-function hookExecutionStart(node) {
-  if (node._xditExecutionStartHooked) return;
-  node._xditExecutionStartHooked = true;
-  const previous = node.onExecutionStart;
-  node.onExecutionStart = function (...args) {
-    const result = previous?.apply(this, args);
-    clearConnectedSaveOutputs(this);
-    return result;
-  };
+/** ComfyUI owns output metadata; this only drops rendered media after an empty result. */
+function clearRenderedOutput(node) {
+  node.images = undefined;
+  node.imgs = undefined;
+  node.imageIndex = null;
+  node.animatedImages = false;
+  node.preview = undefined;
+  node.videoContainer?.replaceChildren?.();
+  node.graph?.setDirtyCanvas?.(true, true);
+  app.canvas?.setDirty?.(true, true);
 }
 
 function setupGenerateNode(node) {
@@ -523,7 +488,6 @@ function setupGenerateNode(node) {
 
   hookGenerateSerialization(node);
   hookConnectionChanges(node);
-  hookExecutionStart(node);
   hookGenerationWidgets(node);
   hookExpandWidgets(node);
   ensureDefaultSeedControl(node);
@@ -564,6 +528,18 @@ app.registerExtension({
   async beforeRegisterNodeDef(nodeType, nodeData) {
     const registeredName =
       nodeData?.name ?? nodeData?.class_type ?? nodeType?.comfyClass;
+    if (
+      SAVE_OUTPUT_NODES.has(registeredName) &&
+      !nodeType.prototype._xditEmptyOutputHooked
+    ) {
+      nodeType.prototype._xditEmptyOutputHooked = true;
+      const originalExecuted = nodeType.prototype.onExecuted;
+      nodeType.prototype.onExecuted = function (output, ...args) {
+        const result = originalExecuted?.apply(this, [output, ...args]);
+        if (!output?.images?.length) clearRenderedOutput(this);
+        return result;
+      };
+    }
     if (!GENERATE_NODES.has(registeredName)) return;
 
     if (!nodeType.prototype._xditGenerateNodeCreatedHooked) {

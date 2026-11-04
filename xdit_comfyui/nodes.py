@@ -34,6 +34,7 @@ from .runtime_config import (
     _validate_world_size,
 )
 from .runtime_env import _build_hf_cache_env, _resolve_hf_cache_root
+from .save_outputs import XDiTSaveImage, XDiTSaveVideo
 from .sampling import _execute_sample
 from .v3 import ComfyExtension, inputs_from_legacy, io
 from .worker import (
@@ -54,13 +55,13 @@ class XDiTPreset(io.ComfyNode):
             node_id="xDiT.Preset",
             display_name="xDiT Preset",
             category=COMFY_CATEGORY,
-            description="Select a tested configuration for the available GPUs.",
+            description="Select a tested xDiT configuration for the available GPUs.",
             inputs=inputs,
             hidden=hidden,
             outputs=[
-                io.AnyType.Output("model", display_name="model"),
-                io.Image.Output("images", display_name="images"),
-                io.AnyType.Output("sample", display_name="sample"),
+                io.AnyType.Output("model", display_name="Model Preset"),
+                io.Image.Output("images", display_name="Reference Images"),
+                io.AnyType.Output("sample", display_name="Sample Preset"),
             ],
         )
 
@@ -139,10 +140,13 @@ class XDiTModel(io.ComfyNode):
             node_id="xDiT.Model",
             display_name="xDiT Model",
             category=COMFY_CATEGORY,
-            description="Load an xDiT model for inference.",
+            description=(
+                "Configure an xDiT model worker. It warms immediately when possible, "
+                "or when sampling supplies required reference images."
+            ),
             inputs=inputs,
             hidden=hidden,
-            outputs=[io.AnyType.Output("model", display_name="model")],
+            outputs=[io.AnyType.Output("model", display_name="Model")],
         )
 
     @classmethod
@@ -280,12 +284,20 @@ class XDiTSample(io.ComfyNode):
             node_id="xDiT.Sample",
             display_name="xDiT Sample",
             category=COMFY_CATEGORY,
-            description="Generate images or video with a loaded xDiT model.",
+            description="Generate an image or video with a configured xDiT model worker.",
             inputs=inputs,
             hidden=hidden,
             outputs=[
-                io.Image.Output("images", display_name="images"),
-                io.Video.Output("video", display_name="video"),
+                io.Image.Output("images", display_name="Images"),
+                io.Video.Output("video", display_name="Video"),
+                io.AnyType.Output(
+                    "result",
+                    display_name="Save Result",
+                    tooltip=(
+                        "Bundled result for Save xDiT Image and Save xDiT Video. "
+                        "Connect both save nodes so the inactive output is cleared each run."
+                    ),
+                ),
             ],
             not_idempotent=True,
         )
@@ -370,12 +382,13 @@ class XDiTSample(io.ComfyNode):
         return io.NodeOutput(
             images if images is not None else ExecutionBlocker(None),
             video if video is not None else ExecutionBlocker(None),
+            {"images": images, "video": video},
         )
 
 
 class XDiTExtension(ComfyExtension):
     async def get_node_list(self) -> list[type[io.ComfyNode]]:
-        return [XDiTPreset, XDiTModel, XDiTSample]
+        return [XDiTPreset, XDiTModel, XDiTSample, XDiTSaveImage, XDiTSaveVideo]
 
 
 async def comfy_entrypoint() -> XDiTExtension:

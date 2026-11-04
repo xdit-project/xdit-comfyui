@@ -442,7 +442,7 @@ def execute_starter_graph_via_sample_node(
     kwargs["Video"] = is_video_preset(spec)
     images_input = _load_reference_images(image_spec)
 
-    images, video = XDiTSample.execute(
+    images, video, _result = XDiTSample.execute(
         model=runtime,
         preset=sample_spec,
         images=images_input,

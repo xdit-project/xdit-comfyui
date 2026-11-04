@@ -84,7 +84,13 @@ def comfy_nodes_ready():
     finally:
         loop.close()
 
-    required = {"xDiT.Preset", "xDiT.Model", "xDiT.Sample", "SaveImage", "SaveVideo"}
+    required = {
+        "xDiT.Preset",
+        "xDiT.Model",
+        "xDiT.Sample",
+        "xDiT.SaveImage",
+        "xDiT.SaveVideo",
+    }
     missing = required - set(nodes.NODE_CLASS_MAPPINGS)
     if missing:
         pytest.skip(f"ComfyUI missing node classes: {sorted(missing)}")

@@ -80,11 +80,12 @@ def test_starter_graph_hooked_prompt_matches_preset(preset_name):
     assert prompt["1"]["inputs"]["preset"] == preset_name
     assert prompt["2"]["inputs"]["preset"] == ["1", 0]
     assert prompt["3"]["inputs"]["preset"] == ["1", 2]
-    # The starter graph wires both outputs; Sample blocks the branch it did not produce.
-    assert prompt["4"]["class_type"] == "SaveImage"
-    assert prompt["4"]["inputs"]["images"] == ["3", 0]
-    assert prompt["5"]["class_type"] == "SaveVideo"
-    assert prompt["5"]["inputs"]["video"] == ["3", 1]
+    # Both output nodes execute from one result so the inactive node receives an
+    # explicit empty UI result instead of retaining media from the previous run.
+    assert prompt["4"]["class_type"] == "xDiT.SaveImage"
+    assert prompt["4"]["inputs"]["result"] == ["3", 2]
+    assert prompt["5"]["class_type"] == "xDiT.SaveVideo"
+    assert prompt["5"]["inputs"]["result"] == ["3", 2]
     if is_video_preset(spec):
         assert prompt["3"]["inputs"]["images"] == ["1", 1]
 
