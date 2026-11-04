@@ -51,15 +51,5 @@ export function describeDenoiserGroups(
       description: group.description ?? "",
     }).trim();
     setWidgetTooltip(node, headingName(group), tooltip);
-    for (const name of group.widgets || []) {
-      setWidgetTooltip(
-        node,
-        name,
-        t("xdit.tooltip.denoiserField", {
-          transformer: row.transformer,
-          field: name.replace(/^t\d+_/, ""),
-        }),
-      );
-    }
   }
 }

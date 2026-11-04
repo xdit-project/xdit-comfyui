@@ -122,7 +122,7 @@ function loaderCard(loader, node, payload, refresh) {
   for (const row of loader.footprint || []) {
     const memory = document.createElement("div");
     memory.className = "xdit-sidebar-memory-row";
-    memory.textContent = `GPU ${row.gpu} · ${gib(row.model_gib)} GiB model · ${gib(row.other_gib)} GiB other · ${gib(row.free_gib)} GiB free`;
+    memory.textContent = `GPU ${row.gpu} · ${gib(row.model_gib)} GiB reserved by this worker · ${gib(row.other_gib)} GiB other on device · ${gib(row.free_gib)} GiB free`;
     card.append(memory);
   }
 

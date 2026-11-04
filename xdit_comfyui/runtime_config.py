@@ -210,7 +210,7 @@ def _generation_input_types():
         "required": {
             "model": (
                 any_typ,
-                {"tooltip": "Warm xDiT runtime from xDiT Model."},
+                {"tooltip": "Configured xDiT runtime from xDiT Model."},
             ),
             "prompt": (
                 "STRING",
@@ -651,7 +651,10 @@ def _preset_picker_input_types():
                 count_choices,
                 {
                     "default": str(default_count),
-                    "tooltip": "GPU count required by the preset.",
+                    "tooltip": (
+                        "GPU count used with the hardware tag to filter benchmark presets "
+                        "and their defaults."
+                    ),
                 },
             ),
             "preset": (

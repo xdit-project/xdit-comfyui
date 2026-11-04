@@ -96,8 +96,9 @@ def loader_pinned_input_types(
             {
                 "default": "0",
                 "tooltip": (
-                    "Comma-separated GPU indices. Specify one index per process, such as "
-                    "0,1,2,3 for four processes. Use separate indices for concurrent models."
+                    "Comma-separated GPU indices. The count must match the world size from "
+                    "the parallel settings, including CFG parallel. Use disjoint indices for "
+                    "different models that may run concurrently."
                 ),
             },
         ),
@@ -106,9 +107,10 @@ def loader_pinned_input_types(
             {
                 "default": RESIDENCY_KEEP_GPU,
                 "tooltip": (
-                    "GPU memory policy after sampling. keep_gpu retains the model until "
-                    "you unload it or stop ComfyUI; park_cpu moves weights to system RAM; "
-                    "release stops the worker after the run."
+                    "GPU memory policy after the last Sample using this Model in a prompt. "
+                    "keep_gpu retains the worker; park_cpu attempts to move supported layouts "
+                    "to system RAM and leaves the worker retained if parking fails; release "
+                    "stops the worker."
                 ),
             },
         ),
@@ -133,8 +135,10 @@ def loader_optional_input_types() -> dict[str, tuple[Any, dict[str, Any]]]:
             {
                 "default": "auto",
                 "tooltip": (
-                    "Hugging Face cache location. auto uses the environment, then "
-                    "ComfyUI/models/huggingface. custom_path uses the directory below."
+                    "Hugging Face cache location. auto uses environment variables, then a "
+                    "populated /cache/huggingface mount, then ComfyUI/models/huggingface. "
+                    "comfy_models_shared always uses the ComfyUI path; system_default leaves "
+                    "HF paths unchanged; custom_path uses HF Cache Directory."
                 ),
             },
         ),
@@ -1084,7 +1088,8 @@ _WIDGET_ADVICE = {
         "Runs guided and unguided passes on separate GPUs. Requires an even GPU count."
     ),
     "cpu_offload_mode": (
-        "Moves model components to system RAM when idle. Reduces VRAM use but slows inference."
+        "Offloads components to system RAM during inference, depending on the mode. This "
+        "reduces VRAM use, increases latency, and prevents park_cpu while offload is active."
     ),
     "gemm_precision": (
         "Lower precision reduces memory use and may improve speed, with a possible quality cost."
@@ -1100,6 +1105,10 @@ _WIDGET_ADVICE = {
     ),
     "use_hybrid_gemm_schedule": (
         "Uses FP8 at the start and end of denoising and MXFP4 between them."
+    ),
+    "cache_method": (
+        "none disables step caching. Only settings supported by the selected method "
+        "and model are applied."
     ),
     "residual_diff_threshold": (
         "Minimum residual difference required to recompute a step. Higher values reuse more steps."
@@ -1118,6 +1127,14 @@ def _widget_advice(dest: str) -> str:
 
 def _cli_tooltip(dest: str, fallback: str = "") -> str:
     help_text = runner_cli_help().get(dest) or fallback
+    for flag, label in {
+        "--enable_tiling": "Enable VAE Tiling",
+        "--vae_tile_size_height": "VAE Tile Size Height",
+        "--vae_tile_size_width": "VAE Tile Size Width",
+        "--vae_tile_overlap_height": "VAE Tile Overlap Height",
+        "--vae_tile_overlap_width": "VAE Tile Overlap Width",
+    }.items():
+        help_text = help_text.replace(flag, label)
     advice = _widget_advice(dest)
     if not advice:
         return help_text

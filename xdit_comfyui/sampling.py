@@ -55,7 +55,10 @@ def _execute_sample(
         raise ValueError("model must be a dictionary payload from XDiTModel.")
 
     if not dry_run and not model.get("_preloaded") and not model.get("_deferred_image_warm"):
-        raise RuntimeError("Model has not warmed the xDiT worker. Queue Model before Sample.")
+        raise RuntimeError(
+            "The xDiT worker is not ready. Queue xDiT Model before Sample; if Model already "
+            "ran, check its residency policy and the ComfyUI server log."
+        )
 
     generation_kwargs = _merge_generation_kwargs(
         preset,

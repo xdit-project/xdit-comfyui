@@ -57,22 +57,27 @@ Add the **xDiT Starter** template or connect the nodes manually.
 1. In **xDiT Preset**, select the detected GPU family, GPU count, and a matching preset.
 2. In **xDiT Model**, review the model, GPU assignment, and residency policy.
 3. In **xDiT Sample**, enter a prompt and queue the workflow.
-4. Use **Unload Model (Free VRAM)** when you no longer need the warm model.
+4. Connect **Save Result** to **Save xDiT Image** and **Save xDiT Video**. The starter
+   template already connects both and clears whichever media type the run did not produce.
+5. Free GPU memory with **Unload model** in the xDiT sidebar, or use
+   **xDiT → Unload all xDiT models** from the canvas menu.
 
 The xDiT sidebar shows resident workers, assigned GPUs, memory use, and unload controls.
 
 ## Nodes
 
-| Node            | Purpose                                                              |
-| --------------- | -------------------------------------------------------------------- |
-| **xDiT Preset** | Applies a benchmark-tested model, GPU, and generation configuration. |
-| **xDiT Model**  | Loads and keeps an xDiT worker ready for inference.                  |
-| **xDiT Sample** | Generates images or video from the loaded model.                     |
+| Node                | Purpose                                                                    |
+| ------------------- | -------------------------------------------------------------------------- |
+| **xDiT Preset**     | Applies a benchmark-tested model, GPU, and generation configuration.       |
+| **xDiT Model**      | Configures a worker and warms it when its required inputs are available.   |
+| **xDiT Sample**     | Generates an image or video with the configured worker.                    |
+| **Save xDiT Image** | Saves image results and emits an empty output after video runs.             |
+| **Save xDiT Video** | Saves video results and emits an empty output after image runs.             |
 
-Model, residency, and compilation are always visible. Less frequently changed controls
-are grouped into model cache, parallelism, memory, VAE, attention, GEMM precision, step
-cache, and optional model-specific sections. Unsupported controls are disabled or hidden
-for the selected model.
+Model, residency, and compilation are always visible. Less frequently changed Model controls
+are grouped into model cache, parallelism, memory, VAE parallelism, attention, GEMM precision,
+step cache, and optional model-specific sections. Sample keeps decode-time tiling and slicing
+under **VAE Decode**. Unsupported controls are disabled or hidden for the selected model.
 
 ## Model storage
 
@@ -83,9 +88,10 @@ With the default `auto` setting, downloads use the first configured Hugging Face
 3. A populated container cache at `/cache/huggingface`
 4. `ComfyUI/models/huggingface`
 
-The Model node shows the effective source and path. Choose `custom_path` to specify another
-Hugging Face cache root. Authentication uses `HF_TOKEN` or `hf auth login`; credentials are
-not stored in workflows.
+The Model node shows the effective source and path. `comfy_models_shared` always uses the
+ComfyUI models path, `system_default` leaves Hugging Face paths unchanged, and `custom_path`
+uses the specified cache root. Authentication uses `HF_TOKEN` or `hf auth login`; credentials
+are not stored in workflows.
 
 Models are selected by Hugging Face repository ID. Arbitrary directories under
 `ComfyUI/models/diffusers` are not discovered; this plugin does not reorganize model files or
