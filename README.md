@@ -1,4 +1,4 @@
-# xDiT
+# xDiT ComfyUI
 
 xDiT for ComfyUI runs supported diffusion models through the
 [xDiT](https://github.com/xdit-project/xDiT) unified runner. It provides nodes for selecting
@@ -32,35 +32,30 @@ Restart ComfyUI after installation.
 
 ### Docker
 
-The included Dockerfile extends the published image selected by the launcher:
+The development launcher can use either maintained hardware profile:
 
 ```bash
 XDIT_PROFILE=instinct bash scripts/docker/run_dev.sh
-# or
 XDIT_PROFILE=rdna4 bash scripts/docker/run_dev.sh
 ```
 
-Other xDiT images remain usable without becoming maintained profiles:
+Or supply another compatible xDiT image:
 
 ```bash
 BASE_IMAGE=your-published-xdit-image bash scripts/docker/run_dev.sh
 ```
 
-Custom images use ROCm when `/dev/kfd` is present and otherwise use the NVIDIA Docker
-runtime. `XDIT_DOCKER_ROCM` can override detection. The plugin reads the installed xDiT
-CLI at startup, exposes the arguments that revision provides, and omits arguments it does not.
+See [docker/README.md](docker/README.md) for the base-image contract, runtime behavior, and
+available overrides.
 
 ## Quick start
 
 Add the **xDiT Starter** template or connect the nodes manually.
 
 1. In **xDiT Preset**, select the detected GPU family, GPU count, and a matching preset.
-2. In **xDiT Model**, review the model, GPU assignment, and residency policy.
+2. In **xDiT Model**, review the model and runtime settings.
 3. In **xDiT Sample**, enter a prompt and queue the workflow.
-4. Connect **Images** to **Save xDiT Image** and **Video** to **Save xDiT Video**. The
-   starter template connects both and clears whichever media type the run did not produce.
-5. Free GPU memory with **Unload model** in the xDiT sidebar, or use
-   **xDiT → Unload all xDiT models** from the canvas menu.
+4. Connect the result to its matching Save node. Unload models from the sidebar when finished.
 
 The xDiT sidebar shows resident workers, assigned GPUs, memory use, and unload controls.
 
@@ -69,15 +64,14 @@ The xDiT sidebar shows resident workers, assigned GPUs, memory use, and unload c
 | Node                | Purpose                                                                    |
 | ------------------- | -------------------------------------------------------------------------- |
 | **xDiT Preset**     | Applies a benchmark-tested model, GPU, and generation configuration.       |
-| **xDiT Model**      | Configures a worker and warms it when its required inputs are available.   |
-| **xDiT Sample**     | Generates an image or video with the configured worker.                    |
-| **Save xDiT Image** | Saves image results and emits an empty output after video runs.             |
-| **Save xDiT Video** | Saves video results and emits an empty output after image runs.             |
+| **xDiT Model**      | Configures and manages a model worker.                                     |
+| **xDiT Sample**     | Supplies generation inputs and produces an image or video.                 |
+| **Save xDiT Image** | Saves image results.                                                       |
+| **Save xDiT Video** | Saves video results.                                                       |
 
-Model, residency, and compilation are always visible. Less frequently changed Model controls
-are grouped into model cache, parallelism, memory, VAE parallelism, attention, GEMM precision,
-step cache, and optional model-specific sections. Sample keeps decode-time tiling and slicing
-under **VAE Decode**. Unsupported controls are disabled or hidden for the selected model.
+The Model node owns model initialization and runtime controls, including VAE settings. The
+Sample node owns generation inputs. Advanced controls are grouped and filtered according to
+the installed xDiT revision, selected model, and related settings.
 
 ## Model storage
 
@@ -134,22 +128,9 @@ bash scripts/browser/run_tests.sh --install  # install Chromium once
 bash scripts/browser/run_tests.sh
 ```
 
-For a GPU development container, run `bash scripts/docker/run_dev.sh`. The most useful
-overrides are:
-
-| Variable                               | Purpose                                                      |
-| -------------------------------------- | ------------------------------------------------------------ |
-| `BASE_IMAGE`                           | Use an unmanaged xDiT image instead of an AMD profile.       |
-| `XDIT_DOCKER_ROCM`                     | Override automatic ROCm (`1`) or NVIDIA (`0`) detection.     |
-| `XDIT_REPOSITORY`, `XDIT_REF`          | Build against another xDiT repository or revision.           |
-| `HF_CACHE_HOST`                        | Host Hugging Face cache to mount in the container.           |
-| `XDIT_DEV_IMAGE`, `XDIT_DEV_CONTAINER` | Override the development image or container name.            |
-| `COMFYUI_URL`                          | Target an existing ComfyUI server in live tests.             |
-| `XDIT_BROWSER_COMFYUI_PORT`            | Override the provisioned browser-test port.                  |
-
-Python node changes require a ComfyUI restart: `bash scripts/docker/restart.sh`.
-See [docker/README.md](docker/README.md) for container examples and the complete Docker
-configuration.
+For GPU container development and launcher overrides, see
+[docker/README.md](docker/README.md). Python node changes require a ComfyUI restart with
+`bash scripts/docker/restart.sh`.
 
 ## Releases
 
