@@ -75,13 +75,15 @@
     input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
     attention_backend: aiter_flydsl_fp8
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     enable_tiling: true
     cache_method: dbcache
     cache_config:
       residual_diff_threshold: 0.16
     use_fp8_text_encoder: true
-    ulysses_degree: 4
+    ulysses_degree: 2
+    use_cfg_parallel: true
+    use_fp8_comms: true
     fully_shard_degree: 2
     memory_efficient_sharding: true
     use_parallel_vae: true
@@ -107,13 +109,13 @@
     input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
     attention_backend: aiter_flydsl_fp8
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     enable_tiling: true
     cache_method: dbcache
     cache_config:
       residual_diff_threshold: 0.16
     use_fp8_text_encoder: true
-    ulysses_degree: 2
+    use_cfg_parallel: true
     fully_shard_degree: 2
     memory_efficient_sharding: true
     use_parallel_vae: true
@@ -139,7 +141,7 @@
     input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
     attention_backend: aiter_flydsl_fp8
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     enable_model_cpu_offload: true
     enable_tiling: true
     cache_method: dbcache

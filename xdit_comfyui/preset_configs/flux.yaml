@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 - name: flux.usp
-  tags: [release, mad, lucid, instinct, gfx942, gfx950]
+  tags: [release, mad, lucid, instinct, gfx942, gfx950, nightly]
   model: black-forest-labs/FLUX.1-dev
   runner: xdit
   args:
@@ -59,7 +59,7 @@
     memory_efficient_replicated_load: true
 
 - name: flux.single_gpu
-  tags: [release, instinct, gfx942, gfx950]
+  tags: [release, instinct, gfx942, gfx950, nightly]
   model: black-forest-labs/FLUX.1-dev
   runner: xdit
   args:
@@ -239,8 +239,9 @@
     guidance_scale: 0.0
     attention_backend: aiter_flydsl_fp8
     ulysses_degree: 4
+    use_fp8_comms: true
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     use_parallel_vae: true
     enable_tiling: true
     cache_method: dbcache
@@ -269,8 +270,9 @@
     guidance_scale: 0.0
     attention_backend: aiter_flydsl_fp8
     ulysses_degree: 4
+    use_fp8_comms: true
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     use_parallel_vae: true
     enable_tiling: true
     cache_method: dbcache
@@ -299,8 +301,9 @@
     guidance_scale: 0.0
     attention_backend: aiter_flydsl_fp8
     ulysses_degree: 2
+    use_fp8_comms: true
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     use_parallel_vae: true
     enable_tiling: true
     cache_method: dbcache
@@ -329,8 +332,9 @@
     guidance_scale: 0.0
     attention_backend: aiter_flydsl_fp8
     ulysses_degree: 2
+    use_fp8_comms: true
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     use_parallel_vae: true
     enable_tiling: true
     cache_method: dbcache
@@ -359,7 +363,7 @@
     guidance_scale: 0.0
     attention_backend: aiter_flydsl_fp8
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     cache_method: dbcache
     cache_config:
       residual_diff_threshold: 0.16
@@ -381,7 +385,7 @@
     guidance_scale: 0.0
     attention_backend: aiter_flydsl_fp8
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     enable_tiling: true
     cache_method: dbcache
     cache_config:

@@ -56,6 +56,7 @@
     attention_backend: aiter_flydsl_fp8
     use_cfg_parallel: true
     ulysses_degree: 2
+    use_fp8_comms: true
     use_torch_compile: true
     enable_tiling: true
     enable_slicing: true
@@ -81,6 +82,7 @@
     attention_backend: aiter_flydsl_fp8
     use_torch_compile: true
     cache_method: dbcache
+    use_parallel_vae: true
     enable_tiling: true
     enable_slicing: true
     vae_tile_size_height: 704

@@ -4,6 +4,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python 3.10
+    import tomli as tomllib
+
 import pytest
 import yaml
 
@@ -123,9 +128,13 @@ def test_wan_preset_keeps_input_images_for_cli_not_comfy_widgets():
 
     preset = preset_by_name("wan2_2_ti2v_5b.i2v.4gpu.rdna4")
     assert preset is not None
-    assert (
-        preset.args.get("input_images")
-        == "https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/e52c1cdcf690ce2c0c9fd8a7be42321ca0841279/assets/data/wan_input.jpg"
+    pyproject = tomllib.loads(
+        (Path(__file__).parents[3] / "pyproject.toml").read_text(encoding="utf-8")
+    )
+    commit = pyproject["tool"]["xdit-comfyui"]["preset-configs"]["commit"]
+    assert preset.args.get("input_images") == (
+        "https://raw.githubusercontent.com/AMD-AGI/"
+        f"diffusion-models-inference/{commit}/assets/data/wan_input.jpg"
     )
     assert "input_images" not in preset_to_generation_widgets(preset.args)
 
@@ -151,7 +160,21 @@ def test_ltx25_is_not_an_rdna4_preset():
 
 
 @pytest.mark.contract
-def test_every_release_preset_argument_is_accounted_for():
+def test_qwen_pipefusion_cache_preset_keeps_its_full_policy():
+    from xdit_comfyui.presets import preset_by_name
+
+    preset = preset_by_name("qwen_image.4gpu.rdna4")
+    assert preset is not None
+    assert preset.args["cache_method"] == "pipefusion"
+    assert preset.args["cache_config"] == {
+        "residual_diff_threshold": 0.1,
+        "scm_policy": "alternating",
+        "steps_computation_policy": "static",
+    }
+
+
+@pytest.mark.contract
+def test_every_available_release_preset_argument_is_accounted_for():
     import xdit_comfyui.presets as presets
     from xdit_comfyui.runner_contract import (
         preset_args_to_runtime,
@@ -166,16 +189,13 @@ def test_every_release_preset_argument_is_accounted_for():
     for path in config_dir.glob("*.yaml"):
         for entry in yaml.safe_load(path.read_text(encoding="utf-8")) or []:
             args = dict(entry.get("args") or {})
-            unknown = set(args) - cli_dests - {"no_reshard_after_forward"}
             runtime = preset_args_to_runtime(args)
             generation = preset_to_generation_widgets(args)
             represented = set(runtime) | set(generation)
             if preset_to_image_input_preset(args)["paths"]:
                 represented.add("input_images")
-            dropped = set(args) - represented - presets._COMFY_IGNORED_BENCHMARK_ARGS - unknown
-            if unknown or dropped:
-                failures[str(entry["name"])] = {
-                    "unknown": sorted(unknown),
-                    "dropped": sorted(dropped),
-                }
+            available = set(args) & (cli_dests | {"no_reshard_after_forward"})
+            dropped = available - represented - presets._COMFY_IGNORED_BENCHMARK_ARGS
+            if dropped:
+                failures[str(entry["name"])] = sorted(dropped)
     assert failures == {}

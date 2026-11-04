@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 - name: minimax_h3.default
-  tags: [release, mad, lucid, instinct, gfx942, gfx950]
+  tags: [release, mad, lucid, instinct, gfx942, gfx950, nightly]
   model: MiniMaxAI/MiniMax-H3
   runner: xdit
   args:

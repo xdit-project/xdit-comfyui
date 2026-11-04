@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 - name: hunyuanvideo_1_5.default.gfx942
-  tags: [release, mad, lucid, instinct, gfx942]
+  tags: [release, mad, lucid, instinct, gfx942, nightly]
   model: hunyuanvideo-community/HunyuanVideo-1.5-Diffusers-720p_t2v
   runner: xdit
   args:
@@ -21,7 +21,7 @@
     attention_backend: aiter
 
 - name: hunyuanvideo_1_5.default.gfx950
-  tags: [release, mad, lucid, instinct, gfx950]
+  tags: [release, mad, lucid, instinct, gfx950, nightly]
   model: hunyuanvideo-community/HunyuanVideo-1.5-Diffusers-720p_t2v
   runner: xdit
   args:

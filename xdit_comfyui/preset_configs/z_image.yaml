@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 - name: z_image.default
-  tags: [release, mad, lucid, instinct, gfx942, gfx950]
+  tags: [release, mad, lucid, instinct, gfx942, gfx950, nightly]
   model: Tongyi-MAI/Z-Image
   runner: xdit
   args:
@@ -67,8 +67,9 @@
     guidance_scale: 4.0
     attention_backend: aiter_flydsl_fp8
     ulysses_degree: 2
+    use_fp8_comms: true
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     cache_method: dbcache
     cache_config:
       residual_diff_threshold: 0.08
@@ -99,7 +100,7 @@
     guidance_scale: 4.0
     attention_backend: aiter_flydsl_fp8
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     cache_method: dbcache
     cache_config:
       residual_diff_threshold: 0.08
@@ -130,7 +131,7 @@
     guidance_scale: 4.0
     attention_backend: aiter_flydsl_fp8
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     cache_method: dbcache
     cache_config:
       residual_diff_threshold: 0.08

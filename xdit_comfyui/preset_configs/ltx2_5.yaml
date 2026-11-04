@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 - name: ltx2_5.default
-  tags: [release, mad, lucid, instinct, gfx942, gfx950]
+  tags: [release, mad, lucid, instinct, gfx942, gfx950, nightly]
   model: Lightricks/LTX-2.5-Diffusers
   runner: xdit
   args:
