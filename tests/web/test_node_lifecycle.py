@@ -294,6 +294,13 @@ def test_graph_loading_does_not_release_inactive_workflow_workers(harness):
     assert not [entry for entry in report["requests"] if entry["url"] == "/xdit/loader/reap"]
 
 
+def test_deleting_a_model_node_releases_its_worker(harness):
+    report, _ = harness
+    clears = [entry for entry in report["requests"] if entry["url"] == "/xdit/loader/clear"]
+    assert len(clears) == 1
+    assert clears[0]["method"] == "POST"
+
+
 def test_the_model_hands_its_input_defaults_to_the_sample_node(harness):
     """The Sample definition carries one model's numbers; the selected model wins."""
     report, payloads = harness
@@ -355,13 +362,14 @@ def test_sample_advanced_widgets_stay_plainly_visible():
         assert required[name][1].get("advanced") is not True
 
 
-def test_sample_owns_the_vae_decode_widgets():
-    from xdit_comfyui.runner_contract import SAMPLE_VAE_DESTS
+def test_model_owns_the_vae_decode_widgets():
+    from xdit_comfyui.runner_contract import MODEL_VAE_DESTS
 
-    required = _generation_input_types()["required"]
-    assert "VAE" in required
-    for name in SAMPLE_VAE_DESTS:
-        assert name in required
+    model_required = _runtime_loader_input_types()["required"]
+    sample_required = _generation_input_types()["required"]
+    for name in MODEL_VAE_DESTS:
+        assert name in model_required
+        assert name not in sample_required
 
 
 def test_dom_widgets_reserve_nonzero_bounded_rows(harness):

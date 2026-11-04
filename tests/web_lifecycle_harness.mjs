@@ -95,6 +95,7 @@ globalThis.fetch = async (url, init) => {
           ? presetPreviewMultiGpu
           : presetPreview,
       "/xdit/loader/preview": loaderPreviewFor(requestBody),
+      "/xdit/loader/clear": { evicted: true },
       "/xdit/loader/reap": { released: [] },
     };
     const body = routes[String(url)];
@@ -495,18 +496,6 @@ const SAMPLE_GROUPS = [
     expand_widget: "Video",
     widgets: ["num_frames", "output_fps", "flow_shift", "guidance_scale_2"],
   },
-  {
-    id: "vae",
-    expand_widget: "VAE",
-    widgets: [
-      "enable_tiling",
-      "enable_slicing",
-      "vae_tile_size_height",
-      "vae_tile_size_width",
-      "vae_tile_overlap_height",
-      "vae_tile_overlap_width",
-    ],
-  },
 ];
 
 function sampleLayout() {
@@ -749,6 +738,9 @@ const taskAfterLeavingVideoModel = taskState();
 
 const domLayout = (node, name) =>
   node.widgets.find((widget) => widget.name === name)?.computeLayoutSize?.();
+
+modelNode.onRemoved?.();
+await settle();
 
 console.log(
   JSON.stringify(

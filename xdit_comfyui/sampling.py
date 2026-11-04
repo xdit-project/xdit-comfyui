@@ -38,12 +38,6 @@ def _execute_sample(
     flow_shift=0.0,
     guidance_scale_2=0.0,
     resize_input_images=False,
-    enable_tiling=False,
-    enable_slicing=False,
-    vae_tile_size_height=0,
-    vae_tile_size_width=0,
-    vae_tile_overlap_height=0,
-    vae_tile_overlap_width=0,
     output_fps=0,
     timeout_seconds,
     unique_id=None,
@@ -109,16 +103,6 @@ def _execute_sample(
     exec_cfg = runtime.pop("_exec", {})
     if not isinstance(exec_cfg, dict):
         raise ValueError("model missing _exec configuration.")
-    runtime.update(
-        {
-            "enable_tiling": bool(enable_tiling),
-            "enable_slicing": bool(enable_slicing),
-            "vae_tile_size_height": int(vae_tile_size_height or 0) or None,
-            "vae_tile_size_width": int(vae_tile_size_width or 0) or None,
-            "vae_tile_overlap_height": int(vae_tile_overlap_height or 0) or None,
-            "vae_tile_overlap_width": int(vae_tile_overlap_width or 0) or None,
-        }
-    )
 
     from .model_info import align_generation_resolution
 

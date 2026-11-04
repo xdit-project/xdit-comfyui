@@ -884,6 +884,13 @@ def _wait_for_worker_ready(ready_path, proc, timeout_seconds, started_at, log_pa
 
 def _pid_alive(pid):
     try:
+        stat = Path(f"/proc/{int(pid)}/stat").read_text(encoding="utf-8")
+        state = stat.rpartition(")")[2].strip().split(maxsplit=1)[0]
+        if state == "Z":
+            return False
+    except (OSError, ValueError, IndexError):
+        pass
+    try:
         os.kill(int(pid), 0)
         return True
     except OSError:

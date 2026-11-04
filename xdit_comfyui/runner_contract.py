@@ -47,7 +47,7 @@ _GENERATION_DESTS = frozenset(
 
 _AUTO_BACKEND_DESTS = frozenset({"attention_backend", "cross_attention_backend"})
 
-SAMPLE_VAE_DESTS = (
+MODEL_VAE_DESTS = (
     "enable_tiling",
     "enable_slicing",
     "vae_tile_size_height",
@@ -170,7 +170,6 @@ _LOADER_EXCLUDED_DESTS = frozenset(
         "use_fp4_gemms",
         "use_int8_gemms",
         "gemm_quantization",
-        *SAMPLE_VAE_DESTS,
         "warmup_calls",
         "profile",
         "profile_wait",
@@ -240,12 +239,7 @@ _LOADER_WIDGET_GROUPS = (
         "widgets": (
             "use_parallel_vae",
             "use_vae_channels_last_format",
-            "enable_tiling",
-            "enable_slicing",
-            "vae_tile_size_height",
-            "vae_tile_size_width",
-            "vae_tile_overlap_height",
-            "vae_tile_overlap_width",
+            *MODEL_VAE_DESTS,
         ),
     },
     {
@@ -1377,6 +1371,11 @@ def runtime_from_loader_widgets(
             continue
         runtime[dest] = widget_value_to_runtime(dest, values[dest])
     _apply_compound_widgets(runtime, values)
+    overlap_names = ("vae_tile_overlap_height", "vae_tile_overlap_width")
+    if any(runtime.get(name) is not None for name in overlap_names):
+        for name in overlap_names:
+            if values.get(name) not in (None, ""):
+                runtime[name] = int(values[name])
     cache_method = runtime.get("cache_method")
     if cache_method and str(cache_method).lower() not in ("", "none"):
         cache_config = _cache_config_from_widgets(values, registry_model=registry_model)
@@ -1468,7 +1467,6 @@ def preset_args_to_runtime(args: dict[str, Any]) -> dict[str, Any]:
         "cache_config",
         "use_torch_compile",
         *compound_runner_dests,
-        *SAMPLE_VAE_DESTS,
     }
     cli_dests = runner_cli_dests()
 

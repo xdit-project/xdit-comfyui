@@ -244,10 +244,13 @@ def test_prompt_hook_keeps_stale_video_fields_from_widgets():
     assert inputs["guidance_scale_2"] == 3.0
 
 
-def test_generate_is_changed_tracks_prompt():
+def test_generate_always_executes():
+    import math
+
     first = XDiTSample.fingerprint_inputs(prompt="a", seed=1)
     second = XDiTSample.fingerprint_inputs(prompt="b", seed=1)
-    assert first != second
+    assert math.isnan(first)
+    assert math.isnan(second)
 
 
 def test_normalize_task_rejects_zero():

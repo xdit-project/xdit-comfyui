@@ -17,7 +17,6 @@ from .presets import (
 )
 from .runner_contract import (
     _AUTO_BACKEND_DESTS,
-    SAMPLE_VAE_DESTS,
     cache_widget_defaults_for_model,
     default_loader_widget_values,
     loader_config_input_types,
@@ -25,7 +24,6 @@ from .runner_contract import (
     loader_optional_input_types,
     loader_pinned_input_types,
     loader_schema,
-    loader_widget_spec,
     runner_cli_dests,
     runtime_from_loader_widgets,
 )
@@ -369,15 +367,6 @@ def _generation_input_types():
                     ),
                 },
             ),
-            "VAE": (
-                "BOOLEAN",
-                {
-                    "default": False,
-                    "display_name": "VAE DECODE",
-                    "tooltip": "Show or hide VAE decoding and tiling settings.",
-                },
-            ),
-            **{name: loader_widget_spec(name) for name in SAMPLE_VAE_DESTS},
         },
         "optional": {
             "images": (

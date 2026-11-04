@@ -192,6 +192,21 @@ class RunnerNodesTest(unittest.TestCase):
         self.assertEqual(runtime["_preset"]["name"], "flux.1gpu.rdna4")
         self.assertEqual(runtime["attention_backend"], "aiter_flydsl")
 
+    def test_model_prewarms_with_preset_vae_settings(self):
+        spec = _preset_spec("qwen_image.1gpu.rdna4")
+        kwargs = _preset_synced_loader_kwargs(spec)
+        seen = {}
+
+        def capture(runtime, loader_node_id, timeout_seconds=None):
+            seen.update(runtime)
+            return runtime
+
+        with mock.patch("xdit_comfyui.nodes._ensure_loader_worker", side_effect=capture):
+            XDiTModel.execute(**kwargs, preset=spec)
+
+        self.assertTrue(seen["enable_tiling"])
+        self.assertTrue(seen["enable_slicing"])
+
     def test_runtime_loader_named_preset_applies_gpu_count(self):
         spec = _preset_spec("z_image_turbo.4gpu.rdna4")
         with self.assertRaisesRegex(ValueError, "gpu_device_ids must list exactly 1"):
@@ -316,7 +331,8 @@ class RunnerNodesTest(unittest.TestCase):
         self.assertIn("attention", required["attention_backend"][1]["tooltip"].lower())
         self.assertIn("residual", required["residual_diff_threshold"][1]["tooltip"].lower())
         self.assertIn("cpu_offload_mode", required)
-        self.assertIn("enable_tiling", _generation_input_types()["required"])
+        self.assertIn("enable_tiling", required)
+        self.assertNotIn("enable_tiling", _generation_input_types()["required"])
         self.assertIn("cpu offload", required["cpu_offload_mode"][1]["tooltip"].lower())
 
     def test_runtime_loader_group_cpu_offload(self):
@@ -690,13 +706,16 @@ class RunnerNodesTest(unittest.TestCase):
             )
         evict.assert_called_once()
 
-    def test_load_model_is_changed_includes_preset(self):
+    def test_model_always_reconciles_its_worker(self):
+        import math
+
         flux = _preset_spec("flux.1gpu.rdna4")
         wan = _preset_spec("wan2_2_ti2v_5b.i2v.4gpu.rdna4")
         kwargs = _loader_kwargs()
         flux_fp = XDiTModel.fingerprint_inputs(preset=flux, **kwargs)
         wan_fp = XDiTModel.fingerprint_inputs(preset=wan, **kwargs)
-        self.assertNotEqual(flux_fp, wan_fp)
+        self.assertTrue(math.isnan(flux_fp))
+        self.assertTrue(math.isnan(wan_fp))
 
     def test_runtime_cache_key_includes_preset_execution_key(self):
         flux = _preset_spec("flux.1gpu.rdna4")

@@ -12,7 +12,7 @@ from xdit_comfyui.presets import (
     resolve_preset_choice,
 )
 from xdit_comfyui.runner_contract import (
-    SAMPLE_VAE_DESTS,
+    MODEL_VAE_DESTS,
     cache_config_baseline,
     cache_config_fields_for_method,
     cache_config_widget_names,
@@ -48,8 +48,8 @@ class RunnerContractTest(unittest.TestCase):
             "cross_attention_backend",
         ):
             self.assertIn(key, dests)
-        for key in SAMPLE_VAE_DESTS:
-            self.assertNotIn(key, dests)
+        for key in MODEL_VAE_DESTS:
+            self.assertIn(key, dests)
 
     def test_every_runner_arg_is_either_a_widget_or_explicitly_excluded(self):
         """A new xdit CLI arg must reach the UI without a code change here."""
@@ -138,7 +138,10 @@ class RunnerContractTest(unittest.TestCase):
         self.assertIn("text_encoder_tp_degree", groups["parallelism"])
         self.assertIn("memory_efficient_replicated_load", groups["memory"])
         self.assertIn("group_offload_low_cpu_mem", groups["memory"])
-        self.assertEqual(groups["vae"], {"use_parallel_vae", "use_vae_channels_last_format"})
+        self.assertEqual(
+            groups["vae"],
+            {"use_parallel_vae", "use_vae_channels_last_format", *MODEL_VAE_DESTS},
+        )
         self.assertIn("use_fp8_text_encoder", groups["quantization"])
         self.assertIn("vsa_drop_rates", groups["attention"])
 
@@ -303,6 +306,23 @@ class RunnerContractTest(unittest.TestCase):
         else:
             self.assertTrue(runtime["use_fp4_gemms"])
             self.assertFalse(runtime["use_fp8_gemms"])
+
+    def test_vae_overlap_pair_preserves_an_explicit_zero_width(self):
+        defaults = default_loader_widget_values()
+        self.assertIsNone(runtime_from_loader_widgets(defaults)["vae_tile_overlap_width"])
+
+        runtime = runtime_from_loader_widgets(
+            {
+                **defaults,
+                "enable_tiling": True,
+                "vae_tile_overlap_height": 88,
+                "vae_tile_overlap_width": 0,
+            }
+        )
+        self.assertEqual(
+            (runtime["vae_tile_overlap_height"], runtime["vae_tile_overlap_width"]),
+            (88, 0),
+        )
 
     def test_schema_exposes_combo_options(self):
         schema = loader_schema()

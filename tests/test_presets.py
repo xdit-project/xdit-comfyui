@@ -249,31 +249,20 @@ class PresetTest(unittest.TestCase):
             ["num_frames", "output_fps", "flow_shift", "guidance_scale_2"],
         )
         self.assertEqual(
-            sample_order[sample_order.index("resize_input_images") : sample_order.index("VAE")],
+            sample_order[sample_order.index("resize_input_images") :],
             ["resize_input_images", "max_sequence_length", "timeout_seconds"],
         )
         self.assertIn("Video", sample_order)
-        self.assertEqual(
-            sample_order[sample_order.index("VAE") + 1 :],
-            [
-                "enable_tiling",
-                "enable_slicing",
-                "vae_tile_size_height",
-                "vae_tile_size_width",
-                "vae_tile_overlap_height",
-                "vae_tile_overlap_width",
-            ],
-        )
+        self.assertNotIn("VAE", sample_order)
         self.assertNotIn("Advanced", sample_order)
         self.assertFalse(sample_required["resize_input_images"][1]["default"])
         self.assertEqual(sample_required["output_fps"][1]["default"], 0)
 
-    def test_vae_defaults_are_owned_by_the_sample_preset_payload(self):
+    def test_vae_defaults_are_owned_by_the_model_preset_payload(self):
         from xdit_comfyui.presets import build_preset_spec
 
         spec = build_preset_spec("flux2.i2i_2k.1gpu.rdna4", "gfx1201")
-        self.assertTrue(spec["vae_defaults"]["enable_tiling"])
-        self.assertNotIn("enable_tiling", spec["runtime_widgets"])
+        self.assertTrue(spec["runtime_widgets"]["enable_tiling"])
 
     def test_preset_spec_reads_explicit_model_gpu_count(self):
         preset = preset_by_name("flux.usp_1k.4gpu.rdna4")

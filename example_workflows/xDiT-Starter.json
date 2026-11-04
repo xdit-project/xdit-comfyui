@@ -292,6 +292,54 @@
           "link": null
         },
         {
+          "name": "enable_tiling",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "enable_tiling"
+          },
+          "link": null
+        },
+        {
+          "name": "enable_slicing",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "enable_slicing"
+          },
+          "link": null
+        },
+        {
+          "name": "vae_tile_size_height",
+          "type": "INT",
+          "widget": {
+            "name": "vae_tile_size_height"
+          },
+          "link": null
+        },
+        {
+          "name": "vae_tile_size_width",
+          "type": "INT",
+          "widget": {
+            "name": "vae_tile_size_width"
+          },
+          "link": null
+        },
+        {
+          "name": "vae_tile_overlap_height",
+          "type": "INT",
+          "widget": {
+            "name": "vae_tile_overlap_height"
+          },
+          "link": null
+        },
+        {
+          "name": "vae_tile_overlap_width",
+          "type": "INT",
+          "widget": {
+            "name": "vae_tile_overlap_width"
+          },
+          "link": null
+        },
+        {
           "name": "ATTENTION",
           "type": "BOOLEAN",
           "widget": {
@@ -808,6 +856,12 @@
         "VAE": false,
         "use_parallel_vae": false,
         "use_vae_channels_last_format": false,
+        "enable_tiling": false,
+        "enable_slicing": false,
+        "vae_tile_size_height": 0,
+        "vae_tile_size_width": 0,
+        "vae_tile_overlap_height": 0,
+        "vae_tile_overlap_width": 0,
         "ATTENTION": false,
         "attention_backend": "auto",
         "cross_attention_backend": "auto",
@@ -1010,62 +1064,6 @@
           "link": null
         },
         {
-          "name": "VAE",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "VAE"
-          },
-          "link": null
-        },
-        {
-          "name": "enable_tiling",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "enable_tiling"
-          },
-          "link": null
-        },
-        {
-          "name": "enable_slicing",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "enable_slicing"
-          },
-          "link": null
-        },
-        {
-          "name": "vae_tile_size_height",
-          "type": "INT",
-          "widget": {
-            "name": "vae_tile_size_height"
-          },
-          "link": null
-        },
-        {
-          "name": "vae_tile_size_width",
-          "type": "INT",
-          "widget": {
-            "name": "vae_tile_size_width"
-          },
-          "link": null
-        },
-        {
-          "name": "vae_tile_overlap_height",
-          "type": "INT",
-          "widget": {
-            "name": "vae_tile_overlap_height"
-          },
-          "link": null
-        },
-        {
-          "name": "vae_tile_overlap_width",
-          "type": "INT",
-          "widget": {
-            "name": "vae_tile_overlap_width"
-          },
-          "link": null
-        },
-        {
           "name": "images",
           "type": "IMAGE",
           "link": 5
@@ -1112,14 +1110,7 @@
         "guidance_scale_2": 0.0,
         "resize_input_images": false,
         "max_sequence_length": 512,
-        "timeout_seconds": 900,
-        "VAE": false,
-        "enable_tiling": false,
-        "enable_slicing": false,
-        "vae_tile_size_height": 0,
-        "vae_tile_size_width": 0,
-        "vae_tile_overlap_height": 0,
-        "vae_tile_overlap_width": 0
+        "timeout_seconds": 900
       }
     },
     {
@@ -1221,7 +1212,7 @@
       1,
       0,
       2,
-      81,
+      87,
       "*"
     ],
     [
@@ -1229,7 +1220,7 @@
       1,
       2,
       3,
-      24,
+      17,
       "*"
     ],
     [
@@ -1253,7 +1244,7 @@
       1,
       1,
       3,
-      23,
+      16,
       "IMAGE"
     ],
     [
@@ -1277,6 +1268,6 @@
     }
   },
   "version": 0.4,
-  "revision": "ba7d9a9bd548",
-  "id": "3dbcbec9-e7f3-49ff-9c94-8c1bf3b8f624"
+  "revision": "2c72f8cedd32",
+  "id": "c4d39b99-ffec-4c09-bc75-d55af11b2eef"
 }

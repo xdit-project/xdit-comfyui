@@ -7,7 +7,6 @@ from typing import Any
 import yaml
 
 from .runner_contract import (
-    SAMPLE_VAE_DESTS,
     preset_args_to_runtime,
     preset_to_generation_widgets,
     preset_to_image_input_preset,
@@ -465,7 +464,6 @@ def build_preset_spec(
     if selected_tag and selected_tag not in preset.tags:
         return spec
     choices = registry_choices or []
-    preset_runtime = preset_args_to_runtime(preset.args)
     spec.update(
         {
             "preset_name": preset.name,
@@ -477,11 +475,6 @@ def build_preset_spec(
                 model_choice_for_benchmark_model(preset.model, choices) if choices else preset.model
             ),
             "runtime_widgets": preset_to_loader_widgets(preset),
-            "vae_defaults": {
-                name: preset_runtime[name]
-                for name in SAMPLE_VAE_DESTS
-                if preset_runtime.get(name) is not None
-            },
             "generation_defaults": preset_to_generation_widgets(preset.args),
             "image_input_preset": preset_to_image_input_preset(preset.args),
         }

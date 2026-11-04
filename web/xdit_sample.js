@@ -50,12 +50,6 @@ const PRESET_WIDGETS = [
   "flow_shift",
   "guidance_scale_2",
   "resize_input_images",
-  "enable_tiling",
-  "enable_slicing",
-  "vae_tile_size_height",
-  "vae_tile_size_width",
-  "vae_tile_overlap_height",
-  "vae_tile_overlap_width",
 ];
 
 const VIDEO_CLEAR_DEFAULTS = {
@@ -73,23 +67,7 @@ const VIDEO_GROUP = {
   widgets: ["num_frames", "output_fps", "flow_shift", "guidance_scale_2"],
 };
 
-const VAE_GROUP = {
-  id: "vae",
-  label: t("xdit.group.vae.label"),
-  expand_widget: "VAE",
-  collapsed: true,
-  description: t("xdit.group.vae.description"),
-  widgets: [
-    "enable_tiling",
-    "enable_slicing",
-    "vae_tile_size_height",
-    "vae_tile_size_width",
-    "vae_tile_overlap_height",
-    "vae_tile_overlap_width",
-  ],
-};
-
-const WIDGET_GROUPS = [VIDEO_GROUP, VAE_GROUP];
+const WIDGET_GROUPS = [VIDEO_GROUP];
 
 const EXPAND_WIDGETS = WIDGET_GROUPS.map((group) => group.expand_widget);
 
@@ -405,7 +383,6 @@ async function applyPreset(node, trigger, payload) {
   }
   const presetChanged = trigger !== node._xditLastPresetTrigger;
   const defaults = { ...(spec.generation_defaults || {}) };
-  Object.assign(defaults, spec.vae_defaults || {});
   applyGenerationDefaults(node, defaults, { presetChanged });
   node._xditLastPresetTrigger = trigger;
   node._xditLastPresetApplied = true;

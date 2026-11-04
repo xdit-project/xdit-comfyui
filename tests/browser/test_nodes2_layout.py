@@ -129,9 +129,9 @@ def test_sample_vram_and_groups_render_in_order(vue_nodes):
             assert canvas_state["rows"], f"Sample did not load in canvas graph: {canvas_state}"
             names = [row["name"] for row in canvas_state["rows"]]
             assert "xdit_info" not in names
-            assert names.index("Video") < names.index("VAE")
-            rows = {row["name"]: row for row in canvas_state["rows"]}
-            assert rows["enable_tiling"]["hidden"] is True
+            assert "Video" in names
+            assert "VAE" not in names
+            assert "enable_tiling" not in names
             browser.close()
             return
 

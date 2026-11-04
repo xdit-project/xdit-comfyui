@@ -1,7 +1,5 @@
 """The xDiT node classes. Everything they call lives in a sibling module."""
 
-from functools import lru_cache
-
 from .identity import (
     COMFY_CATEGORY,
     MODEL_NODE_ID,
@@ -23,10 +21,7 @@ from .presets import (
 )
 from .progress import _node_id_str
 from .residency_allocator import normalize_residency
-from .runner_contract import (
-    loader_config_widget_names,
-    preset_to_image_input_preset,
-)
+from .runner_contract import preset_to_image_input_preset
 from .runtime_config import (
     _generation_input_types,
     _merge_loader_kwargs,
@@ -117,24 +112,6 @@ class XDiTPreset(io.ComfyNode):
         return io.NodeOutput(spec, loaded, spec)
 
 
-@lru_cache(maxsize=1)
-def _loader_fingerprint_keys():
-    """Deferred: touching the xdit CLI at import costs ~6s of ComfyUI startup."""
-    return (
-        "model",
-        "custom_model_id",
-        "task",
-        "gpu_device_ids",
-        # Re-execute so a flipped policy reaches the runtime; the worker cache key
-        # excludes residency, so re-running reuses the warm worker.
-        "residency",
-        "use_torch_compile",
-        "hf_cache_mode",
-        "hf_cache_dir",
-        *loader_config_widget_names(),
-    )
-
-
 _WIRED = object()
 
 
@@ -198,9 +175,10 @@ class XDiTModel(io.ComfyNode):
 
     @classmethod
     def fingerprint_inputs(cls, preset=None, **kwargs):
-        parts = [repr(kwargs.get(key)) for key in _loader_fingerprint_keys() if key in kwargs]
-        parts.append(_preset_execution_fingerprint(preset))
-        return tuple(parts)
+        del preset, kwargs
+        # A cached runtime can refer to a worker replaced by a later model selection.
+        # Reconcile on every queue; matching live workers are still reused.
+        return float("NaN")
 
     @classmethod
     def execute(cls, preset=None, unique_id=None, **kwargs):
@@ -259,30 +237,6 @@ class XDiTModel(io.ComfyNode):
 
 
 class XDiTSample(io.ComfyNode):
-
-    _GENERATE_FINGERPRINT_KEYS = (
-        "prompt",
-        "negative_prompt",
-        "seed",
-        "num_inference_steps",
-        "guidance_scale",
-        "max_sequence_length",
-        "timeout_seconds",
-        "height",
-        "width",
-        "num_frames",
-        "flow_shift",
-        "guidance_scale_2",
-        "resize_input_images",
-        "output_fps",
-        "enable_tiling",
-        "enable_slicing",
-        "vae_tile_size_height",
-        "vae_tile_size_width",
-        "vae_tile_overlap_height",
-        "vae_tile_overlap_width",
-    )
-
     @classmethod
     def define_schema(cls):
         inputs, hidden = inputs_from_legacy(_generation_input_types())
@@ -302,14 +256,10 @@ class XDiTSample(io.ComfyNode):
 
     @classmethod
     def fingerprint_inputs(cls, images=None, preset=None, **kwargs):
-        import torch  # type: ignore[reportMissingImports]
-
-        parts = [repr(kwargs.get(key)) for key in cls._GENERATE_FINGERPRINT_KEYS if key in kwargs]
-        parts.append(_preset_execution_fingerprint(preset))
-        if isinstance(images, torch.Tensor):
-            tensor = images.detach().cpu()
-            parts.append((tuple(tensor.shape), float(tensor.mean()), float(tensor.std())))
-        return tuple(parts)
+        del images, preset, kwargs
+        # Sampling is an action; never return an older generated output from Comfy's
+        # multi-entry cache when the workflow revisits a previous configuration.
+        return float("NaN")
 
     @classmethod
     def execute(
@@ -330,20 +280,13 @@ class XDiTSample(io.ComfyNode):
         resize_input_images=False,
         max_sequence_length=256,
         timeout_seconds=900,
-        VAE=False,
-        enable_tiling=False,
-        enable_slicing=False,
-        vae_tile_size_height=0,
-        vae_tile_size_width=0,
-        vae_tile_overlap_height=0,
-        vae_tile_overlap_width=0,
         images=None,
         preset=None,
         unique_id=None,
         **kwargs,
     ):
         unique_id = unique_id or getattr(getattr(cls, "hidden", None), "unique_id", None)
-        del VAE, Video, kwargs
+        del Video, kwargs
         timeout_seconds = _normalize_timeout_seconds(timeout_seconds)
         try:
             images, video = _execute_sample(
@@ -362,12 +305,6 @@ class XDiTSample(io.ComfyNode):
                 flow_shift=flow_shift,
                 guidance_scale_2=guidance_scale_2,
                 resize_input_images=resize_input_images,
-                enable_tiling=enable_tiling,
-                enable_slicing=enable_slicing,
-                vae_tile_size_height=vae_tile_size_height,
-                vae_tile_size_width=vae_tile_size_width,
-                vae_tile_overlap_height=vae_tile_overlap_height,
-                vae_tile_overlap_width=vae_tile_overlap_width,
                 output_fps=max(int(output_fps or 0), 0),
                 timeout_seconds=timeout_seconds,
                 unique_id=unique_id,

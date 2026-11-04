@@ -25,6 +25,7 @@ from xdit_comfyui.runtime_env import _allocate_master_port
 from xdit_comfyui.worker import (
     _abort_distributed_worker,
     _clear_all_runtime_caches,
+    _pid_alive,
     _reap_children_nonblocking,
     _run_distributed_worker,
     _terminate_group,
@@ -442,6 +443,14 @@ class ProgressParseTest(unittest.TestCase):
 
 
 class ChildReaperTest(unittest.TestCase):
+    def test_zombie_process_is_not_alive(self):
+        with (
+            mock.patch.object(Path, "read_text", return_value="123 (worker) Z 1 2 3"),
+            mock.patch("xdit_comfyui.worker.os.kill") as kill,
+        ):
+            self.assertFalse(_pid_alive(123))
+        kill.assert_not_called()
+
     def test_reap_children_nonblocking_empty(self):
         self.assertEqual(_reap_children_nonblocking(), 0)
 

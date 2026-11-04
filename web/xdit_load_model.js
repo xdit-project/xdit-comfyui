@@ -774,6 +774,20 @@ export async function releaseAllLoaders() {
   }
 }
 
+async function releaseRemovedLoader(nodeId) {
+  try {
+    const response = await fetch("/xdit/loader/clear", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ node_id: String(nodeId) }),
+    });
+    if (!response.ok) throw new Error(`Unload failed (${response.status})`);
+    notifyResidencyChange();
+  } catch (error) {
+    console.warn(`[xdit] releasing deleted Model node ${nodeId} failed`, error);
+  }
+}
+
 /**
  * Every config widget is a declared node input, so litegraph has already created
  * them by the time an extension sees the node. Group setup therefore succeeds on
@@ -804,7 +818,9 @@ async function setupLoaderNode(node) {
     const previousRemoved = node.onRemoved;
     node.onRemoved = function (...args) {
       clearTimeout(this._xditSyncTimer);
+      const nodeId = this.id;
       previousRemoved?.apply(this, args);
+      void releaseRemovedLoader(nodeId);
     };
   }
 

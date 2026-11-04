@@ -37,6 +37,17 @@ function graphNodes(type) {
   );
 }
 
+async function reapDeletedLoaders(modelNodes) {
+  const response = await fetch("/xdit/loader/reap", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      live_node_ids: modelNodes.map((node) => String(node.id)),
+    }),
+  });
+  if (!response.ok) throw new Error(`Refresh cleanup failed (${response.status})`);
+}
+
 function nodeValue(node, name) {
   return node.widgets?.find((widget) => widget.name === name)?.value;
 }
@@ -184,7 +195,15 @@ function renderSidebar(element) {
   element.append(toolbar, content);
 
   let active = true;
-  const refresh = async () => {
+  const refresh = async (reapDeleted = false) => {
+    const modelNodes = graphNodes("xDiT.Model");
+    if (reapDeleted) {
+      try {
+        await reapDeletedLoaders(modelNodes);
+      } catch (error) {
+        console.warn("[xdit] deleted Model cleanup failed", error);
+      }
+    }
     const payload = await fetchResidency();
     if (!active) return;
     content.replaceChildren();
@@ -193,7 +212,6 @@ function renderSidebar(element) {
       return;
     }
     const presetNodes = graphNodes("xDiT.Preset");
-    const modelNodes = graphNodes("xDiT.Model");
     const sampleNodes = graphNodes("xDiT.Sample");
     const loaders = payload.loaders || [];
     if (
@@ -238,7 +256,7 @@ function renderSidebar(element) {
       );
     }
   };
-  refreshButton.addEventListener("click", refresh);
+  refreshButton.addEventListener("click", () => refresh(true));
   unloadButton.addEventListener("click", async () => {
     unloadButton.disabled = true;
     try {

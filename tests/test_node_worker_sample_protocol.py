@@ -268,13 +268,16 @@ class RunnerNodesTest(unittest.TestCase):
         self.assertEqual(metadata["output_kind"], "image")
         self.assertIn("runner created", stdout)
 
-    def test_sample_is_changed_includes_preset(self):
+    def test_sample_always_runs_against_the_current_worker(self):
+        import math
+
         flux = _preset_spec("flux.1gpu.rdna4")
         wan = _preset_spec("wan2_2_ti2v_5b.i2v.4gpu.rdna4")
         kwargs = _generate_kwargs()
         flux_fp = XDiTSample.fingerprint_inputs(preset=flux, **kwargs)
         wan_fp = XDiTSample.fingerprint_inputs(preset=wan, **kwargs)
-        self.assertNotEqual(flux_fp, wan_fp)
+        self.assertTrue(math.isnan(flux_fp))
+        self.assertTrue(math.isnan(wan_fp))
 
     def test_execute_sample_allows_overriding_preset_parallelism(self):
         """A preset is a source of defaults, not a runtime contract.

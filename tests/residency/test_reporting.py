@@ -82,10 +82,13 @@ class ResidencyPolicyTest(unittest.TestCase):
         self.assertEqual(worker._runtime_cache_key(warm), worker._runtime_cache_key(freed))
 
     def test_residency_change_re_executes_the_model_node(self):
+        import math
+
         base = {"model": "FLUX.1-dev", "gpu_device_ids": "0"}
         warm = nodes.XDiTModel.fingerprint_inputs(**base, residency=RESIDENCY_KEEP_GPU)
         freed = nodes.XDiTModel.fingerprint_inputs(**base, residency=RESIDENCY_RELEASE)
-        self.assertNotEqual(warm, freed)
+        self.assertTrue(math.isnan(warm))
+        self.assertTrue(math.isnan(freed))
 
 
 class PromptConsumerCountTest(unittest.TestCase):
