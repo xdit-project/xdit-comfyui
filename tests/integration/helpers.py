@@ -58,7 +58,7 @@ def stop_comfyui_dev_script() -> str:
 
 
 def ensure_comfy_importable() -> None:
-    """The Sample node returns ComfyUI's ExecutionBlocker, so ComfyUI must be importable."""
+    """Add ComfyUI to sys.path for integration cases that exercise its runtime types."""
     import os
     import sys
 

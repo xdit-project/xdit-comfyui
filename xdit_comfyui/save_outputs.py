@@ -17,11 +17,11 @@ IMAGE_FILENAME_PREFIX = "xdit"
 VIDEO_FILENAME_PREFIX = "video/xdit"
 
 
-def _save_input_types(filename_prefix: str) -> dict[str, Any]:
+def _save_input_types(input_name: str, input_type: str, filename_prefix: str) -> dict[str, Any]:
     return {
-        "result": (
-            "*",
-            {"tooltip": "Image or video result from xDiT Sample."},
+        input_name: (
+            input_type,
+            {"tooltip": f"{input_name.title()} from xDiT Sample."},
         ),
         "filename_prefix": (
             "STRING",
@@ -34,13 +34,13 @@ def _save_input_types(filename_prefix: str) -> dict[str, Any]:
 
 
 def save_image_input_types() -> dict[str, Any]:
-    return {"required": _save_input_types(IMAGE_FILENAME_PREFIX)}
+    return {"required": _save_input_types("images", "IMAGE", IMAGE_FILENAME_PREFIX)}
 
 
 def save_video_input_types() -> dict[str, Any]:
     return {
         "required": {
-            **_save_input_types(VIDEO_FILENAME_PREFIX),
+            **_save_input_types("video", "VIDEO", VIDEO_FILENAME_PREFIX),
             "format": (
                 Types.VideoContainer.as_input(),
                 {
@@ -72,10 +72,6 @@ def _save_schema(node_id: str, description: str, input_types: dict[str, Any]):
     )
 
 
-def _result_value(result: Any, name: str):
-    return result.get(name) if isinstance(result, dict) else None
-
-
 def _empty_media_output():
     return io.NodeOutput(ui=ui.SavedImages([]))
 
@@ -101,8 +97,7 @@ class XDiTSaveImage(io.ComfyNode):
         )
 
     @classmethod
-    def execute(cls, result, filename_prefix=IMAGE_FILENAME_PREFIX):
-        images = _result_value(result, "images")
+    def execute(cls, images, filename_prefix=IMAGE_FILENAME_PREFIX):
         if images is None:
             return _empty_media_output()
         saved = ui.ImageSaveHelper.get_save_images_ui(images, filename_prefix, cls)
@@ -119,8 +114,7 @@ class XDiTSaveVideo(io.ComfyNode):
         )
 
     @classmethod
-    def execute(cls, result, filename_prefix=VIDEO_FILENAME_PREFIX, format="auto", codec="auto"):
-        video = _result_value(result, "video")
+    def execute(cls, video, filename_prefix=VIDEO_FILENAME_PREFIX, format="auto", codec="auto"):
         if video is None:
             return _empty_media_output()
 

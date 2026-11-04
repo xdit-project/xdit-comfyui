@@ -57,8 +57,8 @@ Add the **xDiT Starter** template or connect the nodes manually.
 1. In **xDiT Preset**, select the detected GPU family, GPU count, and a matching preset.
 2. In **xDiT Model**, review the model, GPU assignment, and residency policy.
 3. In **xDiT Sample**, enter a prompt and queue the workflow.
-4. Connect **Save Result** to **Save xDiT Image** and **Save xDiT Video**. The starter
-   template already connects both and clears whichever media type the run did not produce.
+4. Connect **Images** to **Save xDiT Image** and **Video** to **Save xDiT Video**. The
+   starter template connects both and clears whichever media type the run did not produce.
 5. Free GPU memory with **Unload model** in the xDiT sidebar, or use
    **xDiT → Unload all xDiT models** from the canvas menu.
 

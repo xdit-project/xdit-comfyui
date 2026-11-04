@@ -95,7 +95,7 @@ def _object_info():
     specs = {
         "xDiT.Preset": (_preset_picker_input_types(), ["model", "images", "sample"]),
         "xDiT.Model": (_runtime_loader_input_types(), ["model"]),
-        "xDiT.Sample": (_generation_input_types(), ["images", "video", "result"]),
+        "xDiT.Sample": (_generation_input_types(), ["images", "video"]),
         "xDiT.SaveImage": (save_image_input_types(), []),
         "xDiT.SaveVideo": (save_video_input_types(), []),
         "SaveImage": (

@@ -62,6 +62,15 @@ def test_starter_workflow_nodes_include_widget_values():
         assert by_type[class_type][NAMED_WIDGET_VALUES_KEY]
 
 
+def test_starter_workflow_is_hardware_neutral_until_a_preset_is_selected():
+    workflow = build_starter_workflow_dict()
+    by_type = {node["type"]: node for node in workflow["nodes"]}
+    assert by_type["xDiT.Preset"][NAMED_WIDGET_VALUES_KEY]["preset"] == "none"
+    model_values = by_type["xDiT.Model"][NAMED_WIDGET_VALUES_KEY]
+    assert model_values["attention_backend"] == "auto"
+    assert model_values["cache_method"] == "none"
+
+
 def test_starter_workflow_carries_no_positional_widget_values():
     """Positions shift as widgets are grouped; only the named map is authoritative."""
     workflow = build_starter_workflow_dict()
@@ -107,15 +116,19 @@ def test_starter_api_prompt_samples_a_video_preset_as_video():
     assert sample["width"] == 736
 
 
-def test_starter_workflow_wires_one_result_to_both_save_nodes():
+def test_starter_workflow_wires_each_media_output_to_its_saver():
     workflow = build_starter_workflow_dict()
     sample = next(node for node in workflow["nodes"] if node["type"] == "xDiT.Sample")
-    assert sample["outputs"][2]["name"] == "result"
-    assert sample["outputs"][2]["links"] == [4, 6]
-    for class_type, link_id in (("xDiT.SaveImage", 4), ("xDiT.SaveVideo", 6)):
+    assert [output["name"] for output in sample["outputs"]] == ["images", "video"]
+    assert sample["outputs"][0]["links"] == [4]
+    assert sample["outputs"][1]["links"] == [6]
+    for class_type, input_name, link_id in (
+        ("xDiT.SaveImage", "images", 4),
+        ("xDiT.SaveVideo", "video", 6),
+    ):
         save_node = next(node for node in workflow["nodes"] if node["type"] == class_type)
-        result_input = next(entry for entry in save_node["inputs"] if entry["name"] == "result")
-        assert result_input["link"] == link_id
+        media_input = next(entry for entry in save_node["inputs"] if entry["name"] == input_name)
+        assert media_input["link"] == link_id
 
 
 def test_starter_workflow_wires_image_preset_to_sample():
@@ -153,7 +166,7 @@ def test_starter_workflow_sample_widgets_include_seed_control():
     workflow = build_starter_workflow_dict()
     sample = next(node for node in workflow["nodes"] if node["type"] == "xDiT.Sample")
     values = sample[NAMED_WIDGET_VALUES_KEY]
-    assert values["seed"] == 42
+    assert values["seed"] == 0
     assert values["control_after_generate"] == "randomize"
     assert values["timeout_seconds"] == 900
 

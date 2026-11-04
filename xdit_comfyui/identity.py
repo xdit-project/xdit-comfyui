@@ -24,11 +24,10 @@ NODE_DISPLAY_NAMES = {
 NODE_OUTPUTS = {
     PRESET_NODE_ID: (("model", "*"), ("images", "IMAGE"), ("sample", "*")),
     MODEL_NODE_ID: (("model", "*"),),
-    SAMPLE_NODE_ID: (("images", "IMAGE"), ("video", "VIDEO"), ("result", "*")),
+    SAMPLE_NODE_ID: (("images", "IMAGE"), ("video", "VIDEO")),
     SAVE_IMAGE_NODE_ID: (),
     SAVE_VIDEO_NODE_ID: (),
 }
 
 SAMPLE_IMAGE_OUTPUT = 0
 SAMPLE_VIDEO_OUTPUT = 1
-SAMPLE_RESULT_OUTPUT = 2

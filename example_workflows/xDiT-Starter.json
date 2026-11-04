@@ -81,7 +81,7 @@
         "gpu_detection_info": "",
         "gpu_tag": "gfx1201",
         "gpu_count": "1",
-        "preset": "flux.1gpu.rdna4"
+        "preset": "none"
       }
     },
     {
@@ -780,7 +780,7 @@
       ],
       "properties": {
         "Node name for S&R": "xDiT.Model",
-        "_xdit_model_preset_trigger": "gfx1201:1:flux.1gpu.rdna4"
+        "_xdit_model_preset_trigger": "gfx1201:1:none"
       },
       "widgets_values": [],
       "xdit_widget_values": {
@@ -809,7 +809,7 @@
         "use_parallel_vae": false,
         "use_vae_channels_last_format": false,
         "ATTENTION": false,
-        "attention_backend": "aiter_flydsl_fp8",
+        "attention_backend": "auto",
         "cross_attention_backend": "auto",
         "use_hybrid_attn_schedule": false,
         "hybrid_attn_low_precision_backend": "",
@@ -831,9 +831,9 @@
         "use_vsa_static_block_mask": true,
         "use_vsa_first_frame_mask": true,
         "GEMM PRECISION": false,
-        "gemm_precision": "fp8",
+        "gemm_precision": "native",
         "gemm_config": "",
-        "use_fp8_text_encoder": true,
+        "use_fp8_text_encoder": false,
         "use_fp8_comms": false,
         "fp8_comms_scale": 0.0,
         "fp8_comms_safety_factor": 0.85,
@@ -842,13 +842,13 @@
         "use_hybrid_gemm_schedule": false,
         "num_hybrid_gemm_high_precision_steps": 0,
         "STEP CACHE": false,
-        "cache_method": "dbcache",
-        "residual_diff_threshold": 0.16,
-        "Fn_compute_blocks": 2,
+        "cache_method": "none",
+        "residual_diff_threshold": 0.08,
+        "Fn_compute_blocks": 8,
         "Bn_compute_blocks": 0,
         "max_warmup_steps": 8,
         "max_cached_steps": -1,
-        "scm_policy": "ultra",
+        "scm_policy": "default",
         "enable_separate_cfg": "default",
         "enable_encoder_calibrator": "default",
         "enable_taylorseer": "default",
@@ -1080,18 +1080,14 @@
         {
           "name": "images",
           "type": "IMAGE",
-          "links": null
+          "links": [
+            4
+          ]
         },
         {
           "name": "video",
           "type": "VIDEO",
-          "links": null
-        },
-        {
-          "name": "result",
-          "type": "*",
           "links": [
-            4,
             6
           ]
         }
@@ -1101,21 +1097,21 @@
       },
       "widgets_values": [],
       "xdit_widget_values": {
-        "prompt": "A small cat",
+        "prompt": "A cat running in a garden",
         "negative_prompt": "",
         "width": 1024,
         "height": 1024,
-        "seed": 42,
+        "seed": 0,
         "control_after_generate": "randomize",
-        "num_inference_steps": 25,
-        "guidance_scale": 0.0,
+        "num_inference_steps": 50,
+        "guidance_scale": 3.5,
         "Video": false,
         "num_frames": 1,
         "output_fps": 0,
         "flow_shift": 0.0,
         "guidance_scale_2": 0.0,
         "resize_input_images": false,
-        "max_sequence_length": 256,
+        "max_sequence_length": 512,
         "timeout_seconds": 900,
         "VAE": false,
         "enable_tiling": false,
@@ -1142,8 +1138,8 @@
       "mode": 0,
       "inputs": [
         {
-          "name": "result",
-          "type": "*",
+          "name": "images",
+          "type": "IMAGE",
           "link": 4
         },
         {
@@ -1179,8 +1175,8 @@
       "mode": 0,
       "inputs": [
         {
-          "name": "result",
-          "type": "*",
+          "name": "video",
+          "type": "VIDEO",
           "link": 6
         },
         {
@@ -1247,10 +1243,10 @@
     [
       4,
       3,
-      2,
+      0,
       4,
       0,
-      "*"
+      "IMAGE"
     ],
     [
       5,
@@ -1263,10 +1259,10 @@
     [
       6,
       3,
-      2,
+      1,
       5,
       0,
-      "*"
+      "VIDEO"
     ]
   ],
   "groups": [],
@@ -1281,6 +1277,6 @@
     }
   },
   "version": 0.4,
-  "revision": "f89f19e01161",
+  "revision": "ba7d9a9bd548",
   "id": "3dbcbec9-e7f3-49ff-9c94-8c1bf3b8f624"
 }

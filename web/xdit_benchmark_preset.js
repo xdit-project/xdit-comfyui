@@ -171,7 +171,10 @@ async function refreshPreset(node, { push = true, selection = null } = {}) {
     const suggested = payload.gpu_tag_suggested;
     if (suggested && suggested !== selection.gpuTag) {
       setWidgetValue(node, "gpu_tag", suggested);
-      await refreshPreset(node, { push: false });
+      // The starter workflow is hardware-neutral but carries concrete saved values.
+      // Push the detected tag so connected nodes do not retain another platform's
+      // attention backend or cache settings.
+      await refreshPreset(node, { push: true });
       return;
     }
   }

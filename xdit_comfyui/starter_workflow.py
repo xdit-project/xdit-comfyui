@@ -16,7 +16,7 @@ from .identity import (
     SAVE_IMAGE_NODE_ID,
     SAVE_VIDEO_NODE_ID,
 )
-from .presets import format_gpu_detection_summary
+from .presets import PRESET_NONE, format_gpu_detection_summary
 from .runner_contract import default_loader_widget_values, loader_pinned_input_types
 from .runtime_config import (
     _generation_input_types,
@@ -226,7 +226,7 @@ def _workflow_link(
 
 def _loader_widget_defaults(
     *,
-    preset_name: str = "flux.1gpu.rdna4",
+    preset_name: str = PRESET_NONE,
     gpu_tag: str = "gfx1201",
 ) -> dict[str, Any]:
     from .presets import build_preset_spec
@@ -275,7 +275,7 @@ def apply_starter_template_revision(workflow: dict[str, Any]) -> dict[str, Any]:
 
 def _sample_starter_widget_overrides(
     *,
-    preset_name: str = "flux.1gpu.rdna4",
+    preset_name: str = PRESET_NONE,
     gpu_tag: str = "gfx1201",
 ) -> dict[str, Any]:
     from .presets import build_preset_spec
@@ -307,7 +307,7 @@ def _sample_widget_values(**kwargs: Any) -> dict[str, Any]:
 
 def _starter_graph(
     *,
-    preset_name: str = "flux.1gpu.rdna4",
+    preset_name: str = PRESET_NONE,
     gpu_tag: str = "gfx1201",
 ) -> tuple[list[dict[str, Any]], list[tuple[int, str, int, str, str]]]:
     from .presets import preset_by_name
@@ -369,16 +369,16 @@ def _starter_graph(
         (1, "model", 2, "preset", "*"),
         (1, "sample", 3, "preset", "*"),
         (2, "model", 3, "model", "*"),
-        (3, "result", 4, "result", "*"),
+        (3, "images", 4, "images", "IMAGE"),
         (1, "images", 3, "images", "IMAGE"),
-        (3, "result", 5, "result", "*"),
+        (3, "video", 5, "video", "VIDEO"),
     ]
     return nodes, edges
 
 
 def build_starter_workflow_dict(
     *,
-    preset_name: str = "flux.1gpu.rdna4",
+    preset_name: str = PRESET_NONE,
     gpu_tag: str = "gfx1201",
 ) -> dict[str, Any]:
     graph_nodes, graph_edges = _starter_graph(preset_name=preset_name, gpu_tag=gpu_tag)
@@ -445,7 +445,7 @@ def build_starter_workflow_dict(
 
 def build_starter_api_prompt(
     *,
-    preset_name: str = "flux.1gpu.rdna4",
+    preset_name: str = PRESET_NONE,
     gpu_tag: str = "gfx1201",
 ) -> dict[str, Any]:
     graph_nodes, graph_edges = _starter_graph(preset_name=preset_name, gpu_tag=gpu_tag)
@@ -468,7 +468,7 @@ def build_starter_api_prompt(
 
 
 def write_starter_workflow(
-    path: Path, *, preset_name: str = "flux.1gpu.rdna4", gpu_tag: str = "gfx1201"
+    path: Path, *, preset_name: str = PRESET_NONE, gpu_tag: str = "gfx1201"
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(

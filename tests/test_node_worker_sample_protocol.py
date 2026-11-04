@@ -127,9 +127,7 @@ class RunnerNodesTest(unittest.TestCase):
         self.assertIsNone(video)
         self.assertEqual(tuple(images.shape[1:]), (64, 64, 3))
 
-    def test_sample_blocks_inactive_output_branch(self):
-        from comfy_execution.graph import ExecutionBlocker
-
+    def test_sample_propagates_none_to_the_inactive_output_branch(self):
         image = object()
         video = object()
         with mock.patch(
@@ -143,15 +141,13 @@ class RunnerNodesTest(unittest.TestCase):
             video_result = XDiTSample.execute(model={}, **_generate_kwargs(num_frames=81))
 
         self.assertIs(image_result[0], image)
-        self.assertIsInstance(image_result[1], ExecutionBlocker)
-        self.assertEqual(image_result[2], {"images": image, "video": None})
-        self.assertIsInstance(video_result[0], ExecutionBlocker)
+        self.assertIsNone(image_result[1])
+        self.assertIsNone(video_result[0])
         self.assertIs(video_result[1], video)
-        self.assertEqual(video_result[2], {"images": None, "video": video})
 
     def test_inactive_save_nodes_emit_an_explicit_empty_ui_result(self):
-        image_result = XDiTSaveImage.execute({"images": None, "video": mock.sentinel.video})
-        video_result = XDiTSaveVideo.execute({"images": mock.sentinel.image, "video": None})
+        image_result = XDiTSaveImage.execute(None)
+        video_result = XDiTSaveVideo.execute(None)
 
         self.assertEqual(image_result.ui.as_dict(), {"images": []})
         self.assertEqual(video_result.ui.as_dict(), {"images": []})

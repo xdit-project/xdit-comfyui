@@ -296,14 +296,6 @@ class XDiTSample(io.ComfyNode):
             outputs=[
                 io.Image.Output("images", display_name="Images"),
                 io.Video.Output("video", display_name="Video"),
-                io.AnyType.Output(
-                    "result",
-                    display_name="Save Result",
-                    tooltip=(
-                        "Bundled result for Save xDiT Image and Save xDiT Video. "
-                        "Connect both save nodes so the inactive output is cleared each run."
-                    ),
-                ),
             ],
             not_idempotent=True,
         )
@@ -383,13 +375,9 @@ class XDiTSample(io.ComfyNode):
             )
         finally:
             _release_loader_after_run(model)
-        from comfy_execution.graph import ExecutionBlocker
-
-        return io.NodeOutput(
-            images if images is not None else ExecutionBlocker(None),
-            video if video is not None else ExecutionBlocker(None),
-            {"images": images, "video": video},
-        )
+        # Both branches intentionally execute. The inactive saver receives None and
+        # emits an explicit empty UI payload, clearing media left by the previous run.
+        return io.NodeOutput(images, video)
 
 
 class XDiTExtension(ComfyExtension):
