@@ -31,7 +31,7 @@ trap cleanup EXIT INT TERM
 if [ -z "${COMFYUI_URL:-}" ]; then
   port="${XDIT_BROWSER_COMFYUI_PORT:-8199}"
   comfy_root="${XDIT_BROWSER_COMFYUI_ROOT:-${ROOT}/.test-cache/ComfyUI}"
-  comfy_ref="${XDIT_BROWSER_COMFYUI_REF:-v0.28.0}"
+  comfy_ref="${XDIT_BROWSER_COMFYUI_REF:-v0.44.0}"
   python="${ROOT}/.venv/bin/python"
   if [ ! -x "${python}" ]; then
     uv sync --group dev
