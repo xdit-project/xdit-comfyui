@@ -32,11 +32,23 @@ Restart ComfyUI after installation.
 
 ### Docker
 
-The included Dockerfile expects an xDiT base image containing the matching GPU stack:
+The included Dockerfile extends the published image selected by the launcher:
 
 ```bash
-docker build -t xdit-comfyui -f docker/Dockerfile .
+XDIT_PROFILE=instinct bash scripts/docker/run_dev.sh
+# or
+XDIT_PROFILE=rdna4 bash scripts/docker/run_dev.sh
 ```
+
+Other xDiT images remain usable without becoming maintained profiles:
+
+```bash
+BASE_IMAGE=your-published-xdit-image bash scripts/docker/run_dev.sh
+```
+
+Custom images use ROCm when `/dev/kfd` is present and otherwise use the NVIDIA Docker
+runtime. `XDIT_DOCKER_ROCM` can override detection. The plugin reads the installed xDiT
+CLI at startup, exposes the arguments that revision provides, and omits arguments it does not.
 
 ## Quick start
 
@@ -121,7 +133,8 @@ overrides are:
 
 | Variable                               | Purpose                                                      |
 | -------------------------------------- | ------------------------------------------------------------ |
-| `XDIT_DOCKER_ROCM=0`                   | Use CUDA (`--gpus all`) instead of the ROCm device defaults. |
+| `BASE_IMAGE`                           | Use an unmanaged xDiT image instead of an AMD profile.       |
+| `XDIT_DOCKER_ROCM`                     | Override automatic ROCm (`1`) or NVIDIA (`0`) detection.     |
 | `XDIT_REPOSITORY`, `XDIT_REF`          | Build against another xDiT repository or revision.           |
 | `HF_CACHE_HOST`                        | Host Hugging Face cache to mount in the container.           |
 | `XDIT_DEV_IMAGE`, `XDIT_DEV_CONTAINER` | Override the development image or container name.            |

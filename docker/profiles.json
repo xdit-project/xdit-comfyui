@@ -1,0 +1,14 @@
+{
+  "profiles": {
+    "instinct": {
+      "base_image": "rocm/pytorch-xdit:v26.10@sha256:904367987f7e6154cb9f3d54b9c440d554309a86bf99eb4b6c4ae8b07d424360",
+      "xdit_repository": "https://github.com/xdit-project/xDiT.git",
+      "xdit_ref": "4865f4e48fffb5aca2f507647305e8b427b391dc"
+    },
+    "rdna4": {
+      "base_image": "amdsiloai/pytorch-xdit-custom:rdna4-rocm10.0.0-ubuntu24.04-py3.12-torch2.13.0-xdit-ecf0f58-20261016@sha256:c8d4e754952834ce712962d6f201b411bb05a540225db361e3d173fca5ffedaa",
+      "xdit_repository": "https://github.com/pds-amd/xDiT.git",
+      "xdit_ref": "ecf0f588eefb8294356e75e2f14983d16a495034"
+    }
+  }
+}

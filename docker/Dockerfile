@@ -2,14 +2,15 @@
 #
 # Production-style image: ComfyUI + this pack baked in.
 #
-#   docker build -t xdit-comfyui -f docker/Dockerfile .
+#   docker build --build-arg BASE_IMAGE=<xdit-image> \
+#     -t xdit-comfyui -f docker/Dockerfile .
 
-ARG BASE_IMAGE=rocm/pytorch-xdit:v26.7
+ARG BASE_IMAGE
 FROM ${BASE_IMAGE}
 
 ARG COMFYUI_REF=v0.28.0
-ARG XDIT_REPOSITORY=https://github.com/xdit-project/xDiT.git
-ARG XDIT_REF=68bca878f454c718d23b3764ded1de6add474eb4
+ARG XDIT_REPOSITORY
+ARG XDIT_REF
 
 ENV PLUGIN_ROOT=/workspace/plugin \
     COMFYUI_ROOT=/workspace/comfyui \
@@ -36,15 +37,18 @@ RUN if ! python -c "import torchaudio" >/dev/null 2>&1; then \
         torchaudio --index-url https://download.pytorch.org/whl/cpu; \
     fi
 
-# Install the requested xDiT branch, tag, or commit over the base image's copy.
-RUN xdit_repo="${XDIT_REPOSITORY%.git}.git" \
-    && xdit_spec="xfuser[cache-dit,opencv-python] @ git+${xdit_repo}@${XDIT_REF}" \
-    && if [ -f /opt/build-constraints.txt ]; then \
-         PIP_CONSTRAINT=/opt/build-constraints.txt \
-           python -m pip install --no-cache-dir --upgrade "${xdit_spec}"; \
-       else \
-         python -m pip install --no-cache-dir --upgrade "${xdit_spec}"; \
-       fi
+# Validated profile images own xDiT and may carry architecture-specific patches.
+# Only replace that copy when the caller explicitly overrides repository/ref.
+RUN if [ -n "${XDIT_REPOSITORY}" ] && [ -n "${XDIT_REF}" ]; then \
+      xdit_repo="${XDIT_REPOSITORY%.git}.git"; \
+      xdit_spec="xfuser[cache-dit,opencv-python] @ git+${xdit_repo}@${XDIT_REF}"; \
+      if [ -f /opt/build-constraints.txt ]; then \
+        PIP_CONSTRAINT=/opt/build-constraints.txt \
+          python -m pip install --no-cache-dir --upgrade "${xdit_spec}"; \
+      else \
+        python -m pip install --no-cache-dir --upgrade "${xdit_spec}"; \
+      fi; \
+    fi
 
 COPY . ${PLUGIN_ROOT}
 

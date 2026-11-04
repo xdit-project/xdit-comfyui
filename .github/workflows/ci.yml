@@ -55,6 +55,28 @@ jobs:
       - name: Run CPU contract suite
         run: uv run pytest tests/integration -q -m contract
 
+  rdna4-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install development and RDNA4 dependencies
+        run: |
+          uv sync --dev
+          uv pip install --reinstall --no-deps \
+            "$(python scripts/docker/profile.py rdna4 --xdit-spec)"
+      - name: Run RDNA4 unit suite
+        run: uv run --no-sync pytest tests -q --ignore=tests/integration
+      - name: Run RDNA4 contract suite
+        run: uv run --no-sync pytest tests/integration -q -m contract
+
   plain-clone:
     # A clone into custom_nodes/ with nothing pip-installed still has to register its
     # nodes: that is what ComfyUI Manager and the Docker image produce. Without xfuser
