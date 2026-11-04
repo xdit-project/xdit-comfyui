@@ -261,14 +261,18 @@ class RunnerContractTest(unittest.TestCase):
         self.assertEqual(parallelism["expand_widget"], "PARALLELISM")
 
     def test_loader_widget_groups_cover_runner_config(self):
-        grouped = set()
-        for group in loader_widget_groups():
-            grouped.update(group["widgets"])
+        schema = loader_schema()
+        grouped = {widget for group in schema["widget_groups"] for widget in group["widgets"]}
         for widget in loader_config_widget_names():
             self.assertIn(widget, grouped)
         self.assertNotIn("warmup_calls", loader_config_widget_names())
-        schema = loader_schema()
-        self.assertIn("parallelism", {group["id"] for group in schema["widget_groups"]})
+        group_ids = {group["id"] for group in schema["widget_groups"]}
+        self.assertIn("parallelism", group_ids)
+        statically_grouped = {
+            widget for group in loader_widget_groups() for widget in group["widgets"]
+        }
+        if set(loader_config_widget_names()) - statically_grouped:
+            self.assertIn("other", group_ids)
         self.assertNotIn("execution_widget_order", schema)
 
     def test_every_group_names_the_toggle_the_browser_should_build(self):
@@ -293,8 +297,12 @@ class RunnerContractTest(unittest.TestCase):
         )
         self.assertTrue(runtime["enable_group_cpu_offload"])
         self.assertFalse(runtime["enable_model_cpu_offload"])
-        self.assertTrue(runtime["use_fp4_gemms"])
-        self.assertFalse(runtime["use_fp8_gemms"])
+        if "gemm_quantization" in runner_cli_dests():
+            self.assertEqual(runtime["gemm_quantization"], "fp4")
+            self.assertNotIn("use_fp4_gemms", runtime)
+        else:
+            self.assertTrue(runtime["use_fp4_gemms"])
+            self.assertFalse(runtime["use_fp8_gemms"])
 
     def test_schema_exposes_combo_options(self):
         schema = loader_schema()

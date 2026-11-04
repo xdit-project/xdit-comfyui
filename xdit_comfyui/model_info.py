@@ -116,11 +116,17 @@ def sanitize_runtime_for_model(registry_model: str, runtime: dict[str, Any]) -> 
                 runtime.pop(dest, None)
         else:
             runtime.pop(dest, None)
-    if not runtime.get("use_fp4_gemms"):
-        runtime.pop("fp8_precision_override_prefix_patterns", None)
-        runtime.pop("fp8_precision_override_suffix_patterns", None)
-        runtime.pop("num_hybrid_gemm_high_precision_steps", None)
-        runtime["use_hybrid_gemm_schedule"] = False
+    from .xdit_compat import gemm_precision_from_runtime, runner_supports
+
+    precision = gemm_precision_from_runtime(runtime)
+    if runner_supports("gemm_quantization"):
+        if not _is_tiered_gemm(precision):
+            runtime.pop("fp8_precision_override_prefix_patterns", None)
+            runtime.pop("fp8_precision_override_suffix_patterns", None)
+            runtime.pop("num_hybrid_gemm_high_precision_steps", None)
+            runtime["use_hybrid_gemm_schedule"] = False
+        if "fp8" not in _gemm_formats(precision):
+            runtime["use_fp8_text_encoder"] = False
 
 
 # xfuser turns VAE tiling on from the config alone (base_model._enable_options), so a
@@ -185,11 +191,17 @@ def sanitize_loader_inputs_for_model(registry_model: str, inputs: dict[str, Any]
             continue
         inputs[dest] = runtime_value_to_widget(dest, None)
 
-    if inputs.get("gemm_precision") != "fp4":
-        inputs["fp8_precision_override_prefix_patterns"] = ""
-        inputs["fp8_precision_override_suffix_patterns"] = ""
-        inputs["use_hybrid_gemm_schedule"] = False
-        inputs["num_hybrid_gemm_high_precision_steps"] = 0
+    from .xdit_compat import runner_supports
+
+    if runner_supports("gemm_quantization"):
+        precision = str(inputs.get("gemm_precision") or "native")
+        if not _is_tiered_gemm(precision):
+            inputs["fp8_precision_override_prefix_patterns"] = ""
+            inputs["fp8_precision_override_suffix_patterns"] = ""
+            inputs["use_hybrid_gemm_schedule"] = False
+            inputs["num_hybrid_gemm_high_precision_steps"] = 0
+        if "fp8" not in _gemm_formats(precision):
+            inputs["use_fp8_text_encoder"] = False
 
 
 def sanitize_loader_cache_widgets(registry_model: str, widgets: dict[str, Any]) -> dict[str, Any]:
@@ -342,9 +354,28 @@ def _is_rocm_runtime() -> bool:
         return False
 
 
+def _gemm_formats(precision: str) -> set[str]:
+    value = str(precision or "native")
+    if "=" not in value:
+        return {value}
+    return {
+        part.split("=", 1)[1].strip()
+        for part in value.split(",")
+        if "=" in part and part.split("=", 1)[1].strip()
+    }
+
+
+def _is_tiered_gemm(precision: str) -> bool:
+    return {"low", "high"} <= {
+        part.split("=", 1)[0].strip() for part in str(precision or "").split(",") if "=" in part
+    }
+
+
 def gemm_precision_choices_for_model(registry_model: str) -> list[str]:
     del registry_model
-    choices = ["native", "fp8", "fp4", "int8"]
+    from .xdit_compat import gemm_quantization_choices
+
+    choices = list(gemm_quantization_choices())
     if _is_rocm_runtime() and "int8" in choices:
         choices.remove("int8")
     return choices
@@ -416,21 +447,20 @@ def validate_runtime_for_model(registry_model: str, runtime: dict[str, Any]) -> 
             "GEMM precision modes are mutually exclusive; choose exactly one of "
             "native, fp8, fp4, or int8."
         )
-    precision = (
-        "fp4"
-        if runtime.get("use_fp4_gemms")
-        else (
-            "int8"
-            if runtime.get("use_int8_gemms")
-            else "fp8" if runtime.get("use_fp8_gemms") else "native"
-        )
-    )
+    from .xdit_compat import gemm_precision_from_runtime, runner_supports
+
+    precision = gemm_precision_from_runtime(runtime)
     allowed = gemm_precision_choices_for_model(registry_model)
     if precision not in allowed:
         raise ValueError(
             f"Model {registry_model!r} does not support GEMM precision {precision!r} "
             f"on this runtime. Choose one of {allowed}."
         )
+    if runner_supports("gemm_quantization"):
+        if runtime.get("use_hybrid_gemm_schedule") and not _is_tiered_gemm(precision):
+            raise ValueError("Hybrid GEMM scheduling requires a low/high GEMM precision profile.")
+        if runtime.get("use_fp8_text_encoder") and "fp8" not in _gemm_formats(precision):
+            raise ValueError("FP8 text encoder requires a GEMM precision profile containing FP8.")
 
 
 def widget_capability_gates(registry_model: str) -> dict[str, bool]:
@@ -456,6 +486,7 @@ def widget_capability_gates(registry_model: str) -> dict[str, bool]:
             or caps.get("has_fp8_modules")
             or caps.get("use_fp4_gemms")
             or caps.get("has_fp4_modules")
+            or caps.get("use_fp6_gemms")
             or caps.get("use_int8_gemms")
             or caps.get("has_int8_modules")
         ),

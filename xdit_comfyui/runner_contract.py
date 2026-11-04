@@ -36,6 +36,7 @@ _GENERATION_DESTS = frozenset(
         "flow_shift",
         "output_directory",
         "input_images",
+        "audio_prompt",
         "resize_input_images",
         "task",
         "batch_size",
@@ -164,12 +165,17 @@ _LOADER_EXCLUDED_DESTS = frozenset(
         "use_fp8_gemms",
         "use_fp4_gemms",
         "use_int8_gemms",
+        "gemm_quantization",
         *SAMPLE_VAE_DESTS,
         "warmup_calls",
         "profile",
         "profile_wait",
         "profile_warmup",
         "profile_active",
+        "profile_capture_phase",
+        "profile_with_stack",
+        "determinism_check",
+        "determinism_check_report_ranks",
         "vsa_collect_density",
         # cache_config is represented by cache_method plus the Step Cache group.
         "cache_config",
@@ -273,7 +279,11 @@ _LOADER_WIDGET_GROUPS = (
         "collapsed": True,
         "widgets": (
             "gemm_precision",
+            "gemm_config",
             "use_fp8_text_encoder",
+            "use_fp8_comms",
+            "fp8_comms_scale",
+            "fp8_comms_safety_factor",
             "fp8_precision_override_prefix_patterns",
             "fp8_precision_override_suffix_patterns",
             "use_hybrid_gemm_schedule",
@@ -991,7 +1001,9 @@ def _runner_actions() -> dict[str, Any]:
 def attention_backend_choices() -> list[str]:
     """Live backend list; 'auto' means None, i.e. the best backend xFuser finds."""
     try:
-        from xfuser.core.distributed.attention_backend import AttentionBackendType
+        from .xdit_compat import attention_backend_type
+
+        AttentionBackendType = attention_backend_type()
     except Exception as exc:
         raise _xfuser_unavailable("the attention backends", exc) from exc
     return ["auto"] + [backend.name.lower() for backend in AttentionBackendType]
@@ -1153,8 +1165,10 @@ def loader_widget_spec(dest: str) -> tuple[str, dict[str, Any]]:
             },
         )
     if dest == "gemm_precision":
+        from .xdit_compat import gemm_quantization_choices
+
         return (
-            ["native", "fp8", "fp4", "int8"],
+            list(gemm_quantization_choices()),
             {
                 "default": "native",
                 "tooltip": _cli_tooltip(dest, "Quantized GEMM precision used by xDiT."),
@@ -1170,7 +1184,9 @@ def loader_widget_spec(dest: str) -> tuple[str, dict[str, Any]]:
         # A text box here would accept input the runner then ignores.
         raise KeyError(f"The xdit CLI has no argument {dest!r} to build a widget from.")
 
-    tooltip = _DISTILLED_WEIGHT_TOOLTIPS.get(dest) or _cli_tooltip(dest)
+    tooltip = _DISTILLED_WEIGHT_TOOLTIPS.get(dest) or _cli_tooltip(
+        dest, f"xDiT runner option --{dest}."
+    )
     default = _widget_default(dest, action)
 
     if dest in _AUTO_BACKEND_DESTS:
@@ -1221,7 +1237,14 @@ def expand_widget_name(group: dict[str, Any]) -> str:
 
 
 def loader_expand_widget_names() -> tuple[str, ...]:
-    return tuple(expand_widget_name(group) for group in _LOADER_WIDGET_GROUPS)
+    available = set(loader_config_widget_names()) | set(LOADER_OPTIONAL_WIDGETS)
+    grouped = {name for group in _LOADER_WIDGET_GROUPS for name in group["widgets"]}
+    names = tuple(
+        expand_widget_name(group)
+        for group in _LOADER_WIDGET_GROUPS
+        if any(name in available for name in group["widgets"])
+    )
+    return (*names, *(("Other",) if available - grouped else ()))
 
 
 def strip_undeclared_loader_keys(inputs: dict[str, Any]) -> None:
@@ -1320,10 +1343,9 @@ def _apply_compound_widgets(runtime: dict[str, Any], values: dict[str, Any]) -> 
     runtime["enable_sequential_cpu_offload"] = offload == "sequential"
     runtime["enable_group_cpu_offload"] = offload == "group"
 
-    gemm = str(values.get("gemm_precision", "native") or "native")
-    runtime["use_fp8_gemms"] = gemm == "fp8"
-    runtime["use_fp4_gemms"] = gemm == "fp4"
-    runtime["use_int8_gemms"] = gemm == "int8"
+    from .xdit_compat import apply_gemm_precision
+
+    apply_gemm_precision(runtime, str(values.get("gemm_precision", "native") or "native"))
 
 
 def runtime_from_loader_widgets(
@@ -1365,15 +1387,9 @@ def runtime_to_loader_widgets(runtime: dict[str, Any]) -> dict[str, Any]:
             else "model" if runtime.get("enable_model_cpu_offload") else "none"
         )
     )
-    widgets["gemm_precision"] = (
-        "fp4"
-        if runtime.get("use_fp4_gemms")
-        else (
-            "int8"
-            if runtime.get("use_int8_gemms")
-            else "fp8" if runtime.get("use_fp8_gemms") else "native"
-        )
-    )
+    from .xdit_compat import gemm_precision_from_runtime
+
+    widgets["gemm_precision"] = gemm_precision_from_runtime(runtime)
     widgets["use_torch_compile"] = bool(runtime.get("use_torch_compile", False))
     if "cache_config" in runtime:
         widgets.update(_cache_config_to_widgets(runtime["cache_config"]))
@@ -1429,6 +1445,7 @@ def preset_args_to_runtime(args: dict[str, Any]) -> dict[str, Any]:
         "use_fp8_gemms",
         "use_fp4_gemms",
         "use_int8_gemms",
+        "gemm_quantization",
     }
     known_dests = (set(loader_config_dests()) - {"cpu_offload_mode", "gemm_precision"}) | {
         "cache_config",

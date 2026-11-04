@@ -76,11 +76,14 @@ def _xdit_valid_loader_init_steps(config):
     if explicit:
         steps = max(steps, len([part for part in explicit.split(",") if part.strip()]))
 
-    from xfuser.core.distributed.attention_backend import AttentionBackendType
     from xfuser.core.distributed.attention_schedule import (
         create_hybrid_attn_schedule,
         create_hybrid_gemm_schedule,
     )
+
+    from .xdit_compat import attention_backend_type
+
+    AttentionBackendType = attention_backend_type()
 
     while True:
         try:

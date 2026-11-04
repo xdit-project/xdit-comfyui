@@ -15,7 +15,7 @@ from xdit_comfyui.api import (
 )
 from xdit_comfyui.nodes import XDiTModel
 from xdit_comfyui.presets import PRESET_NONE, list_presets_for_gpu_tag
-from xdit_comfyui.runner_contract import default_loader_widget_values
+from xdit_comfyui.runner_contract import cache_method_choices, default_loader_widget_values
 from xdit_comfyui.runtime_config import _default_gpu_count, _runtime_loader_input_types
 from xdit_comfyui.worker import _clear_loader_cache
 
@@ -149,7 +149,7 @@ class LoaderPreviewTest(unittest.TestCase):
         self.assertFalse(unsupported["step_cache_supported"])
         self.assertEqual(
             unsupported["cache_method_choices"],
-            ["none", "teacache", "fbcache", "dbcache"],
+            cache_method_choices(),
         )
         self.assertEqual(unsupported["display_widgets"]["cache_method"], "none")
 

@@ -2678,7 +2678,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "pyyaml" },
-    { name = "xfuser", extras = ["cache-dit", "opencv-python"], git = "https://github.com/xdit-project/xDiT.git?rev=68bca878f454c718d23b3764ded1de6add474eb4" },
+    { name = "xfuser", extras = ["cache-dit", "opencv-python"], git = "https://github.com/xdit-project/xDiT.git?rev=4865f4e48fffb5aca2f507647305e8b427b391dc" },
 ]
 
 [package.metadata.requires-dev]
@@ -2694,8 +2694,8 @@ dev = [
 
 [[package]]
 name = "xfuser"
-version = "0.4.5"
-source = { git = "https://github.com/xdit-project/xDiT.git?rev=68bca878f454c718d23b3764ded1de6add474eb4#68bca878f454c718d23b3764ded1de6add474eb4" }
+version = "0.7.1.dev2+g4865f4e48"
+source = { git = "https://github.com/xdit-project/xDiT.git?rev=4865f4e48fffb5aca2f507647305e8b427b391dc#4865f4e48fffb5aca2f507647305e8b427b391dc" }
 dependencies = [
     { name = "accelerate" },
     { name = "av", version = "17.1.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
@@ -2707,6 +2707,7 @@ dependencies = [
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "peft" },
+    { name = "pyyaml" },
     { name = "sentencepiece" },
     { name = "torch" },
     { name = "transformers" },

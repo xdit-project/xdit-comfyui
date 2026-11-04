@@ -456,8 +456,12 @@ class RunnerNodesTest(unittest.TestCase):
         runner.model.pipe.transformer = transformer
         with (
             mock.patch(
-                "xfuser.model_executor.cache.adapters.cache_dit._unwrap_fsdp",
+                "xdit_comfyui.xdit_compat.unwrap_cache_dit_fsdp",
                 side_effect=lambda module: module,
+            ),
+            mock.patch(
+                "xfuser.core.distributed.get_classifier_free_guidance_world_size",
+                return_value=1,
             ),
             mock.patch("cache_dit.refresh_context") as refresh,
         ):
@@ -503,8 +507,12 @@ class RunnerNodesTest(unittest.TestCase):
 
         with (
             mock.patch(
-                "xfuser.model_executor.cache.adapters.cache_dit._unwrap_fsdp",
+                "xdit_comfyui.xdit_compat.unwrap_cache_dit_fsdp",
                 side_effect=lambda module: module,
+            ),
+            mock.patch(
+                "xfuser.core.distributed.get_classifier_free_guidance_world_size",
+                return_value=1,
             ),
             mock.patch("cache_dit.refresh_context") as refresh,
         ):
@@ -525,8 +533,12 @@ class RunnerNodesTest(unittest.TestCase):
 
         with (
             mock.patch(
-                "xfuser.model_executor.cache.adapters.cache_dit._unwrap_fsdp",
+                "xdit_comfyui.xdit_compat.unwrap_cache_dit_fsdp",
                 side_effect=lambda module: module,
+            ),
+            mock.patch(
+                "xfuser.core.distributed.get_classifier_free_guidance_world_size",
+                return_value=1,
             ),
             mock.patch("cache_dit.refresh_context") as refresh,
         ):
@@ -566,7 +578,7 @@ class RunnerNodesTest(unittest.TestCase):
         runner.model.pipe.transformer = transformer
         with (
             mock.patch(
-                "xfuser.model_executor.cache.adapters.cache_dit._unwrap_fsdp",
+                "xdit_comfyui.xdit_compat.unwrap_cache_dit_fsdp",
                 side_effect=lambda module: module,
             ),
             mock.patch("cache_dit.refresh_context") as refresh,

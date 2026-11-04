@@ -324,13 +324,36 @@ class ModelInfoTest(unittest.TestCase):
                 return_value=True,
             ),
         ):
-            self.assertEqual(gemm_precision_choices_for_model("model"), ["native", "fp8", "fp4"])
+            choices = gemm_precision_choices_for_model("model")
+            self.assertNotIn("int8", choices)
+            self.assertIn("fp8", choices)
+            self.assertIn("fp4", choices)
 
     def test_runtime_rejects_multiple_gemm_modes(self):
         with self.assertRaisesRegex(ValueError, "mutually exclusive"):
             validate_runtime_for_model(
                 "model",
                 {"use_fp8_gemms": True, "use_fp4_gemms": True},
+            )
+
+    def test_runtime_rejects_hybrid_schedule_without_tiered_gemm(self):
+        with (
+            mock.patch("xdit_comfyui.xdit_compat.runner_supports", return_value=True),
+            self.assertRaisesRegex(ValueError, "low/high"),
+        ):
+            validate_runtime_for_model(
+                "model",
+                {"gemm_quantization": "fp4", "use_hybrid_gemm_schedule": True},
+            )
+
+    def test_runtime_rejects_fp8_text_encoder_without_fp8_gemm(self):
+        with (
+            mock.patch("xdit_comfyui.xdit_compat.runner_supports", return_value=True),
+            self.assertRaisesRegex(ValueError, "containing FP8"),
+        ):
+            validate_runtime_for_model(
+                "model",
+                {"gemm_quantization": "fp4", "use_fp8_text_encoder": True},
             )
 
     def test_runtime_rejects_multiple_cpu_offload_modes(self):

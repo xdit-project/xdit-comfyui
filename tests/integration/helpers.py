@@ -635,8 +635,11 @@ def validate_loader_init_step_cache(worker_payload: dict[str, Any]) -> None:
     if not cache_method or cache_method in ("none", "false", "0"):
         return
 
-    from xfuser.model_executor.cache.adapters.cache_dit import _build_scm_mask
     from xfuser.runner import xFuserModelRunner
+
+    from xdit_comfyui.xdit_compat import cache_dit_config_helpers
+
+    _, _build_scm_mask, _ = cache_dit_config_helpers()
 
     skip_without_gpu()
     runner = xFuserModelRunner(worker_payload)
