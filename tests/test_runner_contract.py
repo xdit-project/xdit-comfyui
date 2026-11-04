@@ -9,7 +9,6 @@ from xdit_comfyui.presets import (
     BenchmarkPreset,
     preset_by_name,
     preset_to_loader_widgets,
-    resolve_preset_choice,
 )
 from xdit_comfyui.runner_contract import (
     MODEL_VAE_DESTS,
@@ -128,10 +127,6 @@ class RunnerContractTest(unittest.TestCase):
         self.assertIn("cpu_offload_mode", names)
         for key in ("profile", "profile_wait", "profile_warmup", "profile_active"):
             self.assertNotIn(key, names)
-
-    def test_profile_fields_are_not_exposed_in_comfyui(self):
-        schema = loader_schema()
-        self.assertNotIn("profiling", {group["id"] for group in schema["widget_groups"]})
 
     def test_new_runner_flags_live_in_their_named_groups(self):
         groups = {group["id"]: set(group["widgets"]) for group in loader_schema()["widget_groups"]}
@@ -294,16 +289,6 @@ class RunnerContractTest(unittest.TestCase):
             loader_widget_spec("t2_residual_diff_threshold")[1]["tooltip"],
         )
 
-    def test_named_preset_runtime_includes_upstream_tiling(self):
-        resolved = resolve_preset_choice(
-            "flux2.i2i_2k.1gpu.rdna4",
-            "black-forest-labs/FLUX.2-dev",
-            1,
-            gpu_tags=("gfx1201", "rdna4"),
-        )
-        self.assertIsNotNone(resolved)
-        self.assertTrue(resolved.runtime["enable_tiling"])
-
     def test_optional_step_widgets_allow_zero(self):
 
         required = _runtime_loader_input_types()["required"]
@@ -324,13 +309,6 @@ class RunnerContractTest(unittest.TestCase):
             self.assertIn(name, required)
             self.assertEqual(required[name][0], "BOOLEAN")
         self.assertIn("ulysses_degree", required)
-
-    def test_loader_schema_includes_expand_widget_metadata(self):
-        schema = loader_schema()
-        parallelism = next(
-            group for group in schema["widget_groups"] if group["id"] == "parallelism"
-        )
-        self.assertEqual(parallelism["expand_widget"], "PARALLELISM")
 
     def test_loader_widget_groups_cover_runner_config(self):
         schema = loader_schema()

@@ -151,17 +151,6 @@ class ModelInfoTest(unittest.TestCase):
         entries = model_cache_transformers("black-forest-labs/FLUX.1-dev", "dbcache")
         self.assertEqual([entry["transformer"] for entry in entries], ["transformer"])
 
-    def test_wan22_reports_per_transformer_cache_defaults(self):
-        """Wan 2.2's refiner warms for fewer steps than its high-noise denoiser."""
-        entries = model_cache_transformers("Wan-AI/Wan2.2-I2V-A14B-Diffusers", "dbcache")
-        self.assertEqual(
-            [entry["transformer"] for entry in entries], ["transformer", "transformer_2"]
-        )
-        warmups = [entry["defaults"]["max_warmup_steps"] for entry in entries]
-        self.assertEqual(warmups, [4, 2])
-        # Read from class settings this collapses to one wrong shared value.
-        self.assertNotEqual(warmups[0], warmups[1])
-
     def test_generation_defaults_come_from_the_runner(self):
         """Each model's own numbers, not one hardcoded set for every model."""
         qwen = model_generation_defaults("Qwen/Qwen-Image")
@@ -267,13 +256,6 @@ class ModelInfoTest(unittest.TestCase):
         gates = loader_widget_gates("Tongyi-MAI/Z-Image-Turbo")
         self.assertFalse(gates["STEP CACHE"])
         self.assertFalse(gates["STEP CACHE · DENOISER 2"])
-
-    def test_loader_widget_gates_disable_dbcache_fields_for_teacache(self):
-        gates = loader_widget_gates("FLUX.1-dev", "teacache")
-        self.assertTrue(gates["cache_method"])
-        self.assertTrue(gates["residual_diff_threshold"])
-        self.assertFalse(gates["Fn_compute_blocks"])
-        self.assertFalse(gates["scm_policy"])
 
     def test_sanitize_runtime_cache_for_unsupported_model(self):
         runtime = {

@@ -158,8 +158,8 @@ def test_sample_vram_and_groups_render_in_order(vue_nodes):
             f"prompt={prompt}, negative={negative}, width={width}, "
             f"height={height}, seed={seed}"
         )
-        assert widget_state["VAE"]["value"] is False
-        assert widget_state["VAE"]["hidden"] is not True
+        assert "VAE" not in widget_state
+        assert "enable_tiling" not in widget_state
         assert not sample.get_by_text(re.compile(r"^Enable Tiling$", re.I)).is_visible()
 
         browser.close()

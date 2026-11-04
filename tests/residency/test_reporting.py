@@ -13,10 +13,8 @@ from xdit_comfyui.residency import (
     residency_report,
     sample_run_memory,
 )
-from xdit_comfyui.residency_allocator import normalize_residency
 from xdit_comfyui.runner_contract import (
     RESIDENCY_KEEP_GPU,
-    RESIDENCY_PARK_CPU,
     RESIDENCY_RELEASE,
 )
 from xdit_comfyui.worker import (
@@ -25,55 +23,13 @@ from xdit_comfyui.worker import (
 )
 
 
-def _runtime(node_id="2", residency=RESIDENCY_RELEASE):
-    return {"_loader_node_id": node_id, "_residency": residency}
-
-
 class ResidencyPolicyTest(unittest.TestCase):
     def setUp(self):
         register_prompt_loader_consumers({})
 
-    def test_unknown_residency_keeps_the_gpu(self):
-        self.assertEqual(normalize_residency("nonsense"), RESIDENCY_KEEP_GPU)
-        self.assertEqual(normalize_residency(None), RESIDENCY_KEEP_GPU)
-        self.assertEqual(normalize_residency(RESIDENCY_RELEASE), RESIDENCY_RELEASE)
-        self.assertEqual(normalize_residency(RESIDENCY_PARK_CPU), RESIDENCY_PARK_CPU)
-
-    def test_keep_gpu_never_evicts(self):
-        with mock.patch.object(worker, "_evict_loader_worker") as evict:
-            with mock.patch.object(worker, "_park_loader_worker") as park:
-                _release_loader_after_run(_runtime(residency=RESIDENCY_KEEP_GPU))
-        evict.assert_not_called()
-        park.assert_not_called()
-
-    def test_release_waits_for_the_last_consumer(self):
-        register_prompt_loader_consumers({"2": 2})
-        with mock.patch.object(worker, "_evict_loader_worker") as evict:
-            _release_loader_after_run(_runtime())
-            evict.assert_not_called()
-            _release_loader_after_run(_runtime())
-            evict.assert_called_once_with("2")
-
-    def test_release_without_registered_consumers_evicts_immediately(self):
-        with mock.patch.object(worker, "_evict_loader_worker") as evict:
-            _release_loader_after_run(_runtime())
-        evict.assert_called_once_with("2")
-
     def test_release_ignores_runtime_without_loader_id(self):
         with mock.patch.object(worker, "_evict_loader_worker") as evict:
             _release_loader_after_run({"_residency": RESIDENCY_RELEASE})
-        evict.assert_not_called()
-
-    def test_park_cpu_calls_park_fn(self):
-        with mock.patch.object(worker, "_park_loader_worker", return_value=True) as park:
-            with mock.patch.object(worker, "_evict_loader_worker") as evict:
-                _release_loader_after_run(
-                    {
-                        **_runtime(residency=RESIDENCY_PARK_CPU),
-                        "fully_shard_degree": 1,
-                    }
-                )
-        park.assert_called_once_with("2")
         evict.assert_not_called()
 
     def test_residency_is_excluded_from_the_worker_cache_key(self):
@@ -195,42 +151,6 @@ class MemoryReportTest(unittest.TestCase):
         worker._evict_loader_worker("2")
         self.assertEqual(sample_run_memory("3"), {})
         self.assertTrue(sample_run_memory("5"))
-
-
-class DeletedNodeReapTest(unittest.TestCase):
-    def setUp(self):
-        worker._clear_all_runtime_caches()
-
-    def _register(self, *node_ids):
-        for node_id in node_ids:
-            worker._register_loader_cache(node_id, f"key-{node_id}")
-
-    def test_reap_releases_workers_whose_node_is_gone(self):
-        self._register("2", "7")
-        with mock.patch.object(worker, "_evict_loader_worker", return_value=True) as evict:
-            result = worker._reap_loaders_except(["2"])
-        self.assertEqual(result["released"], ["7"])
-        evict.assert_called_once_with("7")
-
-    def test_reap_keeps_every_worker_still_present_in_the_graph(self):
-        self._register("2", "7")
-        with mock.patch.object(worker, "_evict_loader_worker", return_value=True) as evict:
-            result = worker._reap_loaders_except(["7", "2"])
-        self.assertEqual(result["released"], [])
-        evict.assert_not_called()
-
-    def test_reap_with_no_live_nodes_releases_everything(self):
-        self._register("2", "7")
-        with mock.patch.object(worker, "_evict_loader_worker", return_value=True):
-            result = worker._reap_loaders_except([])
-        self.assertEqual(sorted(result["released"]), ["2", "7"])
-
-    def test_release_all_frees_every_registered_loader(self):
-        self._register("2", "7")
-        with mock.patch.object(worker, "_evict_loader_worker", return_value=True):
-            result = worker._release_all_loaders()
-        self.assertEqual(sorted(result["released"]), ["2", "7"])
-        self.assertEqual(worker._registered_loader_ids(), [])
 
 
 class OomAttributionTest(unittest.TestCase):

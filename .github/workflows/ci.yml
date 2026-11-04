@@ -99,7 +99,13 @@ jobs:
           extension = asyncio.run(module.comfy_entrypoint())
           nodes = asyncio.run(extension.get_node_list())
           registered = {node.__name__: node for node in nodes}
-          assert set(registered) == {"XDiTPreset", "XDiTModel", "XDiTSample"}, registered
+          assert set(registered) == {
+              "XDiTPreset",
+              "XDiTModel",
+              "XDiTSample",
+              "XDiTSaveImage",
+              "XDiTSaveVideo",
+          }, registered
           try:
               registered["XDiTModel"].define_schema()
           except RuntimeError as exc:

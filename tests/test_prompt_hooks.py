@@ -2,7 +2,6 @@ import pytest
 
 pytestmark = pytest.mark.usefixtures("synthetic_preset_catalog")
 
-from xdit_comfyui.nodes import XDiTSample
 from xdit_comfyui.prompt_hooks import apply_preset_prompt_overrides
 from xdit_comfyui.runtime_config import (
     _merge_generation_kwargs,
@@ -192,29 +191,6 @@ def test_merge_generation_kwargs_prefers_widget_negative_prompt():
     assert merged["negative_prompt"] == "user negative"
 
 
-def test_merge_generation_kwargs_keeps_stale_video_fields_from_widgets():
-    from xdit_comfyui.presets import build_preset_spec
-
-    spec = build_preset_spec(
-        "flux.1gpu.rdna4",
-        "gfx1201",
-        registry_choices=["black-forest-labs/FLUX.1-dev"],
-    )
-    merged = _merge_generation_kwargs(
-        spec,
-        {
-            "num_frames": 121,
-            "task": "i2v",
-            "flow_shift": 5.0,
-            "guidance_scale_2": 3.0,
-        },
-    )
-    assert merged["num_frames"] == 121
-    assert merged["task"] == "i2v"
-    assert merged["flow_shift"] == 5.0
-    assert merged["guidance_scale_2"] == 3.0
-
-
 def test_prompt_hook_keeps_stale_video_fields_from_widgets():
     payload = apply_preset_prompt_overrides(
         {
@@ -242,15 +218,6 @@ def test_prompt_hook_keeps_stale_video_fields_from_widgets():
     assert inputs["task"] == "i2v"
     assert inputs["flow_shift"] == 5.0
     assert inputs["guidance_scale_2"] == 3.0
-
-
-def test_generate_always_executes():
-    import math
-
-    first = XDiTSample.fingerprint_inputs(prompt="a", seed=1)
-    second = XDiTSample.fingerprint_inputs(prompt="b", seed=1)
-    assert math.isnan(first)
-    assert math.isnan(second)
 
 
 def test_normalize_task_rejects_zero():

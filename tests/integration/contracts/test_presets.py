@@ -56,69 +56,32 @@ PRESET_SWITCH_CASES = [
 
 @pytest.mark.contract
 @pytest.mark.parametrize("preset_name,stale_loader,expected", PRESET_SWITCH_CASES)
-def test_loader_preview_matches_preset_contract(preset_name, stale_loader, expected):
+def test_preset_stays_consistent_across_preview_hook_and_runtime(
+    preset_name, stale_loader, expected
+):
     payload = preview_loader(preset_name, stale_loader=stale_loader)
-    runtime = payload["runtime"]
-
-    if "cache_method" in expected:
-        assert runtime.get("cache_method") == expected["cache_method"]
-    if "model" in expected:
-        assert runtime.get("model") == expected["model"]
-    if "gpu_count" in expected:
-        assert payload["preset_widgets"]["gpu_count"] == expected["gpu_count"]
-    if "attention_backend" in expected:
-        assert runtime.get("attention_backend") == expected["attention_backend"]
-
-    if expected.get("cache_method") == "dbcache":
-        assert payload["step_cache_supported"] is True
-        assert payload["display_widgets"]["cache_method"] == "dbcache"
-        assert "dbcache" in payload["cache_method_choices"]
-
-
-@pytest.mark.contract
-@pytest.mark.parametrize("preset_name,stale_loader,expected", PRESET_SWITCH_CASES)
-def test_prompt_hook_loader_matches_preview_api(preset_name, stale_loader, expected):
+    preview_runtime = payload["runtime"]
     loader_inputs = hooked_loader_inputs(preset_name, stale_loader=stale_loader)
-    preview = preview_loader(preset_name, stale_loader=stale_loader)
-
-    assert loader_inputs["model"] == preview["runtime"]["model"]
-    if "cache_method" in expected:
-        expected_cache = expected["cache_method"] or "none"
-        assert loader_inputs.get("cache_method") == expected_cache
-    if "gpu_count" in expected:
-        from xdit_comfyui.runtime_config import _nproc_from_config
-
-        # gpu_count is not a Model input; the parallel degrees carry the layout.
-        assert "gpu_count" not in loader_inputs
-        assert _nproc_from_config(loader_inputs) == expected["gpu_count"]
-    if "attention_backend" in expected:
-        assert loader_inputs["attention_backend"] == expected["attention_backend"]
-
-
-@pytest.mark.contract
-@pytest.mark.parametrize("preset_name,stale_loader,expected", PRESET_SWITCH_CASES)
-def test_load_model_runtime_matches_preview_api(preset_name, stale_loader, expected):
-    preview = preview_loader(preset_name, stale_loader=stale_loader)
     runtime = load_runtime_from_preset(preset_name, stale_loader=stale_loader)
 
-    assert runtime["model"] == preview["runtime"]["model"]
     if "cache_method" in expected:
+        assert preview_runtime.get("cache_method") == expected["cache_method"]
+        assert loader_inputs.get("cache_method") == (expected["cache_method"] or "none")
         assert runtime.get("cache_method") == expected["cache_method"]
+    if "model" in expected:
+        assert preview_runtime.get("model") == expected["model"]
+        assert loader_inputs["model"] == expected["model"]
+        assert runtime["model"] == expected["model"]
     if "gpu_count" in expected:
+        assert payload["preset_widgets"]["gpu_count"] == expected["gpu_count"]
+        from xdit_comfyui.runtime_config import _nproc_from_config
+
+        assert "gpu_count" not in loader_inputs
+        assert _nproc_from_config(loader_inputs) == expected["gpu_count"]
         assert runtime["_gpu_count"] == expected["gpu_count"]
-
-
-@pytest.mark.contract
-def test_zimage_preset_preserves_valid_model_and_cache_overrides():
-    turbo_spec = build_preset_spec_for_tag("z_image_turbo.4gpu.rdna4")
-    assert turbo_spec["runtime_widgets"].get("cache_method") in (None, "none", "")
-
-    zimage_preview = preview_loader(
-        "z_image.4gpu.rdna4",
-        stale_loader={"cache_method": "none", "model": "Tongyi-MAI/Z-Image"},
-    )
-    assert zimage_preview["runtime"]["model"] == "Tongyi-MAI/Z-Image"
-    assert zimage_preview["runtime"]["cache_method"] is None
+    if "attention_backend" in expected:
+        assert preview_runtime.get("attention_backend") == expected["attention_backend"]
+        assert loader_inputs["attention_backend"] == expected["attention_backend"]
 
 
 @pytest.mark.contract

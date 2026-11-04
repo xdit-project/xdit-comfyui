@@ -73,14 +73,6 @@ class BenchmarkPreset:
         return frozenset(self.tags)
 
 
-@dataclass
-class ResolvedPreset:
-    matched: bool
-    preset_name: str | None
-    runtime: dict[str, Any]
-    gpu_tags: tuple[str, ...] = ()
-
-
 def _parse_benchmark_model(entry: dict[str, Any]) -> tuple[str, int]:
     preset_name = str(entry.get("name") or "<unknown>")
     model_field = entry.get("model")
@@ -94,10 +86,6 @@ def _parse_benchmark_model(entry: dict[str, Any]) -> tuple[str, int]:
 
 def _args_to_runtime(args: dict[str, Any]) -> dict[str, Any]:
     return preset_args_to_runtime(args)
-
-
-def _default_runtime(gpu_count: int) -> dict[str, Any]:
-    return _args_to_runtime({"ulysses_degree": max(gpu_count, 1)})
 
 
 def detect_gpu_tags() -> tuple[str, ...]:
@@ -374,38 +362,6 @@ def _score_preset(preset: BenchmarkPreset, gpu_count: int, gpu_tags: set[str]) -
     return score
 
 
-def resolve_loader_preset(
-    registry_model: str,
-    gpu_count: int,
-    gpu_tags: tuple[str, ...] | None = None,
-) -> ResolvedPreset:
-    tags = set(gpu_tags if gpu_tags is not None else detect_gpu_tags())
-    candidates = [
-        preset for preset in load_benchmark_presets() if _models_match(registry_model, preset.model)
-    ]
-    best: BenchmarkPreset | None = None
-    best_score = -1
-    for preset in candidates:
-        score = _score_preset(preset, gpu_count, tags)
-        if score > best_score:
-            best = preset
-            best_score = score
-    if best is None or best_score < 0:
-        return ResolvedPreset(
-            matched=False,
-            preset_name=None,
-            runtime=_default_runtime(gpu_count),
-            gpu_tags=tuple(sorted(tags)),
-        )
-    runtime = _args_to_runtime(best.args)
-    return ResolvedPreset(
-        matched=True,
-        preset_name=best.name,
-        runtime=runtime,
-        gpu_tags=tuple(sorted(tags)),
-    )
-
-
 PRESET_NONE = "none"
 PRESET_CUSTOM = "custom"
 PRESET_AUTO = "auto (best for hardware)"
@@ -505,27 +461,6 @@ def list_applicable_presets(
         }
         for score, preset in scored
     ]
-
-
-def resolve_preset_choice(
-    preset_choice: str,
-    registry_model: str,
-    gpu_count: int,
-    gpu_tags: tuple[str, ...] | None = None,
-) -> ResolvedPreset | None:
-    choice = (preset_choice or PRESET_NONE).strip()
-    if is_manual_preset_choice(choice):
-        return None
-    preset = preset_by_name(choice)
-    if preset is None:
-        return None
-    runtime = _args_to_runtime(preset.args)
-    return ResolvedPreset(
-        matched=True,
-        preset_name=preset.name,
-        runtime=runtime,
-        gpu_tags=tuple(sorted(set(gpu_tags if gpu_tags is not None else detect_gpu_tags()))),
-    )
 
 
 def preset_gpu_count(preset: BenchmarkPreset) -> int:

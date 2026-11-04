@@ -24,8 +24,6 @@ from xdit_comfyui.presets import (
     preset_by_name,
     preset_loader_seed,
     preset_to_loader_widgets,
-    resolve_loader_preset,
-    resolve_preset_choice,
 )
 from xdit_comfyui.runtime_config import (
     _generation_input_types,
@@ -44,11 +42,6 @@ class PresetTest(unittest.TestCase):
 
     def test_preset_configs_are_available(self):
         self.assertGreaterEqual(len(preset_catalog.load_benchmark_presets()), 10)
-
-    def test_benchmark_hardware_tags(self):
-        tags = list_benchmark_hardware_tags()
-        self.assertIn("gfx1201", tags)
-        self.assertIn("gfx942", tags)
 
     def test_default_gpu_tag_prefers_detected_arch(self):
         tag = default_gpu_tag()
@@ -92,6 +85,7 @@ class PresetTest(unittest.TestCase):
     def test_hardware_tags_are_direct(self):
         tags = set(list_benchmark_hardware_tags())
         self.assertIn("gfx1201", tags)
+        self.assertIn("gfx942", tags)
         self.assertIn("h100", tags)
         self.assertNotIn("hopper", tags)
         self.assertNotIn("blackwell", tags)
@@ -160,27 +154,6 @@ class PresetTest(unittest.TestCase):
 
     def test_normalize_gpu_device_ids_preserves_explicit_selection(self):
         self.assertEqual(normalize_gpu_device_ids("0", 4), "0")
-
-    def test_resolve_flux_rdna4_single_gpu(self):
-        resolved = resolve_loader_preset(
-            "FLUX.1-dev",
-            1,
-            gpu_tags=("gfx1201", "rdna4"),
-        )
-        self.assertTrue(resolved.matched)
-        self.assertEqual(resolved.preset_name, "flux.1gpu.rdna4")
-        self.assertEqual(resolved.runtime["ulysses_degree"], 1)
-        self.assertTrue(resolved.runtime["use_fp8_gemms"])
-
-    def test_resolve_z_image_turbo_two_gpu(self):
-        resolved = resolve_loader_preset(
-            "Tongyi-MAI/Z-Image-Turbo",
-            2,
-            gpu_tags=("gfx1201", "rdna4"),
-        )
-        self.assertTrue(resolved.matched)
-        self.assertEqual(resolved.preset_name, "z_image_turbo.2gpu.rdna4")
-        self.assertEqual(resolved.runtime["ulysses_degree"], 2)
 
     def test_list_applicable_presets_flux_rdna4(self):
         presets = list_applicable_presets(
@@ -336,23 +309,6 @@ class PresetTest(unittest.TestCase):
         self.assertTrue(is_manual_preset_choice("custom"))
         self.assertTrue(is_manual_preset_choice("auto (best for hardware)"))
         self.assertFalse(is_manual_preset_choice("flux.1gpu.rdna4"))
-
-    def test_resolve_preset_choice_none_returns_none(self):
-        self.assertIsNone(
-            resolve_preset_choice("none", "FLUX.1-dev", 1, gpu_tags=("gfx1201", "rdna4"))
-        )
-
-    def test_resolve_preset_choice_unknown_returns_none(self):
-        self.assertIsNone(resolve_preset_choice("not.a.real.preset", "FLUX.1-dev", 1))
-
-    def test_unmatched_falls_back_to_ulysses(self):
-        resolved = resolve_loader_preset(
-            "FLUX.1-dev",
-            3,
-            gpu_tags=("gfx1201", "rdna4"),
-        )
-        self.assertFalse(resolved.matched)
-        self.assertEqual(resolved.runtime["ulysses_degree"], 3)
 
     def test_qwen_image_2512_maps_to_registry_model_choice(self):
         spec = build_preset_spec(

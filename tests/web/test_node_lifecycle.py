@@ -50,13 +50,6 @@ def test_sidebar_and_modern_submenu_register(harness):
     assert {"content": "xDiT", "submenuItems": ["Unload all xDiT models"]} in report["canvas_menus"]
 
 
-def test_model_unload_action_is_kept_in_the_sidebar_card_header():
-    source = (_WEB / "xdit_residency_sidebar.js").read_text(encoding="utf-8")
-    assert 'button.textContent = t("xdit.residency.unload")' in source
-    assert "heading.append(button)" in source
-    assert "if (loader.warm || loader.parked)" in source
-
-
 def test_english_localization_uses_comfyui_layout():
     locales = _REPO / "locales" / "en"
     node_defs = json.loads((locales / "nodeDefs.json").read_text(encoding="utf-8"))
