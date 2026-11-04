@@ -261,6 +261,20 @@ function makeNode(classType, id) {
   return node;
 }
 
+function makeSaveNode(classType, id, inputName) {
+  return {
+    id,
+    type: classType,
+    comfyClass: classType,
+    widgets: [],
+    inputs: [{ name: inputName, link: null }],
+    outputs: [],
+    properties: {},
+    size: [300, 300],
+    graph: null,
+  };
+}
+
 const graph = {
   id: "test-graph",
   _nodes: [],
@@ -279,6 +293,8 @@ const appStub = {
   rootGraph: graph,
   configuringGraph: false,
   canvas: { setDirty() {} },
+  nodeOutputs: {},
+  nodePreviewImages: {},
   extensionManager: {
     toast: { add() {} },
     registerSidebarTab(tab) {
@@ -386,7 +402,15 @@ const presetNode = makeNode("xDiT.Preset", 1);
 const modelNode = makeNode("xDiT.Model", 2);
 Object.setPrototypeOf(modelNode, modelNodeType.prototype);
 const sampleNode = makeNode("xDiT.Sample", 3);
-for (const node of [presetNode, modelNode, sampleNode]) {
+const saveImageNode = makeSaveNode("SaveImage", 4, "images");
+const saveVideoNode = makeSaveNode("SaveVideo", 5, "video");
+for (const node of [
+  presetNode,
+  modelNode,
+  sampleNode,
+  saveImageNode,
+  saveVideoNode,
+]) {
   node.graph = graph;
   graph._nodes.push(node);
 }
@@ -394,6 +418,8 @@ for (const node of [presetNode, modelNode, sampleNode]) {
 link(presetNode, 0, modelNode, "preset");
 link(presetNode, 2, sampleNode, "preset");
 link(modelNode, 0, sampleNode, "model");
+link(sampleNode, 0, saveImageNode, "images");
+link(sampleNode, 1, saveVideoNode, "video");
 
 modelNode.onNodeCreated?.();
 for (const extension of extensions) {
@@ -402,6 +428,45 @@ for (const extension of extensions) {
   }
 }
 await settle();
+
+for (const node of [saveImageNode, saveVideoNode]) {
+  appStub.nodeOutputs[String(node.id)] = {
+    images: [{ filename: `old-${node.id}` }],
+  };
+  appStub.nodePreviewImages[String(node.id)] = [`preview-${node.id}`];
+  node.images = appStub.nodeOutputs[String(node.id)].images;
+  node.imgs = [{ src: `old-${node.id}` }];
+  node.imageIndex = 0;
+  node.animatedImages = true;
+  node.preview = [`preview-${node.id}`];
+  node.videoContainer = {
+    childCount: 1,
+    replaceChildren() {
+      this.childCount = 0;
+    },
+  };
+}
+sampleNode.onExecutionStart?.();
+const outputsAfterExecutionStart = {
+  stored_output_ids: Object.keys(appStub.nodeOutputs),
+  stored_preview_ids: Object.keys(appStub.nodePreviewImages),
+  image: {
+    images: saveImageNode.images ?? null,
+    imgs: saveImageNode.imgs ?? null,
+    image_index: saveImageNode.imageIndex,
+    animated: saveImageNode.animatedImages,
+    preview: saveImageNode.preview ?? null,
+    video_children: saveImageNode.videoContainer.childCount,
+  },
+  video: {
+    images: saveVideoNode.images ?? null,
+    imgs: saveVideoNode.imgs ?? null,
+    image_index: saveVideoNode.imageIndex,
+    animated: saveVideoNode.animatedImages,
+    preview: saveVideoNode.preview ?? null,
+    video_children: saveVideoNode.videoContainer.childCount,
+  },
+};
 
 const widgetByName = (node, name) =>
   node.widgets.find((widget) => widget.name === name);
@@ -663,7 +728,7 @@ reloaded.onConfigure?.(saved["xDiT.Model"]);
 // Leaving a video model for an image preset. This runs on a Model node of its own, at
 // the end, so the measurements above see the graph they were written for: `task` belongs
 // to the model being left, and the node still holds that model while the preset applies.
-const videoModelNode = makeNode("xDiT.Model", 5);
+const videoModelNode = makeNode("xDiT.Model", 6);
 videoModelNode.graph = graph;
 graph._nodes.push(videoModelNode);
 for (const extension of extensions) extension.nodeCreated?.(videoModelNode);
@@ -717,6 +782,7 @@ console.log(
       model_preset_trigger:
         modelNode.properties._xdit_model_preset_trigger ?? null,
       sample_model_constraints: sampleNode._xditModelConstraints ?? null,
+      outputs_after_execution_start: outputsAfterExecutionStart,
       sample_resolution_step:
         widgetByName(sampleNode, "height")?.options?.step2 ?? null,
       sample_layout: sampleLayout(),

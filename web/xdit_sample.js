@@ -21,6 +21,7 @@ import {
   requestSequence,
   setWidgetHidden as setWidgetHiddenState,
   setWidgetValue,
+  targetNodesFromOutput,
   userEdited,
   widgetValue,
 } from "./xdit_widget_state.js";
@@ -28,6 +29,10 @@ import { applyWidgetOrder } from "./xdit_widget_order.js";
 import { t } from "./xdit_i18n.js";
 
 const GENERATE_NODES = new Set(["xDiT.Sample"]);
+const SAVE_OUTPUTS = {
+  images: new Set(["SaveImage"]),
+  video: new Set(["SaveVideo"]),
+};
 
 const PRESET_WIDGETS = [
   "prompt",
@@ -464,12 +469,61 @@ function hookConnectionChanges(node) {
   };
 }
 
+/**
+ * Drop the result from a previous run before either output branch executes.
+ *
+ * Sample blocks the branch it did not produce, so that Save node receives no new
+ * `executed` event and ComfyUI would otherwise keep drawing its previous result.
+ * Clearing both here is intentional: the active Save node is populated again by
+ * this run, while the blocked one stays empty.
+ */
+function clearConnectedSaveOutputs(node) {
+  for (const [outputName, saveTypes] of Object.entries(SAVE_OUTPUTS)) {
+    for (const target of targetNodesFromOutput(node, outputName)) {
+      if (!saveTypes.has(target.comfyClass) && !saveTypes.has(target.type))
+        continue;
+
+      const id = String(target.id);
+      delete app.nodeOutputs?.[id];
+
+      const previews = app.nodePreviewImages?.[id];
+      if (previews?.[Symbol.iterator]) {
+        for (const url of previews) {
+          if (typeof url === "string" && url.startsWith("blob:"))
+            URL.revokeObjectURL?.(url);
+        }
+      }
+      delete app.nodePreviewImages?.[id];
+
+      target.images = undefined;
+      target.imgs = undefined;
+      target.imageIndex = null;
+      target.animatedImages = false;
+      target.preview = undefined;
+      target.videoContainer?.replaceChildren?.();
+      app.canvas?.setDirty?.(true, true);
+    }
+  }
+}
+
+function hookExecutionStart(node) {
+  if (node._xditExecutionStartHooked) return;
+  node._xditExecutionStartHooked = true;
+  const previous = node.onExecutionStart;
+  node.onExecutionStart = function (...args) {
+    const result = previous?.apply(this, args);
+    clearConnectedSaveOutputs(this);
+    return result;
+  };
+}
+
 function setupGenerateNode(node) {
   if (!GENERATE_NODES.has(node.comfyClass) && !GENERATE_NODES.has(node.type))
     return;
 
   hookGenerateSerialization(node);
   hookConnectionChanges(node);
+  hookExecutionStart(node);
   hookGenerationWidgets(node);
   hookExpandWidgets(node);
   ensureDefaultSeedControl(node);

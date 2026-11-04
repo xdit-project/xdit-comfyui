@@ -440,6 +440,22 @@ def test_sample_only_offers_the_frame_count_to_a_model_that_makes_video(harness)
     assert not video_model["heading_hidden"], "a video model cannot reach its frame count"
 
 
+def test_each_run_clears_both_connected_save_outputs(harness):
+    """The blocked image/video branch must not retain the previous run's preview."""
+    report, _ = harness
+    cleared = report["outputs_after_execution_start"]
+    assert cleared["stored_output_ids"] == []
+    assert cleared["stored_preview_ids"] == []
+    for output_type in ("image", "video"):
+        output = cleared[output_type]
+        assert output["images"] is None
+        assert output["imgs"] is None
+        assert output["image_index"] is None
+        assert output["animated"] is False
+        assert output["preview"] is None
+        assert output["video_children"] == 0
+
+
 def test_a_user_edit_survives_the_following_server_refresh(harness):
     report, _ = harness
     assert report["user_edit_preserved"] == 7
