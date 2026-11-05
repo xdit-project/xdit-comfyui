@@ -170,6 +170,7 @@ class RunnerNodesTest(unittest.TestCase):
             model_generation_defaults(runtime["model"])["num_inference_steps"],
         )
         self.assertEqual(config["input_images"], [])
+        self.assertIsNone(config["negative_prompt"])
 
     def test_runtime_loader_warms_worker(self):
         with mock.patch("xdit_comfyui.nodes._ensure_loader_worker") as warm:
