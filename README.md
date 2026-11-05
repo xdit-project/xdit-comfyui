@@ -1,4 +1,4 @@
-# xDiT
+# xDiT ComfyUI
 
 xDiT for ComfyUI runs supported diffusion models through the
 [xDiT](https://github.com/xdit-project/xDiT) unified runner. It provides nodes for selecting
@@ -32,35 +32,46 @@ Restart ComfyUI after installation.
 
 ### Docker
 
-The included Dockerfile expects an xDiT base image containing the matching GPU stack:
+The development launcher can use either maintained hardware profile:
 
 ```bash
-docker build -t xdit-comfyui -f docker/Dockerfile .
+XDIT_PROFILE=instinct bash scripts/docker/run_dev.sh
+XDIT_PROFILE=rdna4 bash scripts/docker/run_dev.sh
 ```
+
+Or supply another compatible xDiT image:
+
+```bash
+BASE_IMAGE=your-published-xdit-image bash scripts/docker/run_dev.sh
+```
+
+See [docker/README.md](docker/README.md) for the base-image contract, runtime behavior, and
+available overrides.
 
 ## Quick start
 
 Add the **xDiT Starter** template or connect the nodes manually.
 
 1. In **xDiT Preset**, select the detected GPU family, GPU count, and a matching preset.
-2. In **xDiT Model**, review the model, GPU assignment, and residency policy.
+2. In **xDiT Model**, review the model and runtime settings.
 3. In **xDiT Sample**, enter a prompt and queue the workflow.
-4. Use **Unload Model (Free VRAM)** when you no longer need the warm model.
+4. Connect the result to its matching Save node. Unload models from the sidebar when finished.
 
 The xDiT sidebar shows resident workers, assigned GPUs, memory use, and unload controls.
 
 ## Nodes
 
-| Node            | Purpose                                                              |
-| --------------- | -------------------------------------------------------------------- |
-| **xDiT Preset** | Applies a benchmark-tested model, GPU, and generation configuration. |
-| **xDiT Model**  | Loads and keeps an xDiT worker ready for inference.                  |
-| **xDiT Sample** | Generates images or video from the loaded model.                     |
+| Node                | Purpose                                                              |
+| ------------------- | -------------------------------------------------------------------- |
+| **xDiT Preset**     | Applies a benchmark-tested model, GPU, and generation configuration. |
+| **xDiT Model**      | Configures and manages a model worker.                               |
+| **xDiT Sample**     | Supplies generation inputs and produces an image or video.           |
+| **Save xDiT Image** | Saves image results.                                                 |
+| **Save xDiT Video** | Saves video results.                                                 |
 
-Model, residency, and compilation are always visible. Less frequently changed controls
-are grouped into model cache, parallelism, memory, VAE, attention, GEMM precision, step
-cache, and optional model-specific sections. Unsupported controls are disabled or hidden
-for the selected model.
+The Model node owns model initialization and runtime controls, including VAE settings. The
+Sample node owns generation inputs. Advanced controls are grouped and filtered according to
+the installed xDiT revision, selected model, and related settings.
 
 ## Model storage
 
@@ -71,9 +82,10 @@ With the default `auto` setting, downloads use the first configured Hugging Face
 3. A populated container cache at `/cache/huggingface`
 4. `ComfyUI/models/huggingface`
 
-The Model node shows the effective source and path. Choose `custom_path` to specify another
-Hugging Face cache root. Authentication uses `HF_TOKEN` or `hf auth login`; credentials are
-not stored in workflows.
+The Model node shows the effective source and path. `comfy_models_shared` always uses the
+ComfyUI models path, `system_default` leaves Hugging Face paths unchanged, and `custom_path`
+uses the specified cache root. Authentication uses `HF_TOKEN` or `hf auth login`; credentials
+are not stored in workflows.
 
 Models are selected by Hugging Face repository ID. Arbitrary directories under
 `ComfyUI/models/diffusers` are not discovered; this plugin does not reorganize model files or
@@ -116,21 +128,9 @@ bash scripts/browser/run_tests.sh --install  # install Chromium once
 bash scripts/browser/run_tests.sh
 ```
 
-For a GPU development container, run `bash scripts/docker/run_dev.sh`. The most useful
-overrides are:
-
-| Variable                               | Purpose                                                      |
-| -------------------------------------- | ------------------------------------------------------------ |
-| `XDIT_DOCKER_ROCM=0`                   | Use CUDA (`--gpus all`) instead of the ROCm device defaults. |
-| `XDIT_REPOSITORY`, `XDIT_REF`          | Build against another xDiT repository or revision.           |
-| `HF_CACHE_HOST`                        | Host Hugging Face cache to mount in the container.           |
-| `XDIT_DEV_IMAGE`, `XDIT_DEV_CONTAINER` | Override the development image or container name.            |
-| `COMFYUI_URL`                          | Target an existing ComfyUI server in live tests.             |
-| `XDIT_BROWSER_COMFYUI_PORT`            | Override the provisioned browser-test port.                  |
-
-Python node changes require a ComfyUI restart: `bash scripts/docker/restart.sh`.
-See [docker/README.md](docker/README.md) for container examples and the complete Docker
-configuration.
+For GPU container development and launcher overrides, see
+[docker/README.md](docker/README.md). Python node changes require a ComfyUI restart with
+`bash scripts/docker/restart.sh`.
 
 ## Releases
 

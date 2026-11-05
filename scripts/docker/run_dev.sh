@@ -2,33 +2,48 @@
 # Build (if needed) and run the dev container with the repo bind-mounted.
 set -euo pipefail
 
-XDIT_OVERRIDE_SET=0
-if [ -n "${XDIT_REPOSITORY+x}" ] || [ -n "${XDIT_REF+x}" ]; then
-  XDIT_OVERRIDE_SET=1
-fi
-BASE_IMAGE="${BASE_IMAGE:-rocm/pytorch-xdit:v26.7}"
-XDIT_REPOSITORY="${XDIT_REPOSITORY:-https://github.com/xdit-project/xDiT.git}"
-XDIT_REF="${XDIT_REF:-68bca878f454c718d23b3764ded1de6add474eb4}"
-CONTAINER_NAME="${XDIT_DEV_CONTAINER:-xdit-comfyui-${USER:-$(id -un)}}"
 COMFY_PORT="${COMFY_PORT:-8188}"
 PLUGIN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-IMAGE="${XDIT_DEV_IMAGE:-xdit-comfyui-dev}"
+
+PROFILE_NAME="${XDIT_PROFILE:-custom}"
+if [ -n "${XDIT_PROFILE:-}" ]; then
+  if [ -z "${BASE_IMAGE:-}" ]; then
+    eval "$(python3 "${PLUGIN_ROOT}/scripts/docker/profile.py" "${XDIT_PROFILE}")"
+  fi
+elif [ -z "${BASE_IMAGE:-}" ]; then
+  echo "Set XDIT_PROFILE=instinct or rdna4, or provide BASE_IMAGE for a custom image." >&2
+  exit 2
+fi
+XDIT_REPOSITORY="${XDIT_REPOSITORY:-}"
+XDIT_REF="${XDIT_REF:-}"
+if { [ -n "${XDIT_REPOSITORY}" ] && [ -z "${XDIT_REF}" ]; } ||
+   { [ -z "${XDIT_REPOSITORY}" ] && [ -n "${XDIT_REF}" ]; }; then
+  echo "Custom xDiT replacement requires both XDIT_REPOSITORY and XDIT_REF." >&2
+  exit 2
+fi
+
+CONTAINER_NAME="${XDIT_DEV_CONTAINER:-xdit-comfyui-${PROFILE_NAME}-${USER:-$(id -un)}}"
+IMAGE_KEY="$(printf '%s\n%s\n%s\n' "${BASE_IMAGE}" "${XDIT_REPOSITORY}" "${XDIT_REF}" | sha256sum | cut -c1-12)"
+IMAGE="${XDIT_DEV_IMAGE:-xdit-comfyui-dev-${PROFILE_NAME}-${IMAGE_KEY}}"
 
 # Host path → in-container HF cache (/.cache/huggingface matches other xDiT workloads).
 HF_CACHE_HOST="${HF_CACHE_HOST:-${HOME}/.cache/huggingface}"
 HF_CACHE_ROOT="${HF_CACHE_ROOT:-/.cache/huggingface}"
 
-# ROCm when the host exposes /dev/kfd, otherwise NVIDIA. Set XDIT_DOCKER_ROCM to force.
-if [ -z "${XDIT_DOCKER_ROCM:-}" ]; then
-  if [ -e /dev/kfd ]; then XDIT_DOCKER_ROCM=1; else XDIT_DOCKER_ROCM=0; fi
-fi
 XDIT_DOCKER_SHM_SIZE="${XDIT_DOCKER_SHM_SIZE:-128g}"
 XDIT_DOCKER_NETWORK="${XDIT_DOCKER_NETWORK:-host}"
 XDIT_DOCKER_IPC="${XDIT_DOCKER_IPC:-host}"
+if [ -z "${XDIT_DOCKER_ROCM:-}" ]; then
+  if [ "${PROFILE_NAME}" != "custom" ] || [ -e /dev/kfd ]; then
+    XDIT_DOCKER_ROCM=1
+  else
+    XDIT_DOCKER_ROCM=0
+  fi
+fi
 
 mkdir -p "${HF_CACHE_HOST}"
 
-if [ "${XDIT_OVERRIDE_SET}" = "1" ] || ! docker image inspect "${IMAGE}" >/dev/null 2>&1; then
+if [ "${XDIT_REBUILD:-0}" = "1" ] || ! docker image inspect "${IMAGE}" >/dev/null 2>&1; then
   echo "Building ${IMAGE} from docker/Dockerfile (BASE_IMAGE=${BASE_IMAGE})..."
   docker build -t "${IMAGE}" \
     --build-arg "BASE_IMAGE=${BASE_IMAGE}" \

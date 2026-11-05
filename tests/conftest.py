@@ -97,7 +97,7 @@ def synthetic_preset_catalog():
             ["gfx1201"],
             "Wan-AI/Wan2.2-TI2V-5B-Diffusers",
             2,
-            input_images="https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/172fbcce2bf603216771f476fc40002b0640ce8d/assets/data/wan_input.jpg",
+            input_images="https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/e52c1cdcf690ce2c0c9fd8a7be42321ca0841279/assets/data/wan_input.jpg",
             num_frames=81,
             height=720,
             width=1280,
@@ -111,7 +111,7 @@ def synthetic_preset_catalog():
             ["gfx1201"],
             "Wan-AI/Wan2.2-TI2V-5B-Diffusers",
             4,
-            input_images="https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/172fbcce2bf603216771f476fc40002b0640ce8d/assets/data/wan_input.jpg",
+            input_images="https://raw.githubusercontent.com/AMD-AGI/diffusion-models-inference/e52c1cdcf690ce2c0c9fd8a7be42321ca0841279/assets/data/wan_input.jpg",
             num_frames=81,
             height=720,
             width=1280,
@@ -211,15 +211,17 @@ def isolate_worker_tokens():
         yield
 
 
+def warm_runtime_without_worker(runtime, loader_node_id, timeout_seconds=None):
+    del loader_node_id, timeout_seconds
+    runtime["_preloaded"] = True
+    return runtime
+
+
 @pytest.fixture
 def mock_loader_worker_warm():
-    def _fake_ensure(runtime, loader_node_id, timeout_seconds=None):
-        runtime["_preloaded"] = True
-        return runtime
-
     with mock.patch(
         "xdit_comfyui.nodes._ensure_loader_worker",
-        side_effect=_fake_ensure,
+        side_effect=warm_runtime_without_worker,
     ):
         yield
 
@@ -242,33 +244,12 @@ def mock_comfy_execution(monkeypatch):
 @pytest.fixture
 def mock_comfy_video_api(monkeypatch):
     """Stand in for ComfyUI's VIDEO type so multi-frame runs can return an output."""
+    from tests.comfy_stubs import comfy_video_modules
 
-    class VideoComponents:
-        def __init__(self, images, frame_rate):
-            self.images = images
-            self.frame_rate = frame_rate
-
-    class VideoFromComponents:
-        def __init__(self, components):
-            self.components = components
-
-    modules = {
-        "comfy_api": types.ModuleType("comfy_api"),
-        "comfy_api.latest": types.ModuleType("comfy_api.latest"),
-        "comfy_api.latest._input_impl": types.ModuleType("comfy_api.latest._input_impl"),
-        "comfy_api.latest._input_impl.video_types": types.ModuleType(
-            "comfy_api.latest._input_impl.video_types"
-        ),
-        "comfy_api.latest._util": types.ModuleType("comfy_api.latest._util"),
-        "comfy_api.latest._util.video_types": types.ModuleType(
-            "comfy_api.latest._util.video_types"
-        ),
-    }
-    modules["comfy_api.latest._input_impl.video_types"].VideoFromComponents = VideoFromComponents
-    modules["comfy_api.latest._util.video_types"].VideoComponents = VideoComponents
+    modules, video_type = comfy_video_modules()
     for name, module in modules.items():
         monkeypatch.setitem(sys.modules, name, module)
-    return VideoFromComponents
+    return video_type
 
 
 @pytest.fixture

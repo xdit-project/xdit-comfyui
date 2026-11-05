@@ -69,7 +69,7 @@
         "gpu_detection_info": "",
         "gpu_tag": "gfx1201",
         "gpu_count": "1",
-        "preset": "flux.1gpu.rdna4"
+        "preset": "none"
       }
     },
     {
@@ -274,6 +274,54 @@
           "link": null
         },
         {
+          "name": "enable_tiling",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "enable_tiling"
+          },
+          "link": null
+        },
+        {
+          "name": "enable_slicing",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "enable_slicing"
+          },
+          "link": null
+        },
+        {
+          "name": "vae_tile_size_height",
+          "type": "INT",
+          "widget": {
+            "name": "vae_tile_size_height"
+          },
+          "link": null
+        },
+        {
+          "name": "vae_tile_size_width",
+          "type": "INT",
+          "widget": {
+            "name": "vae_tile_size_width"
+          },
+          "link": null
+        },
+        {
+          "name": "vae_tile_overlap_height",
+          "type": "INT",
+          "widget": {
+            "name": "vae_tile_overlap_height"
+          },
+          "link": null
+        },
+        {
+          "name": "vae_tile_overlap_width",
+          "type": "INT",
+          "widget": {
+            "name": "vae_tile_overlap_width"
+          },
+          "link": null
+        },
+        {
           "name": "ATTENTION",
           "type": "BOOLEAN",
           "widget": {
@@ -466,10 +514,42 @@
           "link": null
         },
         {
+          "name": "gemm_config",
+          "type": "STRING",
+          "widget": {
+            "name": "gemm_config"
+          },
+          "link": null
+        },
+        {
           "name": "use_fp8_text_encoder",
           "type": "BOOLEAN",
           "widget": {
             "name": "use_fp8_text_encoder"
+          },
+          "link": null
+        },
+        {
+          "name": "use_fp8_comms",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "use_fp8_comms"
+          },
+          "link": null
+        },
+        {
+          "name": "fp8_comms_scale",
+          "type": "FLOAT",
+          "widget": {
+            "name": "fp8_comms_scale"
+          },
+          "link": null
+        },
+        {
+          "name": "fp8_comms_safety_factor",
+          "type": "FLOAT",
+          "widget": {
+            "name": "fp8_comms_safety_factor"
           },
           "link": null
         },
@@ -728,7 +808,7 @@
       ],
       "properties": {
         "Node name for S&R": "xDiT.Model",
-        "_xdit_model_preset_trigger": "gfx1201:1:flux.1gpu.rdna4"
+        "_xdit_model_preset_trigger": "gfx1201:1:none"
       },
       "widgets_values": [],
       "xdit_widget_values": {
@@ -756,8 +836,14 @@
         "VAE": false,
         "use_parallel_vae": false,
         "use_vae_channels_last_format": false,
+        "enable_tiling": false,
+        "enable_slicing": false,
+        "vae_tile_size_height": 0,
+        "vae_tile_size_width": 0,
+        "vae_tile_overlap_height": 0,
+        "vae_tile_overlap_width": 0,
         "ATTENTION": false,
-        "attention_backend": "aiter_flydsl",
+        "attention_backend": "auto",
         "cross_attention_backend": "auto",
         "use_hybrid_attn_schedule": false,
         "hybrid_attn_low_precision_backend": "",
@@ -779,8 +865,12 @@
         "use_vsa_static_block_mask": true,
         "use_vsa_first_frame_mask": true,
         "GEMM PRECISION": false,
-        "gemm_precision": "fp8",
+        "gemm_precision": "native",
+        "gemm_config": "",
         "use_fp8_text_encoder": false,
+        "use_fp8_comms": false,
+        "fp8_comms_scale": 0.0,
+        "fp8_comms_safety_factor": 0.85,
         "fp8_precision_override_prefix_patterns": "",
         "fp8_precision_override_suffix_patterns": "",
         "use_hybrid_gemm_schedule": false,
@@ -948,62 +1038,6 @@
           "link": null
         },
         {
-          "name": "VAE",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "VAE"
-          },
-          "link": null
-        },
-        {
-          "name": "enable_tiling",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "enable_tiling"
-          },
-          "link": null
-        },
-        {
-          "name": "enable_slicing",
-          "type": "BOOLEAN",
-          "widget": {
-            "name": "enable_slicing"
-          },
-          "link": null
-        },
-        {
-          "name": "vae_tile_size_height",
-          "type": "INT",
-          "widget": {
-            "name": "vae_tile_size_height"
-          },
-          "link": null
-        },
-        {
-          "name": "vae_tile_size_width",
-          "type": "INT",
-          "widget": {
-            "name": "vae_tile_size_width"
-          },
-          "link": null
-        },
-        {
-          "name": "vae_tile_overlap_height",
-          "type": "INT",
-          "widget": {
-            "name": "vae_tile_overlap_height"
-          },
-          "link": null
-        },
-        {
-          "name": "vae_tile_overlap_width",
-          "type": "INT",
-          "widget": {
-            "name": "vae_tile_overlap_width"
-          },
-          "link": null
-        },
-        {
           "name": "images",
           "type": "IMAGE",
           "link": 5
@@ -1031,34 +1065,27 @@
       },
       "widgets_values": [],
       "xdit_widget_values": {
-        "prompt": "A small cat",
+        "prompt": "A cat running in a garden",
         "negative_prompt": "",
         "width": 1024,
         "height": 1024,
-        "seed": 42,
+        "seed": 0,
         "control_after_generate": "randomize",
-        "num_inference_steps": 25,
-        "guidance_scale": 0.0,
+        "num_inference_steps": 50,
+        "guidance_scale": 3.5,
         "Video": false,
         "num_frames": 1,
         "output_fps": 0,
         "flow_shift": 0.0,
         "guidance_scale_2": 0.0,
         "resize_input_images": false,
-        "max_sequence_length": 256,
-        "timeout_seconds": 900,
-        "VAE": false,
-        "enable_tiling": false,
-        "enable_slicing": false,
-        "vae_tile_size_height": 0,
-        "vae_tile_size_width": 0,
-        "vae_tile_overlap_height": 0,
-        "vae_tile_overlap_width": 0
+        "max_sequence_length": 512,
+        "timeout_seconds": 900
       }
     },
     {
       "id": 4,
-      "type": "SaveImage",
+      "type": "xDiT.SaveImage",
       "pos": [1480, 40],
       "size": [320, 220],
       "flags": {},
@@ -1066,13 +1093,11 @@
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "images",
           "name": "images",
           "type": "IMAGE",
           "link": 4
         },
         {
-          "localized_name": "filename_prefix",
           "name": "filename_prefix",
           "type": "STRING",
           "widget": {
@@ -1081,22 +1106,15 @@
           "link": null
         }
       ],
-      "outputs": [
-        {
-          "localized_name": "images",
-          "name": "images",
-          "type": "IMAGE",
-          "links": null
-        }
-      ],
+      "outputs": [],
       "properties": {
-        "Node name for S&R": "SaveImage"
+        "Node name for S&R": "xDiT.SaveImage"
       },
       "widgets_values": ["xdit"]
     },
     {
       "id": 5,
-      "type": "SaveVideo",
+      "type": "xDiT.SaveVideo",
       "pos": [1480, 420],
       "size": [320, 220],
       "flags": {},
@@ -1104,13 +1122,11 @@
       "mode": 0,
       "inputs": [
         {
-          "localized_name": "video",
           "name": "video",
           "type": "VIDEO",
           "link": 6
         },
         {
-          "localized_name": "filename_prefix",
           "name": "filename_prefix",
           "type": "STRING",
           "widget": {
@@ -1119,7 +1135,6 @@
           "link": null
         },
         {
-          "localized_name": "format",
           "name": "format",
           "type": "COMBO",
           "widget": {
@@ -1128,7 +1143,6 @@
           "link": null
         },
         {
-          "localized_name": "codec",
           "name": "codec",
           "type": "COMBO",
           "widget": {
@@ -1137,26 +1151,19 @@
           "link": null
         }
       ],
-      "outputs": [
-        {
-          "localized_name": "video",
-          "name": "video",
-          "type": "VIDEO",
-          "links": null
-        }
-      ],
+      "outputs": [],
       "properties": {
-        "Node name for S&R": "SaveVideo"
+        "Node name for S&R": "xDiT.SaveVideo"
       },
       "widgets_values": ["video/xdit", "auto", "auto"]
     }
   ],
   "links": [
-    [1, 1, 0, 2, 77, "*"],
-    [2, 1, 2, 3, 24, "*"],
+    [1, 1, 0, 2, 87, "*"],
+    [2, 1, 2, 3, 17, "*"],
     [3, 2, 0, 3, 0, "*"],
     [4, 3, 0, 4, 0, "IMAGE"],
-    [5, 1, 1, 3, 23, "IMAGE"],
+    [5, 1, 1, 3, 16, "IMAGE"],
     [6, 3, 1, 5, 0, "VIDEO"]
   ],
   "groups": [],
@@ -1168,6 +1175,6 @@
     }
   },
   "version": 0.4,
-  "revision": "59810be73b1b",
-  "id": "58c34dbb-ca71-4ab9-bdad-da2c32cebc1f"
+  "revision": "2c72f8cedd32",
+  "id": "c4d39b99-ffec-4c09-bc75-d55af11b2eef"
 }

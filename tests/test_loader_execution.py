@@ -229,7 +229,9 @@ def test_worker_payload_matches_widget_kwargs_not_corrupt_seed_values():
     payload = loader_init_worker_payload(runtime)
     assert payload["model"] == "black-forest-labs/FLUX.1-dev"
     assert payload["attention_backend"] == "sdpa"
-    assert payload.get("use_fp8_gemms") is False
+    from xdit_comfyui.xdit_compat import gemm_precision_from_runtime
+
+    assert gemm_precision_from_runtime(payload) == "native"
     assert payload.get("fp8_precision_override_prefix_patterns") in (None, "")
 
 

@@ -19,6 +19,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: aiter
+    memory_efficient_replicated_load: true
 
 - name: flux2.default.hopper.h100
   tags: [lucid, hopper, h100]
@@ -58,6 +59,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 - name: flux2.default.blackwell
   tags: [lucid, blackwell, b200, b300]
@@ -77,6 +79,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 - name: flux2.quantgemm.gfx942
   tags: [release, mad, lucid, instinct, gfx942]
@@ -90,13 +93,14 @@
     num_inference_steps: 50
     max_sequence_length: 512
     warmup_calls: 5
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     ulysses_degree: 8
     use_torch_compile: true
     input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: aiter
+    memory_efficient_replicated_load: true
 
 - name: flux2.quantgemm.gfx950
   tags: [release, mad, lucid, instinct, gfx950]
@@ -110,13 +114,14 @@
     num_inference_steps: 50
     max_sequence_length: 512
     warmup_calls: 5
-    use_fp4_gemms: true
+    gemm_quantization: fp4
     ulysses_degree: 8
     use_torch_compile: true
     input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: aiter
+    memory_efficient_replicated_load: true
 
 - name: flux2.quantgemm.hopper.h100
   tags: [lucid, hopper, h100]
@@ -130,7 +135,7 @@
     num_inference_steps: 50
     max_sequence_length: 512
     warmup_calls: 5
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     ulysses_degree: 8
     fully_shard_degree: 8
     use_torch_compile: true
@@ -151,13 +156,14 @@
     num_inference_steps: 50
     max_sequence_length: 512
     warmup_calls: 5
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     ulysses_degree: 8
     use_torch_compile: true
     input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 - name: flux2.quantgemm.blackwell
   tags: [lucid, blackwell, b200, b300]
@@ -171,16 +177,17 @@
     num_inference_steps: 50
     max_sequence_length: 512
     warmup_calls: 5
-    use_fp4_gemms: true
+    gemm_quantization: fp4
     ulysses_degree: 8
     use_torch_compile: true
     input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
-- name: flux2.quantgemm_sageattn.gfx942
-  tags: [release, instinct, gfx942]
+- name: flux2.quantgemm_quantattn.gfx942
+  tags: [release, instinct, gfx942, nightly]
   model: black-forest-labs/FLUX.2-dev
   runner: xdit
   args:
@@ -196,11 +203,12 @@
     input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
     guidance_scale: 4.0
     num_iterations: 25
-    attention_backend: aiter_i8fp8
-    use_fp8_gemms: true
+    attention_backend: aiter_fp8
+    gemm_quantization: fp8
+    memory_efficient_replicated_load: true
 
-- name: flux2.quantgemm_sageattn.gfx950
-  tags: [release, instinct, gfx950]
+- name: flux2.quantgemm_quantattn.gfx950
+  tags: [release, instinct, gfx950, nightly]
   model: black-forest-labs/FLUX.2-dev
   runner: xdit
   args:
@@ -216,12 +224,13 @@
     input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
     guidance_scale: 4.0
     num_iterations: 25
-    attention_backend: aiter_i8fp8
-    use_fp4_gemms: true
+    attention_backend: aiter_mxfp6
+    gemm_quantization: fp4
+    memory_efficient_replicated_load: true
 
 # TI2V 2K
 - name: flux2.ti2i_2k
-  tags: [release, mad, lucid, instinct, gfx942, gfx950]
+  tags: [release, mad, lucid, instinct, gfx942, gfx950, nightly]
   model: black-forest-labs/FLUX.2-dev
   runner: xdit
   args:
@@ -238,6 +247,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: aiter
+    memory_efficient_replicated_load: true
 
 - name: flux2.ti2i_2k.hopper.h100
   tags: [lucid, hopper, h100]
@@ -277,6 +287,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 - name: flux2.ti2i_2k.blackwell
   tags: [lucid, blackwell, b200, b300]
@@ -296,6 +307,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 # T2V 1K
 - name: flux2.t2i_1k
@@ -315,6 +327,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: aiter
+    memory_efficient_replicated_load: true
 
 - name: flux2.t2i_1k.hopper.h100
   tags: [lucid, hopper, h100]
@@ -352,6 +365,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 - name: flux2.t2i_1k.blackwell
   tags: [lucid, blackwell, b200, b300]
@@ -370,6 +384,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 # T2V 2K
 - name: flux2.t2i_2k
@@ -389,6 +404,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: aiter
+    memory_efficient_replicated_load: true
 
 - name: flux2.t2i_2k.hopper.h100
   tags: [lucid, hopper, h100]
@@ -426,6 +442,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 - name: flux2.t2i_2k.blackwell
   tags: [lucid, blackwell, b200, b300]
@@ -444,10 +461,11 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 # TmultiI2V 1K
 - name: flux2.t-multi-i2i_1k
-  tags: [release, mad, lucid, instinct, gfx942, gfx950]
+  tags: [release, mad, lucid, instinct, gfx942, gfx950, nightly]
   model: black-forest-labs/FLUX.2-dev
   runner: xdit
   args:
@@ -466,6 +484,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: aiter
+    memory_efficient_replicated_load: true
 
 - name: flux2.t-multi-i2i_1k.hopper.h100
   tags: [lucid, hopper, h100]
@@ -509,6 +528,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 - name: flux2.t-multi-i2i_1k.blackwell
   tags: [lucid, blackwell, b200, b300]
@@ -530,6 +550,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 # TmultiI2V 2K
 - name: flux2.t-multi-i2i_2k
@@ -552,6 +573,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: aiter
+    memory_efficient_replicated_load: true
 
 - name: flux2.t-multi-i2i_2k.hopper.h100
   tags: [lucid, hopper, h100]
@@ -595,6 +617,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 - name: flux2.t-multi-i2i_2k.blackwell
   tags: [lucid, blackwell, b200, b300]
@@ -616,6 +639,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 - name: flux2.i2i_1k.4gpu.rdna4
   tags: [rdna4, gfx1201]
@@ -634,14 +658,20 @@
     input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
     attention_backend: aiter_flydsl_fp8
     use_torch_compile: true
-    use_fp8_gemms: true
-    cache_method: dbcache
+    gemm_quantization: fp8
+    cache_method: pipefusion
     cache_config:
       residual_diff_threshold: 0.16
       enable_taylorseer: false
     use_fp8_text_encoder: true
-    ulysses_degree: 4
-    fully_shard_degree: 2
+    pipefusion_parallel_degree: 4
+    num_pipeline_patch: 4
+    attn_layer_num_for_pp: [14, 14, 14, 14]
+    warmup_steps: 1
+    memory_efficient_replicated_load: true
+    fully_shard_degree: 4
+    fully_shard_components:
+      - text_encoder
     memory_efficient_sharding: true
     use_parallel_vae: true
     enable_tiling: true
@@ -669,14 +699,20 @@
       - https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/grumpy.jpg
     attention_backend: aiter_flydsl_fp8
     use_torch_compile: true
-    use_fp8_gemms: true
-    cache_method: dbcache
+    gemm_quantization: fp8
+    cache_method: pipefusion
     cache_config:
       residual_diff_threshold: 0.16
       enable_taylorseer: false
     use_fp8_text_encoder: true
-    ulysses_degree: 4
+    pipefusion_parallel_degree: 4
+    num_pipeline_patch: 4
+    attn_layer_num_for_pp: [14, 14, 14, 14]
+    warmup_steps: 1
+    memory_efficient_replicated_load: true
     fully_shard_degree: 4
+    fully_shard_components:
+      - text_encoder
     memory_efficient_sharding: true
     use_parallel_vae: true
     enable_tiling: true
@@ -701,14 +737,20 @@
     guidance_scale: 4.0
     attention_backend: aiter_flydsl_fp8
     use_torch_compile: true
-    use_fp8_gemms: true
-    cache_method: dbcache
+    gemm_quantization: fp8
+    cache_method: pipefusion
     cache_config:
       residual_diff_threshold: 0.16
       enable_taylorseer: false
     use_fp8_text_encoder: true
-    ulysses_degree: 4
-    fully_shard_degree: 2
+    pipefusion_parallel_degree: 4
+    num_pipeline_patch: 4
+    attn_layer_num_for_pp: [14, 14, 14, 14]
+    warmup_steps: 1
+    memory_efficient_replicated_load: true
+    fully_shard_degree: 4
+    fully_shard_components:
+      - text_encoder
     memory_efficient_sharding: true
     use_parallel_vae: true
     enable_tiling: true
@@ -734,13 +776,14 @@
     input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
     attention_backend: aiter_flydsl_fp8
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     cache_method: dbcache
     cache_config:
       residual_diff_threshold: 0.16
       enable_taylorseer: false
     use_fp8_text_encoder: true
     ulysses_degree: 2
+    use_fp8_comms: true
     fully_shard_degree: 2
     memory_efficient_sharding: true
     use_parallel_vae: true
@@ -769,13 +812,14 @@
       - https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/grumpy.jpg
     attention_backend: aiter_flydsl_fp8
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     cache_method: dbcache
     cache_config:
       residual_diff_threshold: 0.16
       enable_taylorseer: false
     use_fp8_text_encoder: true
     ulysses_degree: 2
+    use_fp8_comms: true
     fully_shard_degree: 2
     memory_efficient_sharding: true
     use_parallel_vae: true
@@ -801,14 +845,20 @@
     guidance_scale: 4.0
     attention_backend: aiter_flydsl_fp8
     use_torch_compile: true
-    use_fp8_gemms: true
-    cache_method: dbcache
+    gemm_quantization: fp8
+    cache_method: pipefusion
     cache_config:
       residual_diff_threshold: 0.16
       enable_taylorseer: false
     use_fp8_text_encoder: true
-    ulysses_degree: 2
+    pipefusion_parallel_degree: 2
+    num_pipeline_patch: 2
+    attn_layer_num_for_pp: [28, 28]
+    warmup_steps: 1
+    memory_efficient_replicated_load: true
     fully_shard_degree: 2
+    fully_shard_components:
+      - text_encoder
     memory_efficient_sharding: true
     use_parallel_vae: true
     enable_tiling: true
@@ -834,7 +884,7 @@
     input_images: https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png
     attention_backend: aiter_flydsl_fp8
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     use_fp8_text_encoder: true
     enable_group_cpu_offload: true
     group_offload_low_cpu_mem: false
@@ -862,7 +912,7 @@
       - https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/grumpy.jpg
     attention_backend: aiter_flydsl_fp8
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     use_fp8_text_encoder: true
     enable_group_cpu_offload: true
     group_offload_low_cpu_mem: true
@@ -887,7 +937,7 @@
     guidance_scale: 4.0
     attention_backend: aiter_flydsl_fp8
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     use_fp8_text_encoder: true
     enable_group_cpu_offload: true
     group_offload_low_cpu_mem: false

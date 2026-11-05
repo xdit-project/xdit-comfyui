@@ -1,8 +1,12 @@
 """The xDiT node classes. Everything they call lives in a sibling module."""
 
-from functools import lru_cache
-
-from .identity import COMFY_CATEGORY
+from .identity import (
+    COMFY_CATEGORY,
+    MODEL_NODE_ID,
+    NODE_DISPLAY_NAMES,
+    PRESET_NODE_ID,
+    SAMPLE_NODE_ID,
+)
 from .images import _load_preset_reference_image
 from .log_context import worker_logger
 from .presets import (
@@ -17,10 +21,7 @@ from .presets import (
 )
 from .progress import _node_id_str
 from .residency_allocator import normalize_residency
-from .runner_contract import (
-    loader_config_widget_names,
-    preset_to_image_input_preset,
-)
+from .runner_contract import preset_to_image_input_preset
 from .runtime_config import (
     _generation_input_types,
     _merge_loader_kwargs,
@@ -35,6 +36,7 @@ from .runtime_config import (
 )
 from .runtime_env import _build_hf_cache_env, _resolve_hf_cache_root
 from .sampling import _execute_sample
+from .save_outputs import XDiTSaveImage, XDiTSaveVideo
 from .v3 import ComfyExtension, inputs_from_legacy, io
 from .worker import (
     _ensure_loader_worker,
@@ -51,16 +53,16 @@ class XDiTPreset(io.ComfyNode):
     def define_schema(cls):
         inputs, hidden = inputs_from_legacy(_preset_picker_input_types())
         return io.Schema(
-            node_id="xDiT.Preset",
-            display_name="xDiT Preset",
+            node_id=PRESET_NODE_ID,
+            display_name=NODE_DISPLAY_NAMES[PRESET_NODE_ID],
             category=COMFY_CATEGORY,
-            description="Select a tested configuration for the available GPUs.",
+            description="Select a tested xDiT configuration for the available GPUs.",
             inputs=inputs,
             hidden=hidden,
             outputs=[
-                io.AnyType.Output("model", display_name="model"),
-                io.Image.Output("images", display_name="images"),
-                io.AnyType.Output("sample", display_name="sample"),
+                io.AnyType.Output("model", display_name="Model Preset"),
+                io.Image.Output("images", display_name="Reference Images"),
+                io.AnyType.Output("sample", display_name="Sample Preset"),
             ],
         )
 
@@ -110,24 +112,6 @@ class XDiTPreset(io.ComfyNode):
         return io.NodeOutput(spec, loaded, spec)
 
 
-@lru_cache(maxsize=1)
-def _loader_fingerprint_keys():
-    """Deferred: touching the xdit CLI at import costs ~6s of ComfyUI startup."""
-    return (
-        "model",
-        "custom_model_id",
-        "task",
-        "gpu_device_ids",
-        # Re-execute so a flipped policy reaches the runtime; the worker cache key
-        # excludes residency, so re-running reuses the warm worker.
-        "residency",
-        "use_torch_compile",
-        "hf_cache_mode",
-        "hf_cache_dir",
-        *loader_config_widget_names(),
-    )
-
-
 _WIRED = object()
 
 
@@ -136,13 +120,16 @@ class XDiTModel(io.ComfyNode):
     def define_schema(cls):
         inputs, hidden = inputs_from_legacy(_runtime_loader_input_types())
         return io.Schema(
-            node_id="xDiT.Model",
-            display_name="xDiT Model",
+            node_id=MODEL_NODE_ID,
+            display_name=NODE_DISPLAY_NAMES[MODEL_NODE_ID],
             category=COMFY_CATEGORY,
-            description="Load an xDiT model for inference.",
+            description=(
+                "Configure an xDiT model worker. It warms immediately when possible, "
+                "or when sampling supplies required reference images."
+            ),
             inputs=inputs,
             hidden=hidden,
-            outputs=[io.AnyType.Output("model", display_name="model")],
+            outputs=[io.AnyType.Output("model", display_name="Model")],
         )
 
     @classmethod
@@ -188,9 +175,10 @@ class XDiTModel(io.ComfyNode):
 
     @classmethod
     def fingerprint_inputs(cls, preset=None, **kwargs):
-        parts = [repr(kwargs.get(key)) for key in _loader_fingerprint_keys() if key in kwargs]
-        parts.append(_preset_execution_fingerprint(preset))
-        return tuple(parts)
+        del preset, kwargs
+        # A cached runtime can refer to a worker replaced by a later model selection.
+        # Reconcile on every queue; matching live workers are still reused.
+        return float("NaN")
 
     @classmethod
     def execute(cls, preset=None, unique_id=None, **kwargs):
@@ -249,57 +237,29 @@ class XDiTModel(io.ComfyNode):
 
 
 class XDiTSample(io.ComfyNode):
-
-    _GENERATE_FINGERPRINT_KEYS = (
-        "prompt",
-        "negative_prompt",
-        "seed",
-        "num_inference_steps",
-        "guidance_scale",
-        "max_sequence_length",
-        "timeout_seconds",
-        "height",
-        "width",
-        "num_frames",
-        "flow_shift",
-        "guidance_scale_2",
-        "resize_input_images",
-        "output_fps",
-        "enable_tiling",
-        "enable_slicing",
-        "vae_tile_size_height",
-        "vae_tile_size_width",
-        "vae_tile_overlap_height",
-        "vae_tile_overlap_width",
-    )
-
     @classmethod
     def define_schema(cls):
         inputs, hidden = inputs_from_legacy(_generation_input_types())
         return io.Schema(
-            node_id="xDiT.Sample",
-            display_name="xDiT Sample",
+            node_id=SAMPLE_NODE_ID,
+            display_name=NODE_DISPLAY_NAMES[SAMPLE_NODE_ID],
             category=COMFY_CATEGORY,
-            description="Generate images or video with a loaded xDiT model.",
+            description="Generate an image or video with a configured xDiT model worker.",
             inputs=inputs,
             hidden=hidden,
             outputs=[
-                io.Image.Output("images", display_name="images"),
-                io.Video.Output("video", display_name="video"),
+                io.Image.Output("images", display_name="Images"),
+                io.Video.Output("video", display_name="Video"),
             ],
             not_idempotent=True,
         )
 
     @classmethod
     def fingerprint_inputs(cls, images=None, preset=None, **kwargs):
-        import torch  # type: ignore[reportMissingImports]
-
-        parts = [repr(kwargs.get(key)) for key in cls._GENERATE_FINGERPRINT_KEYS if key in kwargs]
-        parts.append(_preset_execution_fingerprint(preset))
-        if isinstance(images, torch.Tensor):
-            tensor = images.detach().cpu()
-            parts.append((tuple(tensor.shape), float(tensor.mean()), float(tensor.std())))
-        return tuple(parts)
+        del images, preset, kwargs
+        # Sampling is an action; never return an older generated output from Comfy's
+        # multi-entry cache when the workflow revisits a previous configuration.
+        return float("NaN")
 
     @classmethod
     def execute(
@@ -320,20 +280,13 @@ class XDiTSample(io.ComfyNode):
         resize_input_images=False,
         max_sequence_length=256,
         timeout_seconds=900,
-        VAE=False,
-        enable_tiling=False,
-        enable_slicing=False,
-        vae_tile_size_height=0,
-        vae_tile_size_width=0,
-        vae_tile_overlap_height=0,
-        vae_tile_overlap_width=0,
         images=None,
         preset=None,
         unique_id=None,
         **kwargs,
     ):
         unique_id = unique_id or getattr(getattr(cls, "hidden", None), "unique_id", None)
-        del VAE, Video, kwargs
+        del Video, kwargs
         timeout_seconds = _normalize_timeout_seconds(timeout_seconds)
         try:
             images, video = _execute_sample(
@@ -352,12 +305,6 @@ class XDiTSample(io.ComfyNode):
                 flow_shift=flow_shift,
                 guidance_scale_2=guidance_scale_2,
                 resize_input_images=resize_input_images,
-                enable_tiling=enable_tiling,
-                enable_slicing=enable_slicing,
-                vae_tile_size_height=vae_tile_size_height,
-                vae_tile_size_width=vae_tile_size_width,
-                vae_tile_overlap_height=vae_tile_overlap_height,
-                vae_tile_overlap_width=vae_tile_overlap_width,
                 output_fps=max(int(output_fps or 0), 0),
                 timeout_seconds=timeout_seconds,
                 unique_id=unique_id,
@@ -365,17 +312,14 @@ class XDiTSample(io.ComfyNode):
             )
         finally:
             _release_loader_after_run(model)
-        from comfy_execution.graph import ExecutionBlocker
-
-        return io.NodeOutput(
-            images if images is not None else ExecutionBlocker(None),
-            video if video is not None else ExecutionBlocker(None),
-        )
+        # Both branches intentionally execute. The inactive saver receives None and
+        # emits an explicit empty UI payload, clearing media left by the previous run.
+        return io.NodeOutput(images, video)
 
 
 class XDiTExtension(ComfyExtension):
     async def get_node_list(self) -> list[type[io.ComfyNode]]:
-        return [XDiTPreset, XDiTModel, XDiTSample]
+        return [XDiTPreset, XDiTModel, XDiTSample, XDiTSaveImage, XDiTSaveVideo]
 
 
 async def comfy_entrypoint() -> XDiTExtension:

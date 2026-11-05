@@ -36,6 +36,7 @@ _GENERATION_DESTS = frozenset(
         "flow_shift",
         "output_directory",
         "input_images",
+        "audio_prompt",
         "resize_input_images",
         "task",
         "batch_size",
@@ -46,7 +47,7 @@ _GENERATION_DESTS = frozenset(
 
 _AUTO_BACKEND_DESTS = frozenset({"attention_backend", "cross_attention_backend"})
 
-SAMPLE_VAE_DESTS = (
+MODEL_VAE_DESTS = (
     "enable_tiling",
     "enable_slicing",
     "vae_tile_size_height",
@@ -95,8 +96,9 @@ def loader_pinned_input_types(
             {
                 "default": "0",
                 "tooltip": (
-                    "Comma-separated GPU indices. Specify one index per process, such as "
-                    "0,1,2,3 for four processes. Use separate indices for concurrent models."
+                    "Comma-separated GPU indices. The count must match the world size from "
+                    "the parallel settings, including CFG parallel. Use disjoint indices for "
+                    "different models that may run concurrently."
                 ),
             },
         ),
@@ -105,9 +107,10 @@ def loader_pinned_input_types(
             {
                 "default": RESIDENCY_KEEP_GPU,
                 "tooltip": (
-                    "GPU memory policy after sampling. keep_gpu retains the model until "
-                    "you unload it or stop ComfyUI; park_cpu moves weights to system RAM; "
-                    "release stops the worker after the run."
+                    "GPU memory policy after the last Sample using this Model in a prompt. "
+                    "keep_gpu retains the worker; park_cpu attempts to move supported layouts "
+                    "to system RAM and leaves the worker retained if parking fails; release "
+                    "stops the worker."
                 ),
             },
         ),
@@ -132,8 +135,10 @@ def loader_optional_input_types() -> dict[str, tuple[Any, dict[str, Any]]]:
             {
                 "default": "auto",
                 "tooltip": (
-                    "Hugging Face cache location. auto uses the environment, then "
-                    "ComfyUI/models/huggingface. custom_path uses the directory below."
+                    "Hugging Face cache location. auto uses environment variables, then a "
+                    "populated /cache/huggingface mount, then ComfyUI/models/huggingface. "
+                    "comfy_models_shared always uses the ComfyUI path; system_default leaves "
+                    "HF paths unchanged; custom_path uses HF Cache Directory."
                 ),
             },
         ),
@@ -164,12 +169,16 @@ _LOADER_EXCLUDED_DESTS = frozenset(
         "use_fp8_gemms",
         "use_fp4_gemms",
         "use_int8_gemms",
-        *SAMPLE_VAE_DESTS,
+        "gemm_quantization",
         "warmup_calls",
         "profile",
         "profile_wait",
         "profile_warmup",
         "profile_active",
+        "profile_capture_phase",
+        "profile_with_stack",
+        "determinism_check",
+        "determinism_check_report_ranks",
         "vsa_collect_density",
         # cache_config is represented by cache_method plus the Step Cache group.
         "cache_config",
@@ -188,12 +197,151 @@ _DISTILLED_WEIGHT_TOOLTIPS = {
     ),
 }
 
+_CACHE_WIDGET_GROUP_FIELDS = (
+    "residual_diff_threshold",
+    "Fn_compute_blocks",
+    "Bn_compute_blocks",
+    "max_warmup_steps",
+    "max_cached_steps",
+    "scm_policy",
+    "enable_separate_cfg",
+    "enable_encoder_calibrator",
+    "enable_taylorseer",
+    "steps_computation_policy",
+    "share_pipefusion_decisions",
+)
+
+
+def _backend_family_visibility(name: str) -> dict[str, Any]:
+    return {
+        "any": [
+            {"widget": "attention_backend", "contains": name},
+            {
+                "all": [
+                    {"widget": "use_hybrid_attn_schedule", "truthy": True},
+                    {
+                        "any": [
+                            {
+                                "widget": "hybrid_attn_low_precision_backend",
+                                "contains": name,
+                            },
+                            {
+                                "widget": "hybrid_attn_high_precision_backend",
+                                "contains": name,
+                            },
+                        ]
+                    },
+                ]
+            },
+        ]
+    }
+
+
+_WIDGET_VISIBILITY_RULES = {
+    **{
+        name: _backend_family_visibility("sol_attn")
+        for name in (
+            "sol_attn_kv_splits",
+            "sol_attn_sink_start",
+            "sol_attn_sink_tokens",
+            "sol_attn_tau",
+            "sol_attn_thresh_type",
+        )
+    },
+    **{
+        name: _backend_family_visibility("triton_bsa")
+        for name in ("bsa_sparsity", "bsa_cdf_threshold")
+    },
+    **{
+        name: _backend_family_visibility("vsa")
+        for name in (
+            "vsa_block_size",
+            "vsa_top_k",
+            "vsa_top_k_ratio",
+            "vsa_drop_rates",
+            "vsa_prob_threshold",
+            "vsa_reorder_sequence",
+            "use_vsa_static_block_mask",
+            "use_vsa_first_frame_mask",
+            "vsa_collect_density",
+        )
+    },
+    **{
+        name: _backend_family_visibility("sparge")
+        for name in (
+            "spargeattn_simthreshold",
+            "spargeattn_cdfthreshold",
+            "spargeattn_reorder_sequence",
+            "use_spargeattn_static_block_mask",
+            "use_spargeattn_head_balance",
+        )
+    },
+    **{
+        name: {"widget": "use_hybrid_attn_schedule", "truthy": True}
+        for name in (
+            "hybrid_attn_low_precision_backend",
+            "hybrid_attn_high_precision_backend",
+            "num_hybrid_attn_high_precision_steps",
+            "hybrid_attn_schedule",
+        )
+    },
+    **{
+        name: {"widget": "pipefusion_parallel_degree", "greater_than": 1}
+        for name in ("num_pipeline_patch", "attn_layer_num_for_pp", "warmup_steps")
+    },
+    **{
+        name: {"widget": "fully_shard_degree", "greater_than": 1}
+        for name in (
+            "fully_shard_components",
+            "reshard_after_forward",
+            "memory_efficient_sharding",
+        )
+    },
+    **{
+        name: {"widget": "enable_tiling", "truthy": True}
+        for name in (
+            "vae_tile_size_height",
+            "vae_tile_size_width",
+            "vae_tile_overlap_height",
+            "vae_tile_overlap_width",
+        )
+    },
+    "group_offload_low_cpu_mem": {"widget": "cpu_offload_mode", "equals": "group"},
+    "lora_weight_name": {"widget": "lora_path", "nonempty": True},
+    "lora_scale": {"widget": "lora_path", "nonempty": True},
+    "fp8_comms_scale": {"widget": "use_fp8_comms", "truthy": True},
+    "fp8_comms_safety_factor": {"widget": "use_fp8_comms", "truthy": True},
+    "num_hybrid_gemm_high_precision_steps": {
+        "widget": "use_hybrid_gemm_schedule",
+        "truthy": True,
+    },
+    "steps_computation_policy": {"widget": "cache_method", "equals": "pipefusion"},
+    "share_pipefusion_decisions": {
+        "all": [
+            {"widget": "cache_method", "equals": "dbcache"},
+            {"widget": "pipefusion_parallel_degree", "greater_than": 1},
+        ]
+    },
+    "t2_share_pipefusion_decisions": {
+        "all": [
+            {"widget": "cache_method", "equals": "dbcache"},
+            {"widget": "pipefusion_parallel_degree", "greater_than": 1},
+        ]
+    },
+}
+
 _LOADER_WIDGET_GROUPS = (
     {
         "id": "model_cache",
         "label": "MODEL CACHE",
         "collapsed": True,
         "widgets": ("hf_cache_mode", "hf_cache_dir"),
+    },
+    {
+        "id": "lora",
+        "label": "LORA",
+        "collapsed": True,
+        "widgets": ("lora_path", "lora_weight_name", "lora_scale"),
     },
     {
         "id": "parallelism",
@@ -209,7 +357,11 @@ _LOADER_WIDGET_GROUPS = (
             "data_parallel_degree",
             "use_cfg_parallel",
             "fully_shard_degree",
+            "fully_shard_components",
             "reshard_after_forward",
+            "num_pipeline_patch",
+            "attn_layer_num_for_pp",
+            "warmup_steps",
         ),
     },
     {
@@ -230,12 +382,7 @@ _LOADER_WIDGET_GROUPS = (
         "widgets": (
             "use_parallel_vae",
             "use_vae_channels_last_format",
-            "enable_tiling",
-            "enable_slicing",
-            "vae_tile_size_height",
-            "vae_tile_size_width",
-            "vae_tile_overlap_height",
-            "vae_tile_overlap_width",
+            *MODEL_VAE_DESTS,
         ),
     },
     {
@@ -265,6 +412,13 @@ _LOADER_WIDGET_GROUPS = (
             "use_vsa_static_block_mask",
             "use_vsa_first_frame_mask",
             "vsa_collect_density",
+            "bsa_sparsity",
+            "bsa_cdf_threshold",
+            "sol_attn_kv_splits",
+            "sol_attn_sink_start",
+            "sol_attn_sink_tokens",
+            "sol_attn_tau",
+            "sol_attn_thresh_type",
         ),
     },
     {
@@ -273,7 +427,11 @@ _LOADER_WIDGET_GROUPS = (
         "collapsed": True,
         "widgets": (
             "gemm_precision",
+            "gemm_config",
             "use_fp8_text_encoder",
+            "use_fp8_comms",
+            "fp8_comms_scale",
+            "fp8_comms_safety_factor",
             "fp8_precision_override_prefix_patterns",
             "fp8_precision_override_suffix_patterns",
             "use_hybrid_gemm_schedule",
@@ -284,18 +442,7 @@ _LOADER_WIDGET_GROUPS = (
         "id": "cache",
         "label": "STEP CACHE",
         "collapsed": True,
-        "widgets": (
-            "cache_method",
-            "residual_diff_threshold",
-            "Fn_compute_blocks",
-            "Bn_compute_blocks",
-            "max_warmup_steps",
-            "max_cached_steps",
-            "scm_policy",
-            "enable_separate_cfg",
-            "enable_encoder_calibrator",
-            "enable_taylorseer",
-        ),
+        "widgets": ("cache_method", *_CACHE_WIDGET_GROUP_FIELDS),
     },
     {
         "id": "cache_denoiser_2",
@@ -305,20 +452,7 @@ _LOADER_WIDGET_GROUPS = (
             "The main Step Cache settings apply to the first transformer."
         ),
         "collapsed": True,
-        "widgets": tuple(
-            f"t2_{field_name}"
-            for field_name in (
-                "residual_diff_threshold",
-                "Fn_compute_blocks",
-                "Bn_compute_blocks",
-                "max_warmup_steps",
-                "max_cached_steps",
-                "scm_policy",
-                "enable_separate_cfg",
-                "enable_encoder_calibrator",
-                "enable_taylorseer",
-            )
-        ),
+        "widgets": tuple(f"t2_{field_name}" for field_name in _CACHE_WIDGET_GROUP_FIELDS),
     },
     {
         "id": "distilled_weights",
@@ -420,6 +554,9 @@ def loader_schema() -> dict[str, Any]:
         "widget_groups": groups,
         "widget_defaults": default_loader_widget_values(),
         "widget_constraints": widget_constraints,
+        "widget_visibility": {
+            name: rule for name, rule in _WIDGET_VISIBILITY_RULES.items() if name in widget_names
+        },
         "combo_widgets": combo_widgets,
         "combo_options": combo_options,
     }
@@ -514,7 +651,17 @@ def _dbcache_preset_defaults() -> dict[str, Any]:
 
 @lru_cache(maxsize=1)
 def cache_config_widget_names() -> tuple[str, ...]:
-    return tuple(_dbcache_preset_defaults().keys())
+    names = list(_dbcache_preset_defaults())
+    if "pipefusion" in cache_method_choices():
+        try:
+            from cache_dit import DBCacheConfig
+
+            config_fields = {field.name for field in dataclasses.fields(DBCacheConfig)}
+        except (ImportError, TypeError):
+            config_fields = set()
+        if "steps_computation_policy" in config_fields:
+            names.append("steps_computation_policy")
+    return tuple(names)
 
 
 # Wan 2.2 is the deepest stack xfuser caches today: a high-noise expert and a low-noise
@@ -581,6 +728,8 @@ def cache_config_fields_for_method(cache_method: str | None) -> frozenset[str]:
     if method in ("", "none"):
         return frozenset()
     if method == "dbcache":
+        return frozenset(_dbcache_preset_defaults())
+    if method == "pipefusion":
         return frozenset(cache_config_widget_names())
     if method in ("teacache", "fbcache"):
         return frozenset({"residual_diff_threshold"})
@@ -690,7 +839,12 @@ def _cache_config_help(field_name: str) -> str:
         "max_cached_steps": "Max cached steps (-1 = unlimited).",
         "scm_policy": (
             "Step computation mask for dbcache. slow computes most steps; medium, fast, "
-            "and ultra progressively skip more work. default preserves the model preset."
+            "and ultra progressively skip more work; alternating is the PipeFusion "
+            "isolated-reuse schedule. default preserves the model preset."
+        ),
+        "steps_computation_policy": (
+            "How cache-dit applies the step mask. static preserves the preset's fixed "
+            "PipeFusion schedule; dynamic allows runtime adaptation."
         ),
         "enable_taylorseer": "TaylorSeer prediction for dbcache. default = model built-in setting.",
         "enable_separate_cfg": "Separate CFG passes (Wan, Qwen-Image-Edit). default = model built-in setting.",
@@ -714,8 +868,16 @@ def cache_config_widget_spec(field_name: str) -> tuple[str, dict[str, Any]]:
             {"default": "default", "tooltip": tooltip},
         )
     if field_name == "scm_policy":
+        choices = list(_SCM_POLICY_CHOICES)
+        if "pipefusion" in cache_method_choices():
+            choices.append("alternating")
         return (
-            list(_SCM_POLICY_CHOICES),
+            choices,
+            {"default": "default", "tooltip": tooltip},
+        )
+    if field_name == "steps_computation_policy":
+        return (
+            ["default", "dynamic", "static"],
             {"default": "default", "tooltip": tooltip},
         )
     if isinstance(default, int):
@@ -761,6 +923,8 @@ def _cache_override_value(field_name: str, widget_value: Any) -> Any | None:
         return _optional_bool_widget_to_json(widget_value)
     if field_name == "scm_policy":
         return _scm_policy_widget_to_json(widget_value)
+    if field_name == "steps_computation_policy":
+        return None if widget_value == "default" else str(widget_value)
     if field_name == "residual_diff_threshold":
         if str(widget_value).strip().lower() in ("none", ""):
             return None
@@ -991,7 +1155,9 @@ def _runner_actions() -> dict[str, Any]:
 def attention_backend_choices() -> list[str]:
     """Live backend list; 'auto' means None, i.e. the best backend xFuser finds."""
     try:
-        from xfuser.core.distributed.attention_backend import AttentionBackendType
+        from .xdit_compat import attention_backend_type
+
+        AttentionBackendType = attention_backend_type()
     except Exception as exc:
         raise _xfuser_unavailable("the attention backends", exc) from exc
     return ["auto"] + [backend.name.lower() for backend in AttentionBackendType]
@@ -1072,7 +1238,8 @@ _WIDGET_ADVICE = {
         "Runs guided and unguided passes on separate GPUs. Requires an even GPU count."
     ),
     "cpu_offload_mode": (
-        "Moves model components to system RAM when idle. Reduces VRAM use but slows inference."
+        "Offloads components to system RAM during inference, depending on the mode. This "
+        "reduces VRAM use, increases latency, and prevents park_cpu while offload is active."
     ),
     "gemm_precision": (
         "Lower precision reduces memory use and may improve speed, with a possible quality cost."
@@ -1088,6 +1255,10 @@ _WIDGET_ADVICE = {
     ),
     "use_hybrid_gemm_schedule": (
         "Uses FP8 at the start and end of denoising and MXFP4 between them."
+    ),
+    "cache_method": (
+        "none disables step caching. Only settings supported by the selected method "
+        "and model are applied."
     ),
     "residual_diff_threshold": (
         "Minimum residual difference required to recompute a step. Higher values reuse more steps."
@@ -1106,6 +1277,14 @@ def _widget_advice(dest: str) -> str:
 
 def _cli_tooltip(dest: str, fallback: str = "") -> str:
     help_text = runner_cli_help().get(dest) or fallback
+    for flag, label in {
+        "--enable_tiling": "Enable VAE Tiling",
+        "--vae_tile_size_height": "VAE Tile Size Height",
+        "--vae_tile_size_width": "VAE Tile Size Width",
+        "--vae_tile_overlap_height": "VAE Tile Overlap Height",
+        "--vae_tile_overlap_width": "VAE Tile Overlap Width",
+    }.items():
+        help_text = help_text.replace(flag, label)
     advice = _widget_advice(dest)
     if not advice:
         return help_text
@@ -1153,8 +1332,10 @@ def loader_widget_spec(dest: str) -> tuple[str, dict[str, Any]]:
             },
         )
     if dest == "gemm_precision":
+        from .xdit_compat import gemm_quantization_choices
+
         return (
-            ["native", "fp8", "fp4", "int8"],
+            list(gemm_quantization_choices()),
             {
                 "default": "native",
                 "tooltip": _cli_tooltip(dest, "Quantized GEMM precision used by xDiT."),
@@ -1170,7 +1351,9 @@ def loader_widget_spec(dest: str) -> tuple[str, dict[str, Any]]:
         # A text box here would accept input the runner then ignores.
         raise KeyError(f"The xdit CLI has no argument {dest!r} to build a widget from.")
 
-    tooltip = _DISTILLED_WEIGHT_TOOLTIPS.get(dest) or _cli_tooltip(dest)
+    tooltip = _DISTILLED_WEIGHT_TOOLTIPS.get(dest) or _cli_tooltip(
+        dest, f"xDiT runner option --{dest}."
+    )
     default = _widget_default(dest, action)
 
     if dest in _AUTO_BACKEND_DESTS:
@@ -1221,7 +1404,14 @@ def expand_widget_name(group: dict[str, Any]) -> str:
 
 
 def loader_expand_widget_names() -> tuple[str, ...]:
-    return tuple(expand_widget_name(group) for group in _LOADER_WIDGET_GROUPS)
+    available = set(loader_config_widget_names()) | set(LOADER_OPTIONAL_WIDGETS)
+    grouped = {name for group in _LOADER_WIDGET_GROUPS for name in group["widgets"]}
+    names = tuple(
+        expand_widget_name(group)
+        for group in _LOADER_WIDGET_GROUPS
+        if any(name in available for name in group["widgets"])
+    )
+    return (*names, *(("Other",) if available - grouped else ()))
 
 
 def strip_undeclared_loader_keys(inputs: dict[str, Any]) -> None:
@@ -1320,10 +1510,9 @@ def _apply_compound_widgets(runtime: dict[str, Any], values: dict[str, Any]) -> 
     runtime["enable_sequential_cpu_offload"] = offload == "sequential"
     runtime["enable_group_cpu_offload"] = offload == "group"
 
-    gemm = str(values.get("gemm_precision", "native") or "native")
-    runtime["use_fp8_gemms"] = gemm == "fp8"
-    runtime["use_fp4_gemms"] = gemm == "fp4"
-    runtime["use_int8_gemms"] = gemm == "int8"
+    from .xdit_compat import apply_gemm_precision
+
+    apply_gemm_precision(runtime, str(values.get("gemm_precision", "native") or "native"))
 
 
 def runtime_from_loader_widgets(
@@ -1338,6 +1527,11 @@ def runtime_from_loader_widgets(
             continue
         runtime[dest] = widget_value_to_runtime(dest, values[dest])
     _apply_compound_widgets(runtime, values)
+    overlap_names = ("vae_tile_overlap_height", "vae_tile_overlap_width")
+    if any(runtime.get(name) is not None for name in overlap_names):
+        for name in overlap_names:
+            if values.get(name) not in (None, ""):
+                runtime[name] = int(values[name])
     cache_method = runtime.get("cache_method")
     if cache_method and str(cache_method).lower() not in ("", "none"):
         cache_config = _cache_config_from_widgets(values, registry_model=registry_model)
@@ -1365,15 +1559,9 @@ def runtime_to_loader_widgets(runtime: dict[str, Any]) -> dict[str, Any]:
             else "model" if runtime.get("enable_model_cpu_offload") else "none"
         )
     )
-    widgets["gemm_precision"] = (
-        "fp4"
-        if runtime.get("use_fp4_gemms")
-        else (
-            "int8"
-            if runtime.get("use_int8_gemms")
-            else "fp8" if runtime.get("use_fp8_gemms") else "native"
-        )
-    )
+    from .xdit_compat import gemm_precision_from_runtime
+
+    widgets["gemm_precision"] = gemm_precision_from_runtime(runtime)
     widgets["use_torch_compile"] = bool(runtime.get("use_torch_compile", False))
     if "cache_config" in runtime:
         widgets.update(_cache_config_to_widgets(runtime["cache_config"]))
@@ -1429,12 +1617,12 @@ def preset_args_to_runtime(args: dict[str, Any]) -> dict[str, Any]:
         "use_fp8_gemms",
         "use_fp4_gemms",
         "use_int8_gemms",
+        "gemm_quantization",
     }
     known_dests = (set(loader_config_dests()) - {"cpu_offload_mode", "gemm_precision"}) | {
         "cache_config",
         "use_torch_compile",
         *compound_runner_dests,
-        *SAMPLE_VAE_DESTS,
     }
     cli_dests = runner_cli_dests()
 

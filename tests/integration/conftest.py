@@ -4,7 +4,14 @@ from unittest import mock
 
 import pytest
 
+from tests.conftest import warm_runtime_without_worker
+
 from .helpers import clear_runtime_caches
+
+
+@pytest.fixture
+def enable_quick_run(monkeypatch):
+    monkeypatch.setenv("XDIT_QUICK_RUN", "1")
 
 
 @pytest.fixture(autouse=True)
@@ -17,13 +24,9 @@ def _mock_worker_warm_for_non_gpu_tests(request):
         yield
         return
 
-    def _fake_ensure(runtime, loader_node_id, timeout_seconds=None):
-        runtime["_preloaded"] = True
-        return runtime
-
     with mock.patch(
         "xdit_comfyui.nodes._ensure_loader_worker",
-        side_effect=_fake_ensure,
+        side_effect=warm_runtime_without_worker,
     ):
         yield
 
@@ -84,7 +87,13 @@ def comfy_nodes_ready():
     finally:
         loop.close()
 
-    required = {"xDiT.Preset", "xDiT.Model", "xDiT.Sample", "SaveImage", "SaveVideo"}
+    required = {
+        "xDiT.Preset",
+        "xDiT.Model",
+        "xDiT.Sample",
+        "xDiT.SaveImage",
+        "xDiT.SaveVideo",
+    }
     missing = required - set(nodes.NODE_CLASS_MAPPINGS)
     if missing:
         pytest.skip(f"ComfyUI missing node classes: {sorted(missing)}")

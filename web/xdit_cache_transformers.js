@@ -22,17 +22,6 @@ export function isDenoiserGroup(group) {
   return denoiserGroupIndex(group) != null;
 }
 
-/** Ids of the denoiser groups this model has no transformer for. */
-export function inactiveDenoiserGroups(groups, rows) {
-  const count = Array.isArray(rows) ? rows.length : 0;
-  const inactive = new Set();
-  for (const group of groups || []) {
-    const index = denoiserGroupIndex(group);
-    if (index != null && index > count) inactive.add(group.id);
-  }
-  return inactive;
-}
-
 /** Name the transformer each group drives, so the heading is not just a number. */
 export function describeDenoiserGroups(
   node,
@@ -51,15 +40,5 @@ export function describeDenoiserGroups(
       description: group.description ?? "",
     }).trim();
     setWidgetTooltip(node, headingName(group), tooltip);
-    for (const name of group.widgets || []) {
-      setWidgetTooltip(
-        node,
-        name,
-        t("xdit.tooltip.denoiserField", {
-          transformer: row.transformer,
-          field: name.replace(/^t\d+_/, ""),
-        }),
-      );
-    }
   }
 }

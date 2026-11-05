@@ -95,6 +95,7 @@ globalThis.fetch = async (url, init) => {
           ? presetPreviewMultiGpu
           : presetPreview,
       "/xdit/loader/preview": loaderPreviewFor(requestBody),
+      "/xdit/loader/clear": { evicted: true },
       "/xdit/loader/reap": { released: [] },
     };
     const body = routes[String(url)];
@@ -102,15 +103,14 @@ globalThis.fetch = async (url, init) => {
       pending.requests -= 1;
       return { ok: false, status: 404, json: async () => ({}) };
     }
-    // The body resolves lazily, so the caller's `await response.json()` still counts
-    // as work in flight while the harness decides whether the graph has settled.
+    // A fetch is no longer in flight once its response resolves. Some endpoints
+    // intentionally ignore an empty response body, so tying completion to json()
+    // would leave those requests pending forever.
+    pending.requests -= 1;
     return {
       ok: true,
       status: 200,
-      json: async () => {
-        pending.requests -= 1;
-        return body;
-      },
+      json: async () => body,
     };
   } catch (error) {
     pending.requests -= 1;
@@ -279,6 +279,8 @@ const appStub = {
   rootGraph: graph,
   configuringGraph: false,
   canvas: { setDirty() {} },
+  nodeOutputs: {},
+  nodePreviewImages: {},
   extensionManager: {
     toast: { add() {} },
     registerSidebarTab(tab) {
@@ -339,11 +341,16 @@ for (const extension of extensions) await extension.setup?.();
 
 // Nodes 2.0 constructs nodes through the registered class hook and does not reliably
 // dispatch the extension-level nodeCreated callback. Exercise that lifecycle directly.
-const modelNodeType = { prototype: {} };
-for (const extension of extensions) {
-  await extension.beforeRegisterNodeDef?.(modelNodeType, {
-    name: "xDiT.Model",
-  });
+const nodeTypes = Object.fromEntries(
+  ["xDiT.Preset", "xDiT.Model", "xDiT.Sample", "SaveImage", "SaveVideo"].map(
+    (name) => [name, { prototype: {} }],
+  ),
+);
+for (const [name, nodeType] of Object.entries(nodeTypes)) {
+  for (const extension of extensions) {
+    const nodeData = name.startsWith("xDiT.") ? { class_type: name } : { name };
+    await extension.beforeRegisterNodeDef?.(nodeType, nodeData);
+  }
 }
 
 /**
@@ -383,10 +390,22 @@ function link(originNode, originSlot, targetNode, inputName) {
 }
 
 const presetNode = makeNode("xDiT.Preset", 1);
+Object.setPrototypeOf(presetNode, nodeTypes["xDiT.Preset"].prototype);
 const modelNode = makeNode("xDiT.Model", 2);
-Object.setPrototypeOf(modelNode, modelNodeType.prototype);
+Object.setPrototypeOf(modelNode, nodeTypes["xDiT.Model"].prototype);
 const sampleNode = makeNode("xDiT.Sample", 3);
-for (const node of [presetNode, modelNode, sampleNode]) {
+Object.setPrototypeOf(sampleNode, nodeTypes["xDiT.Sample"].prototype);
+const saveImageNode = makeNode("SaveImage", 4);
+Object.setPrototypeOf(saveImageNode, nodeTypes.SaveImage.prototype);
+const saveVideoNode = makeNode("SaveVideo", 5);
+Object.setPrototypeOf(saveVideoNode, nodeTypes.SaveVideo.prototype);
+for (const node of [
+  presetNode,
+  modelNode,
+  sampleNode,
+  saveImageNode,
+  saveVideoNode,
+]) {
   node.graph = graph;
   graph._nodes.push(node);
 }
@@ -394,14 +413,56 @@ for (const node of [presetNode, modelNode, sampleNode]) {
 link(presetNode, 0, modelNode, "preset");
 link(presetNode, 2, sampleNode, "preset");
 link(modelNode, 0, sampleNode, "model");
+link(sampleNode, 0, saveImageNode, "images");
+link(sampleNode, 1, saveVideoNode, "video");
 
-modelNode.onNodeCreated?.();
+for (const node of [presetNode, modelNode, sampleNode]) {
+  node.onNodeCreated?.();
+}
 for (const extension of extensions) {
   for (const node of graph._nodes) {
-    if (node !== modelNode) extension.nodeCreated?.(node);
+    if (![presetNode, modelNode, sampleNode].includes(node)) {
+      extension.nodeCreated?.(node);
+    }
   }
 }
 await settle();
+
+for (const node of [saveImageNode, saveVideoNode]) {
+  node.images = [{ filename: `old-${node.id}` }];
+  node.imgs = [{ src: `old-${node.id}` }];
+  node.imageIndex = 0;
+  node.animatedImages = true;
+  node.preview = [`preview-${node.id}`];
+  node.videoContainer = {
+    childCount: 1,
+    replaceChildren() {
+      this.childCount = 0;
+    },
+  };
+  // ComfyUI stores the executed payload before invoking node.onExecuted.
+  appStub.nodeOutputs[String(node.id)] = { images: [] };
+  node.onExecuted?.(appStub.nodeOutputs[String(node.id)]);
+}
+const outputsAfterEmptyResults = {
+  stored_outputs: appStub.nodeOutputs,
+  image: {
+    images: saveImageNode.images ?? null,
+    imgs: saveImageNode.imgs ?? null,
+    image_index: saveImageNode.imageIndex,
+    animated: saveImageNode.animatedImages,
+    preview: saveImageNode.preview ?? null,
+    video_children: saveImageNode.videoContainer.childCount,
+  },
+  video: {
+    images: saveVideoNode.images ?? null,
+    imgs: saveVideoNode.imgs ?? null,
+    image_index: saveVideoNode.imageIndex,
+    animated: saveVideoNode.animatedImages,
+    preview: saveVideoNode.preview ?? null,
+    video_children: saveVideoNode.videoContainer.childCount,
+  },
+};
 
 const widgetByName = (node, name) =>
   node.widgets.find((widget) => widget.name === name);
@@ -433,18 +494,6 @@ const SAMPLE_GROUPS = [
     id: "video",
     expand_widget: "Video",
     widgets: ["num_frames", "output_fps", "flow_shift", "guidance_scale_2"],
-  },
-  {
-    id: "vae",
-    expand_widget: "VAE",
-    widgets: [
-      "enable_tiling",
-      "enable_slicing",
-      "vae_tile_size_height",
-      "vae_tile_size_width",
-      "vae_tile_overlap_height",
-      "vae_tile_overlap_width",
-    ],
   },
 ];
 
@@ -663,7 +712,7 @@ reloaded.onConfigure?.(saved["xDiT.Model"]);
 // Leaving a video model for an image preset. This runs on a Model node of its own, at
 // the end, so the measurements above see the graph they were written for: `task` belongs
 // to the model being left, and the node still holds that model while the preset applies.
-const videoModelNode = makeNode("xDiT.Model", 5);
+const videoModelNode = makeNode("xDiT.Model", 6);
 videoModelNode.graph = graph;
 graph._nodes.push(videoModelNode);
 for (const extension of extensions) extension.nodeCreated?.(videoModelNode);
@@ -688,6 +737,9 @@ const taskAfterLeavingVideoModel = taskState();
 
 const domLayout = (node, name) =>
   node.widgets.find((widget) => widget.name === name)?.computeLayoutSize?.();
+
+modelNode.onRemoved?.();
+await settle();
 
 console.log(
   JSON.stringify(
@@ -717,6 +769,7 @@ console.log(
       model_preset_trigger:
         modelNode.properties._xdit_model_preset_trigger ?? null,
       sample_model_constraints: sampleNode._xditModelConstraints ?? null,
+      outputs_after_empty_results: outputsAfterEmptyResults,
       sample_resolution_step:
         widgetByName(sampleNode, "height")?.options?.step2 ?? null,
       sample_layout: sampleLayout(),

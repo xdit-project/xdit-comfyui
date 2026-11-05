@@ -1,5 +1,6 @@
 """Pixels in and out: Comfy IMAGE/VIDEO tensors, staged input files, preview thumbnails."""
 
+import logging
 import shutil
 import tempfile
 from pathlib import Path
@@ -8,6 +9,8 @@ try:
     import folder_paths  # type: ignore[reportMissingImports]
 except Exception:  # pragma: no cover - only used inside ComfyUI runtime
     folder_paths = None
+
+_LOG = logging.getLogger("xdit")
 
 
 # Enough that a run in flight, and the one a user may still be comparing against, are
@@ -182,6 +185,8 @@ def _pil_rgb_array(image):
 def _video_frames_to_numpy_list(video):
     import numpy as np
 
+    if hasattr(video, "frames"):
+        video = video.frames
     if isinstance(video, list):
         if video and isinstance(video[0], list):
             video = video[0]
@@ -245,7 +250,44 @@ def _diffusion_output_to_comfy_image(output):
     return _frame_arrays_to_comfy_tensor(frames)
 
 
-def _generation_outputs_from_frames(frames, output_kind, fps=24):
+def _diffusion_output_audio(output, sample_rate=None):
+    """Return Comfy's AUDIO mapping without retaining a GPU-backed waveform."""
+    if not output.videos:
+        return None
+    audio = getattr(output, "audio", None)
+    if audio is None:
+        videos = list(output.get_outputs())
+        if len(videos) != 1:
+            return None
+        audio = getattr(videos[0][0], "audio", None)
+    if audio is None:
+        return None
+    if isinstance(audio, list):
+        if len(audio) != 1:
+            _LOG.warning("Dropping audio because xDiT returned %s audio outputs.", len(audio))
+            return None
+        audio = audio[0]
+    sample_rate = getattr(output, "audio_sample_rate", None) or sample_rate
+    if not sample_rate:
+        _LOG.warning("Dropping xDiT audio because no sample rate was reported.")
+        return None
+    import torch  # type: ignore[reportMissingImports]
+
+    waveform = audio.detach().to(device="cpu", dtype=torch.float32)
+    if waveform.ndim == 1:
+        waveform = waveform.unsqueeze(0).unsqueeze(0)
+    elif waveform.ndim == 2:
+        waveform = waveform.unsqueeze(0)
+    if waveform.ndim != 3:
+        _LOG.warning(
+            "Dropping xDiT audio with unsupported shape %s; expected [batch, channels, samples].",
+            tuple(waveform.shape),
+        )
+        return None
+    return {"waveform": waveform.contiguous(), "sample_rate": int(sample_rate)}
+
+
+def _generation_outputs_from_frames(frames, output_kind, fps=24, audio=None):
     if output_kind == "image":
         if frames.ndim != 4:
             raise ValueError("Expected an image batch with shape [N, H, W, C].")
@@ -264,5 +306,8 @@ def _generation_outputs_from_frames(frames, output_kind, fps=24):
             f"frames cannot be returned as a video: {exc}"
         ) from exc
 
-    video = VideoFromComponents(VideoComponents(images=frames, frame_rate=Fraction(int(fps), 1)))
+    components = {"images": frames, "frame_rate": Fraction(int(fps), 1)}
+    if audio is not None:
+        components["audio"] = audio
+    video = VideoFromComponents(VideoComponents(**components))
     return None, video

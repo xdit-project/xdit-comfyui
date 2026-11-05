@@ -21,6 +21,7 @@ from xdit_comfyui.runtime_config import (
     _preset_picker_input_types,
     _runtime_loader_input_types,
 )
+from xdit_comfyui.save_outputs import save_image_input_types, save_video_input_types
 
 _REPO = Path(__file__).parents[2]
 _HARNESS = Path(__file__).parents[1] / "web_lifecycle_harness.mjs"
@@ -46,40 +47,41 @@ def test_served_extensions_register_unique_names():
 def test_sidebar_and_modern_submenu_register(harness):
     report, _ = harness
     assert report["sidebar_tabs"] == [{"id": "xdit", "title": "xDiT", "hasRender": True}]
-    assert {"content": "xDiT", "submenuItems": ["Unload all models"]} in report["canvas_menus"]
-
-
-def test_model_unload_action_is_kept_in_the_sidebar_card_header():
-    source = (_WEB / "xdit_residency_sidebar.js").read_text(encoding="utf-8")
-    assert 'button.textContent = t("xdit.residency.unload")' in source
-    assert "heading.append(button)" in source
-    assert "if (loader.warm || loader.parked)" in source
+    assert {"content": "xDiT", "submenuItems": ["Unload all xDiT models"]} in report["canvas_menus"]
 
 
 def test_english_localization_uses_comfyui_layout():
     locales = _REPO / "locales" / "en"
     node_defs = json.loads((locales / "nodeDefs.json").read_text(encoding="utf-8"))
     commands = json.loads((locales / "commands.json").read_text(encoding="utf-8"))
-    json.loads((locales / "main.json").read_text(encoding="utf-8"))
-    assert set(node_defs) == {"xDiT.Preset", "xDiT.Model", "xDiT.Sample"}
-    assert node_defs["xDiT.Model"]["inputs"]["scm_policy"]["name"] == "SCM Policy"
+    main = json.loads((locales / "main.json").read_text(encoding="utf-8"))
+    assert set(node_defs) == {
+        "xDiT.Preset",
+        "xDiT.Model",
+        "xDiT.Sample",
+        "xDiT.SaveImage",
+        "xDiT.SaveVideo",
+    }
     assert "xdit_unloadAllModels" in commands
 
-    schemas = {
-        "xDiT.Preset": _preset_picker_input_types(),
-        "xDiT.Model": _runtime_loader_input_types(),
-        "xDiT.Sample": _generation_input_types(),
-    }
-    for node_id, schema in schemas.items():
-        localized = node_defs[node_id]
+    for localized in node_defs.values():
         assert localized.get("display_name")
-        assert localized.get("description")
-        for section in ("required", "optional"):
-            for input_name, (_input_type, options) in schema.get(section, {}).items():
-                entry = localized["inputs"].get(input_name)
-                assert entry and entry.get("name"), f"missing locale name: {node_id}.{input_name}"
-                if options.get("tooltip"):
-                    assert entry.get("tooltip"), f"missing locale tooltip: {node_id}.{input_name}"
+        assert "description" not in localized
+        assert "inputs" not in localized
+
+    def flatten(value, prefix=""):
+        result = {}
+        for key, child in value.items():
+            path = f"{prefix}.{key}" if prefix else key
+            if isinstance(child, dict):
+                result.update(flatten(child, path))
+            else:
+                result[path] = child
+        return result
+
+    fallback_source = (_WEB / "xdit_i18n.js").read_text(encoding="utf-8")
+    fallback = dict(re.findall(r'"(xdit\.[^"]+)":\s*"([^"]*)"', fallback_source))
+    assert fallback == flatten(main)
 
 
 def _object_info():
@@ -87,6 +89,23 @@ def _object_info():
         "xDiT.Preset": (_preset_picker_input_types(), ["model", "images", "sample"]),
         "xDiT.Model": (_runtime_loader_input_types(), ["model"]),
         "xDiT.Sample": (_generation_input_types(), ["images", "video"]),
+        "xDiT.SaveImage": (save_image_input_types(), []),
+        "xDiT.SaveVideo": (save_video_input_types(), []),
+        "SaveImage": (
+            {"required": {"images": ("IMAGE", {}), "filename_prefix": ("STRING", {})}},
+            ["images"],
+        ),
+        "SaveVideo": (
+            {
+                "required": {
+                    "video": ("VIDEO", {}),
+                    "filename_prefix": ("STRING", {}),
+                    "format": (["auto"], {}),
+                    "codec": (["auto"], {}),
+                }
+            },
+            ["video"],
+        ),
     }
     info = {}
     for class_type, (inputs, outputs) in specs.items():
@@ -268,6 +287,13 @@ def test_graph_loading_does_not_release_inactive_workflow_workers(harness):
     assert not [entry for entry in report["requests"] if entry["url"] == "/xdit/loader/reap"]
 
 
+def test_deleting_a_model_node_releases_its_worker(harness):
+    report, _ = harness
+    clears = [entry for entry in report["requests"] if entry["url"] == "/xdit/loader/clear"]
+    assert len(clears) == 1
+    assert clears[0]["method"] == "POST"
+
+
 def test_the_model_hands_its_input_defaults_to_the_sample_node(harness):
     """The Sample definition carries one model's numbers; the selected model wins."""
     report, payloads = harness
@@ -329,13 +355,14 @@ def test_sample_advanced_widgets_stay_plainly_visible():
         assert required[name][1].get("advanced") is not True
 
 
-def test_sample_owns_the_vae_decode_widgets():
-    from xdit_comfyui.runner_contract import SAMPLE_VAE_DESTS
+def test_model_owns_the_vae_decode_widgets():
+    from xdit_comfyui.runner_contract import MODEL_VAE_DESTS
 
-    required = _generation_input_types()["required"]
-    assert "VAE" in required
-    for name in SAMPLE_VAE_DESTS:
-        assert name in required
+    model_required = _runtime_loader_input_types()["required"]
+    sample_required = _generation_input_types()["required"]
+    for name in MODEL_VAE_DESTS:
+        assert name in model_required
+        assert name not in sample_required
 
 
 def test_dom_widgets_reserve_nonzero_bounded_rows(harness):
@@ -438,6 +465,21 @@ def test_sample_only_offers_the_frame_count_to_a_model_that_makes_video(harness)
     assert image_model["heading_hidden"], "a still-image model still offers video settings"
     assert image_model["num_frames"] == 1, "a stale frame count outlived the model that used it"
     assert not video_model["heading_hidden"], "a video model cannot reach its frame count"
+
+
+def test_empty_save_results_clear_rendered_media_without_deleting_output_state(harness):
+    """Backend results own canonical state; the hook only clears stale rendered media."""
+    report, _ = harness
+    cleared = report["outputs_after_empty_results"]
+    assert cleared["stored_outputs"] == {"4": {"images": []}, "5": {"images": []}}
+    for output_type in ("image", "video"):
+        output = cleared[output_type]
+        assert output["images"] is None
+        assert output["imgs"] is None
+        assert output["image_index"] is None
+        assert output["animated"] is False
+        assert output["preview"] is None
+        assert output["video_children"] == 0
 
 
 def test_a_user_edit_survives_the_following_server_refresh(harness):

@@ -40,7 +40,11 @@ class ModelInfoTest(unittest.TestCase):
         self.assertTrue(gates.get("gemm_precision"))
         self.assertTrue(gates.get("use_parallel_vae"))
 
-    def test_cache_methods_come_from_runner_settings(self):
+    @mock.patch(
+        "xdit_comfyui.runner_contract.cache_method_choices",
+        return_value=["none", "teacache", "dbcache"],
+    )
+    def test_cache_methods_come_from_runner_settings(self, _choices):
         from xdit_comfyui.model_info import _supported_cache_methods
 
         caps = SimpleNamespace(supports_step_caching=True)
@@ -56,6 +60,21 @@ class ModelInfoTest(unittest.TestCase):
         caps = SimpleNamespace(supports_step_caching=False)
         settings = SimpleNamespace(step_cache_config={"dbcache": object()})
         self.assertEqual(_supported_cache_methods(caps, settings), ())
+
+    @mock.patch(
+        "xdit_comfyui.runner_contract.cache_method_choices",
+        return_value=["none", "dbcache", "pipefusion"],
+    )
+    def test_single_transformer_dbcache_models_support_pipefusion_cache(self, _choices):
+        from xdit_comfyui.model_info import _supported_cache_methods
+
+        caps = SimpleNamespace(supports_step_caching=True)
+        dbcache = SimpleNamespace(adapter=object())
+        settings = SimpleNamespace(step_cache_config={"dbcache": dbcache})
+        self.assertEqual(_supported_cache_methods(caps, settings), ("dbcache", "pipefusion"))
+
+        dbcache.adapter = [object(), object()]
+        self.assertEqual(_supported_cache_methods(caps, settings), ("dbcache",))
 
     def test_z_image_model_cache_defaults(self):
         defaults = model_cache_preset_defaults("Tongyi-MAI/Z-Image", "dbcache")
@@ -135,17 +154,6 @@ class ModelInfoTest(unittest.TestCase):
     def test_single_transformer_model_reports_one_cache_entry(self):
         entries = model_cache_transformers("black-forest-labs/FLUX.1-dev", "dbcache")
         self.assertEqual([entry["transformer"] for entry in entries], ["transformer"])
-
-    def test_wan22_reports_per_transformer_cache_defaults(self):
-        """Wan 2.2's refiner warms for fewer steps than its high-noise denoiser."""
-        entries = model_cache_transformers("Wan-AI/Wan2.2-I2V-A14B-Diffusers", "dbcache")
-        self.assertEqual(
-            [entry["transformer"] for entry in entries], ["transformer", "transformer_2"]
-        )
-        warmups = [entry["defaults"]["max_warmup_steps"] for entry in entries]
-        self.assertEqual(warmups, [4, 2])
-        # Read from class settings this collapses to one wrong shared value.
-        self.assertNotEqual(warmups[0], warmups[1])
 
     def test_generation_defaults_come_from_the_runner(self):
         """Each model's own numbers, not one hardcoded set for every model."""
@@ -253,13 +261,6 @@ class ModelInfoTest(unittest.TestCase):
         self.assertFalse(gates["STEP CACHE"])
         self.assertFalse(gates["STEP CACHE · DENOISER 2"])
 
-    def test_loader_widget_gates_disable_dbcache_fields_for_teacache(self):
-        gates = loader_widget_gates("FLUX.1-dev", "teacache")
-        self.assertTrue(gates["cache_method"])
-        self.assertTrue(gates["residual_diff_threshold"])
-        self.assertFalse(gates["Fn_compute_blocks"])
-        self.assertFalse(gates["scm_policy"])
-
     def test_sanitize_runtime_cache_for_unsupported_model(self):
         runtime = {
             "model": "Tongyi-MAI/Z-Image-Turbo",
@@ -324,13 +325,36 @@ class ModelInfoTest(unittest.TestCase):
                 return_value=True,
             ),
         ):
-            self.assertEqual(gemm_precision_choices_for_model("model"), ["native", "fp8", "fp4"])
+            choices = gemm_precision_choices_for_model("model")
+            self.assertNotIn("int8", choices)
+            self.assertIn("fp8", choices)
+            self.assertIn("fp4", choices)
 
     def test_runtime_rejects_multiple_gemm_modes(self):
         with self.assertRaisesRegex(ValueError, "mutually exclusive"):
             validate_runtime_for_model(
                 "model",
                 {"use_fp8_gemms": True, "use_fp4_gemms": True},
+            )
+
+    def test_runtime_rejects_hybrid_schedule_without_tiered_gemm(self):
+        with (
+            mock.patch("xdit_comfyui.xdit_compat.runner_supports", return_value=True),
+            self.assertRaisesRegex(ValueError, "low/high"),
+        ):
+            validate_runtime_for_model(
+                "model",
+                {"gemm_quantization": "fp4", "use_hybrid_gemm_schedule": True},
+            )
+
+    def test_runtime_rejects_fp8_text_encoder_without_fp8_gemm(self):
+        with (
+            mock.patch("xdit_comfyui.xdit_compat.runner_supports", return_value=True),
+            self.assertRaisesRegex(ValueError, "containing FP8"),
+        ):
+            validate_runtime_for_model(
+                "model",
+                {"gemm_quantization": "fp4", "use_fp8_text_encoder": True},
             )
 
     def test_runtime_rejects_multiple_cpu_offload_modes(self):

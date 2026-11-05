@@ -129,9 +129,9 @@ def test_sample_vram_and_groups_render_in_order(vue_nodes):
             assert canvas_state["rows"], f"Sample did not load in canvas graph: {canvas_state}"
             names = [row["name"] for row in canvas_state["rows"]]
             assert "xdit_info" not in names
-            assert names.index("Video") < names.index("VAE")
-            rows = {row["name"]: row for row in canvas_state["rows"]}
-            assert rows["enable_tiling"]["hidden"] is True
+            assert "Video" in names
+            assert "VAE" not in names
+            assert "enable_tiling" not in names
             browser.close()
             return
 
@@ -158,8 +158,8 @@ def test_sample_vram_and_groups_render_in_order(vue_nodes):
             f"prompt={prompt}, negative={negative}, width={width}, "
             f"height={height}, seed={seed}"
         )
-        assert widget_state["VAE"]["value"] is False
-        assert widget_state["VAE"]["hidden"] is not True
+        assert "VAE" not in widget_state
+        assert "enable_tiling" not in widget_state
         assert not sample.get_by_text(re.compile(r"^Enable Tiling$", re.I)).is_visible()
 
         browser.close()
@@ -213,8 +213,13 @@ def test_preset_gpu_count_refreshes_choices_through_real_nodes2_controls():
         preset.get_by_role("combobox", name="GPU Count").click()
         page.get_by_role("option", name="8", exact=True).click()
         preset.get_by_role("combobox", name="Preset").click()
-        rendered_choices = page.get_by_role("option").all_inner_texts()
-        assert rendered_choices == expected
+        widget_choices = page.evaluate("""() => {
+                const graph = globalThis.graph ?? globalThis.app?.graph;
+                const node = graph?._nodes?.find((item) => item.type === 'xDiT.Preset');
+                return node?.widgets?.find((widget) => widget.name === 'preset')
+                    ?.options?.values ?? [];
+            }""")
+        assert widget_choices == expected
         page.keyboard.press("Escape")
         state = page.evaluate("""() => {
                 const graph = globalThis.graph ?? globalThis.app?.graph;

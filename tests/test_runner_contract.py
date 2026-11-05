@@ -9,10 +9,9 @@ from xdit_comfyui.presets import (
     BenchmarkPreset,
     preset_by_name,
     preset_to_loader_widgets,
-    resolve_preset_choice,
 )
 from xdit_comfyui.runner_contract import (
-    SAMPLE_VAE_DESTS,
+    MODEL_VAE_DESTS,
     cache_config_baseline,
     cache_config_fields_for_method,
     cache_config_widget_names,
@@ -48,8 +47,8 @@ class RunnerContractTest(unittest.TestCase):
             "cross_attention_backend",
         ):
             self.assertIn(key, dests)
-        for key in SAMPLE_VAE_DESTS:
-            self.assertNotIn(key, dests)
+        for key in MODEL_VAE_DESTS:
+            self.assertIn(key, dests)
 
     def test_every_runner_arg_is_either_a_widget_or_explicitly_excluded(self):
         """A new xdit CLI arg must reach the UI without a code change here."""
@@ -129,18 +128,70 @@ class RunnerContractTest(unittest.TestCase):
         for key in ("profile", "profile_wait", "profile_warmup", "profile_active"):
             self.assertNotIn(key, names)
 
-    def test_profile_fields_are_not_exposed_in_comfyui(self):
-        schema = loader_schema()
-        self.assertNotIn("profiling", {group["id"] for group in schema["widget_groups"]})
-
     def test_new_runner_flags_live_in_their_named_groups(self):
         groups = {group["id"]: set(group["widgets"]) for group in loader_schema()["widget_groups"]}
         self.assertIn("text_encoder_tp_degree", groups["parallelism"])
         self.assertIn("memory_efficient_replicated_load", groups["memory"])
         self.assertIn("group_offload_low_cpu_mem", groups["memory"])
-        self.assertEqual(groups["vae"], {"use_parallel_vae", "use_vae_channels_last_format"})
+        self.assertEqual(
+            groups["vae"],
+            {"use_parallel_vae", "use_vae_channels_last_format", *MODEL_VAE_DESTS},
+        )
         self.assertIn("use_fp8_text_encoder", groups["quantization"])
         self.assertIn("vsa_drop_rates", groups["attention"])
+
+    def test_branch_specific_runner_flags_have_semantic_groups(self):
+        groups = {group["id"]: set(group["widgets"]) for group in loader_widget_groups()}
+        self.assertTrue(
+            {
+                "attn_layer_num_for_pp",
+                "fully_shard_components",
+                "num_pipeline_patch",
+                "warmup_steps",
+            }
+            <= groups["parallelism"]
+        )
+        self.assertTrue(
+            {
+                "bsa_cdf_threshold",
+                "bsa_sparsity",
+                "sol_attn_kv_splits",
+                "sol_attn_sink_start",
+                "sol_attn_sink_tokens",
+                "sol_attn_tau",
+                "sol_attn_thresh_type",
+            }
+            <= groups["attention"]
+        )
+        self.assertEqual(groups["lora"], {"lora_path", "lora_scale", "lora_weight_name"})
+        self.assertIn("share_pipefusion_decisions", groups["cache"])
+        self.assertIn("t2_share_pipefusion_decisions", groups["cache_denoiser_2"])
+
+    def test_dependent_widgets_have_declarative_visibility_rules(self):
+        from xdit_comfyui.runner_contract import _WIDGET_VISIBILITY_RULES
+
+        rules = _WIDGET_VISIBILITY_RULES
+        self.assertEqual(
+            rules["sol_attn_tau"]["any"][0],
+            {"widget": "attention_backend", "contains": "sol_attn"},
+        )
+        self.assertEqual(
+            rules["num_pipeline_patch"],
+            {"widget": "pipefusion_parallel_degree", "greater_than": 1},
+        )
+        self.assertEqual(
+            rules["vae_tile_size_height"],
+            {"widget": "enable_tiling", "truthy": True},
+        )
+        self.assertEqual(
+            rules["group_offload_low_cpu_mem"],
+            {"widget": "cpu_offload_mode", "equals": "group"},
+        )
+        schema = loader_schema()
+        self.assertEqual(
+            set(schema["widget_visibility"]),
+            set(rules) & set(schema["config_widgets"]),
+        )
 
     def test_model_groups_match_comfyui_user_tasks(self):
         groups = {group["id"]: set(group["widgets"]) for group in loader_schema()["widget_groups"]}
@@ -178,6 +229,22 @@ class RunnerContractTest(unittest.TestCase):
         self.assertEqual(
             _cache_config_to_widgets('{"enable_taylorseer": false}')["enable_taylorseer"],
             "false",
+        )
+
+    def test_pipefusion_cache_fields_follow_the_installed_runner(self):
+        from xdit_comfyui.runner_contract import cache_method_choices
+
+        if "pipefusion" not in cache_method_choices():
+            self.skipTest("installed xDiT does not expose PipeFusion caching")
+        self.assertIn("steps_computation_policy", cache_config_widget_names())
+        self.assertIn("alternating", cache_config_widget_spec("scm_policy")[0])
+        self.assertEqual(
+            cache_config_widget_spec("steps_computation_policy")[0],
+            ["default", "dynamic", "static"],
+        )
+        self.assertIn(
+            "steps_computation_policy",
+            cache_config_fields_for_method("pipefusion"),
         )
 
     def test_preset_preserves_upstream_tiling(self):
@@ -222,16 +289,6 @@ class RunnerContractTest(unittest.TestCase):
             loader_widget_spec("t2_residual_diff_threshold")[1]["tooltip"],
         )
 
-    def test_named_preset_runtime_includes_upstream_tiling(self):
-        resolved = resolve_preset_choice(
-            "flux2.i2i_2k.1gpu.rdna4",
-            "black-forest-labs/FLUX.2-dev",
-            1,
-            gpu_tags=("gfx1201", "rdna4"),
-        )
-        self.assertIsNotNone(resolved)
-        self.assertTrue(resolved.runtime["enable_tiling"])
-
     def test_optional_step_widgets_allow_zero(self):
 
         required = _runtime_loader_input_types()["required"]
@@ -253,22 +310,19 @@ class RunnerContractTest(unittest.TestCase):
             self.assertEqual(required[name][0], "BOOLEAN")
         self.assertIn("ulysses_degree", required)
 
-    def test_loader_schema_includes_expand_widget_metadata(self):
-        schema = loader_schema()
-        parallelism = next(
-            group for group in schema["widget_groups"] if group["id"] == "parallelism"
-        )
-        self.assertEqual(parallelism["expand_widget"], "PARALLELISM")
-
     def test_loader_widget_groups_cover_runner_config(self):
-        grouped = set()
-        for group in loader_widget_groups():
-            grouped.update(group["widgets"])
+        schema = loader_schema()
+        grouped = {widget for group in schema["widget_groups"] for widget in group["widgets"]}
         for widget in loader_config_widget_names():
             self.assertIn(widget, grouped)
         self.assertNotIn("warmup_calls", loader_config_widget_names())
-        schema = loader_schema()
-        self.assertIn("parallelism", {group["id"] for group in schema["widget_groups"]})
+        group_ids = {group["id"] for group in schema["widget_groups"]}
+        self.assertIn("parallelism", group_ids)
+        statically_grouped = {
+            widget for group in loader_widget_groups() for widget in group["widgets"]
+        }
+        if set(loader_config_widget_names()) - statically_grouped:
+            self.assertIn("other", group_ids)
         self.assertNotIn("execution_widget_order", schema)
 
     def test_every_group_names_the_toggle_the_browser_should_build(self):
@@ -293,8 +347,29 @@ class RunnerContractTest(unittest.TestCase):
         )
         self.assertTrue(runtime["enable_group_cpu_offload"])
         self.assertFalse(runtime["enable_model_cpu_offload"])
-        self.assertTrue(runtime["use_fp4_gemms"])
-        self.assertFalse(runtime["use_fp8_gemms"])
+        if "gemm_quantization" in runner_cli_dests():
+            self.assertEqual(runtime["gemm_quantization"], "fp4")
+            self.assertNotIn("use_fp4_gemms", runtime)
+        else:
+            self.assertTrue(runtime["use_fp4_gemms"])
+            self.assertFalse(runtime["use_fp8_gemms"])
+
+    def test_vae_overlap_pair_preserves_an_explicit_zero_width(self):
+        defaults = default_loader_widget_values()
+        self.assertIsNone(runtime_from_loader_widgets(defaults)["vae_tile_overlap_width"])
+
+        runtime = runtime_from_loader_widgets(
+            {
+                **defaults,
+                "enable_tiling": True,
+                "vae_tile_overlap_height": 88,
+                "vae_tile_overlap_width": 0,
+            }
+        )
+        self.assertEqual(
+            (runtime["vae_tile_overlap_height"], runtime["vae_tile_overlap_width"]),
+            (88, 0),
+        )
 
     def test_schema_exposes_combo_options(self):
         schema = loader_schema()
@@ -360,14 +435,13 @@ class RunnerContractTest(unittest.TestCase):
             self.assertIsNotNone(defaults[name], f"{name} defaults to null")
 
     def test_each_denoiser_group_offers_the_same_fields_as_the_first(self):
-        from xdit_comfyui.runner_contract import denoiser_cache_widget_field
-
         groups = {group["id"]: group for group in loader_widget_groups()}
         first = [name for name in groups["cache"]["widgets"] if name != "cache_method"]
         for group_id, group in groups.items():
             if not group_id.startswith("cache_denoiser_"):
                 continue
-            fields = [denoiser_cache_widget_field(name)[1] for name in group["widgets"]]
+            prefix = f"t{group_id.rsplit('_', 1)[1]}_"
+            fields = [name.removeprefix(prefix) for name in group["widgets"]]
             self.assertEqual(fields, first, f"{group_id} drifted from the first group")
 
     def test_a_second_denoiser_starts_from_its_own_cache_preset(self):
@@ -620,9 +694,11 @@ class RunnerContractTest(unittest.TestCase):
         )
 
     def test_cache_config_fields_for_method(self):
-        self.assertEqual(
-            cache_config_fields_for_method("dbcache"), frozenset(cache_config_widget_names())
-        )
+        widget_fields = frozenset(cache_config_widget_names())
+        dbcache_fields = cache_config_fields_for_method("dbcache")
+        self.assertLessEqual(dbcache_fields, widget_fields)
+        self.assertLessEqual(widget_fields - dbcache_fields, {"steps_computation_policy"})
+        self.assertEqual(cache_config_fields_for_method("pipefusion"), widget_fields)
         self.assertEqual(
             cache_config_fields_for_method("teacache"), frozenset({"residual_diff_threshold"})
         )

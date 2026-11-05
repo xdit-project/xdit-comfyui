@@ -188,6 +188,68 @@ class RunnerNodesTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Multiple video outputs"):
             _diffusion_output_to_comfy_image(DiffusionOutput(videos=videos, pipe_args={}))
 
+    def test_ltx_output_preserves_frames_and_audio(self):
+        from types import SimpleNamespace
+
+        import numpy as np
+        import torch
+
+        from xdit_comfyui.images import (
+            _diffusion_output_audio,
+            _diffusion_output_to_comfy_image,
+        )
+
+        video = SimpleNamespace(
+            frames=np.full((1, 3, 8, 8, 3), 0.5, dtype=np.float32),
+            audio=torch.ones((1, 2, 2400), dtype=torch.float16),
+        )
+        output = SimpleNamespace(
+            images=None,
+            videos=[video],
+            get_outputs=lambda: iter([(video, {})]),
+        )
+        frames = _diffusion_output_to_comfy_image(output)
+        audio = _diffusion_output_audio(output, 24000)
+        self.assertEqual(tuple(frames.shape), (3, 8, 8, 3))
+        self.assertEqual(tuple(audio["waveform"].shape), (1, 2, 2400))
+        self.assertEqual(audio["waveform"].dtype, torch.float32)
+        self.assertEqual(audio["sample_rate"], 24000)
+
+    def test_ltx_audio_without_sample_rate_does_not_drop_frames(self):
+        from types import SimpleNamespace
+
+        import numpy as np
+        import torch
+
+        from xdit_comfyui.images import _diffusion_output_audio
+
+        video = SimpleNamespace(
+            frames=np.zeros((1, 1, 8, 8, 3), dtype=np.float32),
+            audio=torch.zeros((1, 2, 20)),
+        )
+        output = SimpleNamespace(
+            images=None,
+            videos=[video],
+            get_outputs=lambda: iter([(video, {})]),
+        )
+        self.assertIsNone(_diffusion_output_audio(output, None))
+
+    def test_minimax_output_level_audio_is_preserved(self):
+        from types import SimpleNamespace
+
+        import torch
+
+        from xdit_comfyui.images import _diffusion_output_audio
+
+        output = SimpleNamespace(
+            videos=[torch.zeros((2, 8, 8, 3))],
+            audio=torch.ones((1, 2, 1600)),
+            audio_sample_rate=16000,
+        )
+        audio = _diffusion_output_audio(output)
+        self.assertEqual(audio["sample_rate"], 16000)
+        self.assertEqual(tuple(audio["waveform"].shape), (1, 2, 1600))
+
     def test_generate_splits_video_output(self):
         import torch
 
@@ -209,9 +271,11 @@ class RunnerNodesTest(unittest.TestCase):
                 "comfy_api.latest._util.video_types": util_mod,
             },
         ):
-            image2, video2 = _generation_outputs_from_frames(frames, "video", 16)
+            audio = {"waveform": mock.sentinel.waveform, "sample_rate": 24000}
+            image2, video2 = _generation_outputs_from_frames(frames, "video", 16, audio)
         self.assertIsNone(image2)
         self.assertIs(video2, mock.sentinel.video)
+        self.assertEqual(util_mod.VideoComponents.call_args.kwargs["audio"], audio)
 
     def test_frames_are_never_dropped_when_comfy_cannot_build_a_video(self):
         """Returning nothing would throw away a finished run without a word."""

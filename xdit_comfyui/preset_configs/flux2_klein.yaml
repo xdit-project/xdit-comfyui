@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 - name: flux2_klein.default
-  tags: [release, mad, lucid, instinct, gfx942, gfx950]
+  tags: [release, mad, lucid, instinct, gfx942, gfx950, nightly]
   model: black-forest-labs/FLUX.2-klein-9B
   runner: xdit
   args:
@@ -17,6 +17,7 @@
     guidance_scale: 1.0
     num_iterations: 25
     attention_backend: aiter
+    memory_efficient_replicated_load: true
 
 - name: flux2_klein.default.hopper
   tags: [lucid, hopper, h100, h200]
@@ -34,6 +35,7 @@
     guidance_scale: 1.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 - name: flux2_klein.default.blackwell
   tags: [lucid, blackwell, b200, b300]
@@ -51,6 +53,7 @@
     guidance_scale: 1.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 - name: flux2_klein.4gpu.rdna4
   tags: [rdna4, gfx1201]
@@ -67,8 +70,9 @@
     guidance_scale: 1.0
     attention_backend: aiter_flydsl_fp8
     ulysses_degree: 4
+    use_fp8_comms: true
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     enable_tiling: true
     use_parallel_vae: true
     memory_efficient_replicated_load: true
@@ -93,8 +97,9 @@
     guidance_scale: 1.0
     attention_backend: aiter_flydsl_fp8
     ulysses_degree: 4
+    use_fp8_comms: true
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     enable_tiling: true
     use_parallel_vae: true
     memory_efficient_replicated_load: true
@@ -119,8 +124,9 @@
     guidance_scale: 1.0
     attention_backend: aiter_flydsl_fp8
     ulysses_degree: 2
+    use_fp8_comms: true
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     enable_tiling: true
     use_parallel_vae: true
     memory_efficient_replicated_load: true
@@ -145,8 +151,9 @@
     guidance_scale: 1.0
     attention_backend: aiter_flydsl_fp8
     ulysses_degree: 2
+    use_fp8_comms: true
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     enable_tiling: true
     use_parallel_vae: true
     memory_efficient_replicated_load: true
@@ -172,7 +179,7 @@
     attention_backend: aiter_flydsl_fp8
     use_torch_compile: true
     enable_tiling: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     use_fp8_text_encoder: true
 
 - name: flux2_klein_4b.1gpu.rdna4
@@ -190,6 +197,6 @@
     guidance_scale: 1.0
     attention_backend: aiter_flydsl_fp8
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     enable_tiling: true
     use_fp8_text_encoder: true

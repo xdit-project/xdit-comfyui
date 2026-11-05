@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 - name: qwen_image.default
-  tags: [release, lucid, mad, instinct, gfx942, gfx950]
+  tags: [release, lucid, mad, instinct, gfx942, gfx950, nightly]
   model: Qwen/Qwen-Image-2512
   runner: xdit
   args:
@@ -16,6 +16,7 @@
     ulysses_degree: 8
     use_torch_compile: true
     attention_backend: aiter
+    memory_efficient_replicated_load: true
 
 - name: qwen_image.default.hopper
   tags: [lucid, hopper, h100, h200]
@@ -32,6 +33,7 @@
     ulysses_degree: 8
     use_torch_compile: true
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 - name: qwen_image.default.blackwell
   tags: [lucid, blackwell, b200, b300]
@@ -48,6 +50,7 @@
     ulysses_degree: 8
     use_torch_compile: true
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 - name: qwen_image.4gpu.rdna4
   tags: [rdna4, gfx1201]
@@ -64,15 +67,19 @@
     guidance_scale: 0.0
     attention_backend: aiter_flydsl_fp8
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     enable_tiling: true
-    cache_method: dbcache
+    cache_method: pipefusion
     cache_config:
       residual_diff_threshold: 0.1
+      scm_policy: alternating
+      steps_computation_policy: static
     use_fp8_text_encoder: true
-    ulysses_degree: 4
-    fully_shard_degree: 2
-    memory_efficient_sharding: true
+    pipefusion_parallel_degree: 4
+    num_pipeline_patch: 4
+    attn_layer_num_for_pp: [15, 15, 15, 15]
+    warmup_steps: 4
+    memory_efficient_replicated_load: true
     use_parallel_vae: true
     vae_tile_size_height: 352
     vae_tile_size_width: 2048
@@ -94,15 +101,19 @@
     guidance_scale: 0.0
     attention_backend: aiter_flydsl_fp8
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     enable_tiling: true
-    cache_method: dbcache
+    cache_method: pipefusion
     cache_config:
       residual_diff_threshold: 0.1
+      scm_policy: alternating
+      steps_computation_policy: static
     use_fp8_text_encoder: true
-    ulysses_degree: 2
-    fully_shard_degree: 2
-    memory_efficient_sharding: true
+    pipefusion_parallel_degree: 2
+    num_pipeline_patch: 2
+    attn_layer_num_for_pp: [30, 30]
+    warmup_steps: 4
+    memory_efficient_replicated_load: true
     use_parallel_vae: true
     vae_tile_size_height: 352
     vae_tile_size_width: 2048
@@ -124,7 +135,7 @@
     guidance_scale: 0.0
     attention_backend: aiter_flydsl_fp8
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     enable_model_cpu_offload: true
     enable_tiling: true
     cache_method: dbcache

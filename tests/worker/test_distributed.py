@@ -100,6 +100,19 @@ class WireProtocolTest(unittest.TestCase):
         with self.assertRaises(ConnectionError):
             dw._read_message(self.child)
 
+    def test_audio_is_moved_to_cpu_before_pickling(self):
+        top_audio = mock.MagicMock()
+        video_audio = mock.MagicMock()
+        output = types.SimpleNamespace(
+            audio=top_audio,
+            videos=[types.SimpleNamespace(audio=video_audio)],
+        )
+
+        dw._move_output_audio_to_cpu(output)
+
+        top_audio.detach.return_value.to.assert_called_once_with("cpu")
+        video_audio.detach.return_value.to.assert_called_once_with("cpu")
+
 
 class MemoryProbeTest(unittest.TestCase):
     def test_physical_gpu_id_maps_through_the_visible_device_list(self):

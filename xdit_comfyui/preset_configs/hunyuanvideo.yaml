@@ -1,8 +1,8 @@
 # Copyright Advanced Micro Devices, Inc.
 # SPDX-License-Identifier: MIT
 
-- name: hunyuanvideo.default
-  tags: [release, mad, lucid, instinct, gfx942, gfx950]
+- name: hunyuanvideo.default.gfx942
+  tags: [release, mad, lucid, instinct, gfx942]
   model: tencent/HunyuanVideo
   revision: refs/pr/18
   runner: xdit
@@ -17,14 +17,14 @@
     warmup_calls: 1
     num_iterations: 1
     ulysses_degree: 8
-    enable_tiling: True
-    enable_slicing: True
+    use_parallel_vae: true
     guidance_scale: 6.0
-    use_torch_compile: True
+    use_torch_compile: true
     attention_backend: aiter
+    memory_efficient_replicated_load: true
 
-- name: hunyuanvideo.fp8attn
-  tags: [release, instinct, gfx942, gfx950]
+- name: hunyuanvideo.default.gfx950
+  tags: [release, mad, lucid, instinct, gfx950]
   model: tencent/HunyuanVideo
   revision: refs/pr/18
   runner: xdit
@@ -39,57 +39,10 @@
     warmup_calls: 1
     num_iterations: 1
     ulysses_degree: 8
-    enable_tiling: True
-    enable_slicing: True
+    use_parallel_vae: true
     guidance_scale: 6.0
-    use_torch_compile: True
-    attention_backend: aiter_fp8
-
-- name: hunyuanvideo.sageattn.gfx942
-  tags: [release, instinct, gfx942]
-  model: tencent/HunyuanVideo
-  revision: refs/pr/18
-  runner: xdit
-  args:
-    prompt: In the large cage, two puppies were wagging their tails at each other.
-    batch_size: 1
-    height: 720
-    width: 1280
-    seed: 1168860793
-    num_frames: 129
-    num_inference_steps: 50
-    warmup_calls: 1
-    num_iterations: 1
-    ulysses_degree: 8
-    enable_tiling: True
-    enable_slicing: True
-    guidance_scale: 6.0
-    use_torch_compile: True
-    attention_backend: aiter_i8fp8
-
-- name: hunyuanvideo.sageattn.gfx950
-  tags: [release, instinct, gfx950]
-  model: tencent/HunyuanVideo
-  revision: refs/pr/18
-  runner: xdit
-  args:
-    prompt: In the large cage, two puppies were wagging their tails at each other.
-    batch_size: 1
-    height: 720
-    width: 1280
-    seed: 1168860793
-    num_frames: 129
-    num_inference_steps: 50
-    warmup_calls: 1
-    num_iterations: 1
-    ulysses_degree: 8
-    enable_tiling: True
-    enable_slicing: True
-    guidance_scale: 6.0
-    use_torch_compile: True
-    use_hybrid_attn_schedule: True
-    hybrid_attn_low_precision_backend: aiter_i8fp8
-    hybrid_attn_high_precision_backend: aiter
+    use_torch_compile: true
+    attention_backend: aiter_bf16
 
 - name: hunyuanvideo.default.hopper
   tags: [lucid, hopper, h100, h200]
@@ -107,11 +60,11 @@
     warmup_calls: 1
     num_iterations: 1
     ulysses_degree: 8
-    enable_tiling: True
-    enable_slicing: True
+    use_parallel_vae: true
     guidance_scale: 6.0
-    use_torch_compile: True
+    use_torch_compile: true
     attention_backend: flash_3
+    memory_efficient_replicated_load: true
 
 - name: hunyuanvideo.default.blackwell
   tags: [lucid, blackwell, b200, b300]
@@ -129,8 +82,8 @@
     warmup_calls: 1
     num_iterations: 1
     ulysses_degree: 8
-    enable_tiling: True
-    enable_slicing: True
+    use_parallel_vae: true
     guidance_scale: 6.0
-    use_torch_compile: True
+    use_torch_compile: true
     attention_backend: cudnn
+    memory_efficient_replicated_load: true

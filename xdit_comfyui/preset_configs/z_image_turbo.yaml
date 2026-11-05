@@ -14,8 +14,11 @@
     warmup_calls: 2
     num_iterations: 5
     guidance_scale: 0.0
-    attention_backend: aiter_flydsl
+    attention_backend: aiter_flydsl_fp8
+    gemm_quantization: fp8
+    use_fp8_text_encoder: true
     ulysses_degree: 4
+    use_fp8_comms: true
     use_torch_compile: true
     memory_efficient_replicated_load: true
     use_parallel_vae: true
@@ -38,8 +41,11 @@
     warmup_calls: 2
     num_iterations: 5
     guidance_scale: 0.0
-    attention_backend: aiter_flydsl
+    attention_backend: aiter_flydsl_fp8
+    gemm_quantization: fp8
+    use_fp8_text_encoder: true
     ulysses_degree: 2
+    use_fp8_comms: true
     use_torch_compile: true
     memory_efficient_replicated_load: true
     use_parallel_vae: true
@@ -62,5 +68,7 @@
     warmup_calls: 2
     num_iterations: 5
     guidance_scale: 0.0
-    attention_backend: aiter_flydsl
+    attention_backend: aiter_flydsl_fp8
+    gemm_quantization: fp8
+    use_fp8_text_encoder: true
     use_torch_compile: true

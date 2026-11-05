@@ -7,7 +7,7 @@ from enum import Enum
 from typing import Any
 
 try:  # ComfyUI owns this API; it is present whenever the node pack is loaded.
-    from comfy_api.v0_0_2 import ComfyExtension, io
+    from comfy_api.v0_0_2 import ComfyExtension, Types, io, ui
 except ImportError:  # Keep pure unit tests and package metadata imports lightweight.
 
     class _Hidden(Enum):
@@ -72,10 +72,13 @@ except ImportError:  # Keep pure unit tests and package metadata imports lightwe
         hidden: list[Any] = field(default_factory=list)
         description: str = ""
         not_idempotent: bool = False
+        is_output_node: bool = False
 
     class _NodeOutput(tuple):
-        def __new__(cls, *values):
-            return super().__new__(cls, values)
+        def __new__(cls, *values, ui=None, **_kwargs):
+            result = super().__new__(cls, values)
+            result.ui = ui
+            return result
 
     class _ComfyNode:
         pass
@@ -95,6 +98,40 @@ except ImportError:  # Keep pure unit tests and package metadata imports lightwe
         Combo = _Combo
 
     io = _IO()
+
+    class _SavedImages:
+        def __init__(self, results):
+            self.results = results
+
+        def as_dict(self):
+            return {"images": self.results}
+
+    class _ImageSaveHelper:
+        @staticmethod
+        def get_save_images_ui(*_args, **_kwargs):
+            return _SavedImages([])
+
+    class _UI:
+        SavedImages = _SavedImages
+        ImageSaveHelper = _ImageSaveHelper
+
+    ui = _UI()
+
+    class _VideoContainer:
+        @staticmethod
+        def as_input():
+            return ["auto"]
+
+    class _VideoCodec:
+        @staticmethod
+        def as_input():
+            return ["auto"]
+
+    class _Types:
+        VideoContainer = _VideoContainer
+        VideoCodec = _VideoCodec
+
+    Types = _Types()
 
     class ComfyExtension:
         pass

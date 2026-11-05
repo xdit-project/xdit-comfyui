@@ -19,6 +19,8 @@ from tests.node_test_helpers import (
 from xdit_comfyui.nodes import (
     XDiTModel,
     XDiTSample,
+    XDiTSaveImage,
+    XDiTSaveVideo,
 )
 from xdit_comfyui.presets import build_preset_spec
 from xdit_comfyui.sampling import _execute_sample
@@ -125,9 +127,7 @@ class RunnerNodesTest(unittest.TestCase):
         self.assertIsNone(video)
         self.assertEqual(tuple(images.shape[1:]), (64, 64, 3))
 
-    def test_sample_blocks_inactive_output_branch(self):
-        from comfy_execution.graph import ExecutionBlocker
-
+    def test_sample_propagates_none_to_the_inactive_output_branch(self):
         image = object()
         video = object()
         with mock.patch(
@@ -141,9 +141,16 @@ class RunnerNodesTest(unittest.TestCase):
             video_result = XDiTSample.execute(model={}, **_generate_kwargs(num_frames=81))
 
         self.assertIs(image_result[0], image)
-        self.assertIsInstance(image_result[1], ExecutionBlocker)
-        self.assertIsInstance(video_result[0], ExecutionBlocker)
+        self.assertIsNone(image_result[1])
+        self.assertIsNone(video_result[0])
         self.assertIs(video_result[1], video)
+
+    def test_inactive_save_nodes_emit_an_explicit_empty_ui_result(self):
+        image_result = XDiTSaveImage.execute(None)
+        video_result = XDiTSaveVideo.execute(None)
+
+        self.assertEqual(image_result.ui.as_dict(), {"images": []})
+        self.assertEqual(video_result.ui.as_dict(), {"images": []})
 
     def test_loader_init_config_includes_generation_stubs(self):
         from xdit_comfyui.model_info import model_generation_defaults
@@ -163,6 +170,7 @@ class RunnerNodesTest(unittest.TestCase):
             model_generation_defaults(runtime["model"])["num_inference_steps"],
         )
         self.assertEqual(config["input_images"], [])
+        self.assertIsNone(config["negative_prompt"])
 
     def test_runtime_loader_warms_worker(self):
         with mock.patch("xdit_comfyui.nodes._ensure_loader_worker") as warm:
@@ -261,13 +269,16 @@ class RunnerNodesTest(unittest.TestCase):
         self.assertEqual(metadata["output_kind"], "image")
         self.assertIn("runner created", stdout)
 
-    def test_sample_is_changed_includes_preset(self):
+    def test_sample_always_runs_against_the_current_worker(self):
+        import math
+
         flux = _preset_spec("flux.1gpu.rdna4")
         wan = _preset_spec("wan2_2_ti2v_5b.i2v.4gpu.rdna4")
         kwargs = _generate_kwargs()
         flux_fp = XDiTSample.fingerprint_inputs(preset=flux, **kwargs)
         wan_fp = XDiTSample.fingerprint_inputs(preset=wan, **kwargs)
-        self.assertNotEqual(flux_fp, wan_fp)
+        self.assertTrue(math.isnan(flux_fp))
+        self.assertTrue(math.isnan(wan_fp))
 
     def test_execute_sample_allows_overriding_preset_parallelism(self):
         """A preset is a source of defaults, not a runtime contract.

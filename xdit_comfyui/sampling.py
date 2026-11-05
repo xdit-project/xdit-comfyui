@@ -38,12 +38,6 @@ def _execute_sample(
     flow_shift=0.0,
     guidance_scale_2=0.0,
     resize_input_images=False,
-    enable_tiling=False,
-    enable_slicing=False,
-    vae_tile_size_height=0,
-    vae_tile_size_width=0,
-    vae_tile_overlap_height=0,
-    vae_tile_overlap_width=0,
     output_fps=0,
     timeout_seconds,
     unique_id=None,
@@ -55,7 +49,10 @@ def _execute_sample(
         raise ValueError("model must be a dictionary payload from XDiTModel.")
 
     if not dry_run and not model.get("_preloaded") and not model.get("_deferred_image_warm"):
-        raise RuntimeError("Model has not warmed the xDiT worker. Queue Model before Sample.")
+        raise RuntimeError(
+            "The xDiT worker is not ready. Queue xDiT Model before Sample; if Model already "
+            "ran, check its residency policy and the ComfyUI server log."
+        )
 
     generation_kwargs = _merge_generation_kwargs(
         preset,
@@ -106,16 +103,6 @@ def _execute_sample(
     exec_cfg = runtime.pop("_exec", {})
     if not isinstance(exec_cfg, dict):
         raise ValueError("model missing _exec configuration.")
-    runtime.update(
-        {
-            "enable_tiling": bool(enable_tiling),
-            "enable_slicing": bool(enable_slicing),
-            "vae_tile_size_height": int(vae_tile_size_height or 0) or None,
-            "vae_tile_size_width": int(vae_tile_size_width or 0) or None,
-            "vae_tile_overlap_height": int(vae_tile_overlap_height or 0) or None,
-            "vae_tile_overlap_width": int(vae_tile_overlap_width or 0) or None,
-        }
-    )
 
     from .model_info import align_generation_resolution
 
@@ -175,10 +162,10 @@ def _execute_sample(
         metadata.get("fps") or model_capabilities(config.get("model") or "").get("fps") or 24
     )
     selected_fps = int(output_fps or native_fps)
+    audio = metadata.pop("audio", None)
+    audio_args = () if audio is None else (audio,)
     image_output, video_output = _generation_outputs_from_frames(
-        frames,
-        output_kind,
-        selected_fps,
+        frames, output_kind, selected_fps, *audio_args
     )
     metadata["native_fps"] = native_fps
     metadata["selected_fps"] = selected_fps

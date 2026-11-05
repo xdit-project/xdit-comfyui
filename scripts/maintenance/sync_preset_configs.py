@@ -49,6 +49,11 @@ def _write_atomic(path: Path, content: bytes) -> None:
         temporary.unlink(missing_ok=True)
 
 
+def _normalize_yaml(content: bytes) -> bytes:
+    """Keep generated snapshots formatter-stable without changing YAML semantics."""
+    return b"\n".join(line.rstrip() for line in content.splitlines()) + b"\n"
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true", help="Fail instead of updating files.")
@@ -60,7 +65,7 @@ def main() -> None:
 
     entries = json.loads(_download(api))
     upstream = {
-        str(entry["name"]): _download(str(entry["download_url"]))
+        str(entry["name"]): _normalize_yaml(_download(str(entry["download_url"])))
         for entry in entries
         if entry.get("type") == "file" and str(entry.get("name", "")).endswith(".yaml")
     }

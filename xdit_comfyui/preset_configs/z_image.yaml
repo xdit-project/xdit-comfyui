@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 - name: z_image.default
-  tags: [release, mad, lucid, instinct, gfx942, gfx950]
+  tags: [release, mad, lucid, instinct, gfx942, gfx950, nightly]
   model: Tongyi-MAI/Z-Image
   runner: xdit
   args:
@@ -16,6 +16,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: aiter
+    memory_efficient_replicated_load: true
 
 - name: z_image.default.hopper
   tags: [lucid, hopper, h100, h200]
@@ -32,6 +33,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: flash_3
+    memory_efficient_replicated_load: true
 
 - name: z_image.default.blackwell
   tags: [lucid, blackwell, b200, b300]
@@ -48,6 +50,7 @@
     guidance_scale: 4.0
     num_iterations: 25
     attention_backend: cudnn
+    memory_efficient_replicated_load: true
 
 - name: z_image.4gpu.rdna4
   tags: [rdna4, gfx1201]
@@ -64,8 +67,9 @@
     guidance_scale: 4.0
     attention_backend: aiter_flydsl_fp8
     ulysses_degree: 2
+    use_fp8_comms: true
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     cache_method: dbcache
     cache_config:
       residual_diff_threshold: 0.08
@@ -96,7 +100,7 @@
     guidance_scale: 4.0
     attention_backend: aiter_flydsl_fp8
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     cache_method: dbcache
     cache_config:
       residual_diff_threshold: 0.08
@@ -127,7 +131,7 @@
     guidance_scale: 4.0
     attention_backend: aiter_flydsl_fp8
     use_torch_compile: true
-    use_fp8_gemms: true
+    gemm_quantization: fp8
     cache_method: dbcache
     cache_config:
       residual_diff_threshold: 0.08

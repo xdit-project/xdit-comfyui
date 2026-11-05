@@ -2,8 +2,7 @@ import { app } from "../../scripts/app.js";
 
 const ENGLISH = {
   "xdit.menu.title": "xDiT",
-  "xdit.menu.unloadAll": "Unload all models",
-  "xdit.residency.title": "GPU Residency",
+  "xdit.menu.unloadAll": "Unload all xDiT models",
   "xdit.residency.tooltip": "Inspect xDiT workers and GPU memory usage",
   "xdit.residency.empty": "No xDiT models are loaded.",
   "xdit.residency.refresh": "Refresh",
@@ -18,13 +17,12 @@ const ENGLISH = {
   "xdit.residency.samples": "Samples",
   "xdit.tooltip.disclosure": "Show or hide {group} settings.",
   "xdit.tooltip.residency":
-    "keep_gpu retains the model until you unload it or stop ComfyUI; park_cpu moves weights to system RAM; release stops the worker after the run.",
+    "After the last Sample using this Model: keep_gpu retains the worker; park_cpu attempts to move supported layouts to system RAM and leaves it retained if parking fails; release stops the worker.",
   "xdit.tooltip.residencyUnavailable":
     "CPU parking is unavailable for this layout: {reason}.",
   "xdit.tooltip.distilledWeights":
     "LightX2V transformer files for Wan 2.2 Distilled I2V.",
   "xdit.tooltip.denoiserCache": "Cache values for {transformer}. {description}",
-  "xdit.tooltip.denoiserField": "{transformer}: {field}",
   "xdit.notice.released": "Released GPU memory for Model node(s): {nodes}.",
   "xdit.notice.noneToRelease": "No resident xDiT workers to release.",
   "xdit.error.releaseFailed":

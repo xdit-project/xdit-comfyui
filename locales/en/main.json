@@ -2,10 +2,9 @@
   "xdit": {
     "menu": {
       "title": "xDiT",
-      "unloadAll": "Unload all models"
+      "unloadAll": "Unload all xDiT models"
     },
     "residency": {
-      "title": "xDiT",
       "tooltip": "Inspect xDiT workers and GPU memory usage",
       "empty": "No xDiT models are loaded.",
       "refresh": "Refresh",
@@ -21,11 +20,10 @@
     },
     "tooltip": {
       "disclosure": "Show or hide {group} settings.",
-      "residency": "keep_gpu retains the model until you unload it or stop ComfyUI; park_cpu moves weights to system RAM; release stops the worker after the run.",
+      "residency": "After the last Sample using this Model: keep_gpu retains the worker; park_cpu attempts to move supported layouts to system RAM and leaves it retained if parking fails; release stops the worker.",
       "residencyUnavailable": "CPU parking is unavailable for this layout: {reason}.",
       "distilledWeights": "LightX2V transformer files for Wan 2.2 Distilled I2V.",
-      "denoiserCache": "Cache values for {transformer}. {description}",
-      "denoiserField": "{transformer}: {field}"
+      "denoiserCache": "Cache values for {transformer}. {description}"
     },
     "notice": {
       "released": "Released GPU memory for Model node(s): {nodes}.",

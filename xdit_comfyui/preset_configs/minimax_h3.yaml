@@ -1,0 +1,56 @@
+# Copyright Advanced Micro Devices, Inc.
+# SPDX-License-Identifier: MIT
+
+- name: minimax_h3.default
+  tags: [release, mad, lucid, instinct, gfx942, gfx950, nightly]
+  model: MiniMaxAI/MiniMax-H3
+  runner: xdit
+  args:
+    prompt: A cat flying through the universe on a broom, playing rap music from his boombox
+    height: 768
+    width: 1344
+    seed: 42
+    num_frames: 124
+    num_inference_steps: 50
+    num_iterations: 1
+    ulysses_degree: 8
+    use_parallel_vae: true
+    text_encoder_tp_degree: 8
+    use_torch_compile: true
+    attention_backend: aiter
+
+- name: minimax_h3.default.hopper
+  tags: [lucid, hopper, h200]
+  model: MiniMaxAI/MiniMax-H3
+  runner: xdit
+  args:
+    prompt: A cat flying through the universe on a broom, playing rap music from his boombox
+    height: 768
+    width: 1344
+    seed: 42
+    num_frames: 124
+    num_inference_steps: 50
+    num_iterations: 1
+    ulysses_degree: 8
+    use_parallel_vae: true
+    text_encoder_tp_degree: 8
+    use_torch_compile: true
+    attention_backend: cudnn
+
+- name: minimax_h3.default.blackwell
+  tags: [lucid, blackwell, b200, b300]
+  model: MiniMaxAI/MiniMax-H3
+  runner: xdit
+  args:
+    prompt: A cat flying through the universe on a broom, playing rap music from his boombox
+    height: 768
+    width: 1344
+    seed: 42
+    num_frames: 124
+    num_inference_steps: 50
+    num_iterations: 1
+    ulysses_degree: 8
+    use_parallel_vae: true
+    text_encoder_tp_degree: 8
+    use_torch_compile: true
+    attention_backend: cudnn

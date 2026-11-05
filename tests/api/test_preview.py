@@ -15,8 +15,8 @@ from xdit_comfyui.api import (
 )
 from xdit_comfyui.nodes import XDiTModel
 from xdit_comfyui.presets import PRESET_NONE, list_presets_for_gpu_tag
-from xdit_comfyui.runner_contract import default_loader_widget_values
-from xdit_comfyui.runtime_config import _default_gpu_count, _runtime_loader_input_types
+from xdit_comfyui.runner_contract import cache_method_choices, default_loader_widget_values
+from xdit_comfyui.runtime_config import _default_gpu_count
 from xdit_comfyui.worker import _clear_loader_cache
 
 
@@ -30,11 +30,6 @@ class LoaderPreviewTest(unittest.TestCase):
     def test_default_gpu_count_uses_visible_hardware(self):
         with patch("xdit_comfyui.runtime_config._available_gpu_count", return_value=4):
             self.assertEqual(_default_gpu_count(), 4)
-
-    def test_loader_input_types_exclude_gpu_count_widget(self):
-        required = _runtime_loader_input_types()["required"]
-        self.assertNotIn("gpu_count", required)
-        self.assertIn("gpu_device_ids", required)
 
     def test_preset_preview_disjoint_tag_presets(self):
         gfx1201 = _preset_preview_payload({"preset": PRESET_NONE, "gpu_tag": "gfx1201"})
@@ -149,7 +144,7 @@ class LoaderPreviewTest(unittest.TestCase):
         self.assertFalse(unsupported["step_cache_supported"])
         self.assertEqual(
             unsupported["cache_method_choices"],
-            ["none", "teacache", "fbcache", "dbcache"],
+            cache_method_choices(),
         )
         self.assertEqual(unsupported["display_widgets"]["cache_method"], "none")
 

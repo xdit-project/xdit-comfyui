@@ -1,10 +1,11 @@
 import { t } from "./xdit_i18n.js";
+import { setWidgetHidden } from "./xdit_widget_state.js";
 
 export function usesModernNodeWidgets() {
   return !!globalThis.LiteGraph?.vueNodesMode;
 }
 
-function expandWidgetName(group) {
+export function expandWidgetName(group) {
   return group.expand_widget || group.label;
 }
 
@@ -14,6 +15,28 @@ export function refreshVueWidgetSnapshot(node) {
   if (!Array.isArray(widgets) || !widgets.length) return;
   widgets.push(widgets[widgets.length - 1]);
   widgets.pop();
+}
+
+export function setDisclosureWidgetHidden(
+  node,
+  widgetOrName,
+  hidden,
+  expandWidgetNames,
+) {
+  const name =
+    typeof widgetOrName === "string" ? widgetOrName : widgetOrName?.name;
+  setWidgetHidden(node, widgetOrName, hidden, {
+    canvasOnly:
+      usesModernNodeWidgets() && new Set(expandWidgetNames || []).has(name),
+  });
+}
+
+export function fitNodeHeight(node, minWidth) {
+  const computed = node.computeSize?.();
+  if (!computed) return;
+  const width = Math.max(node.size?.[0] ?? 0, minWidth);
+  if (node.size?.[1] === computed[1] && node.size?.[0] === width) return;
+  node.setSize([width, computed[1]]);
 }
 
 function setGroupExpanded(node, widget, expanded) {

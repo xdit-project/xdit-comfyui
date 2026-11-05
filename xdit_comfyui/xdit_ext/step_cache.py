@@ -47,11 +47,9 @@ def _resolve_transformer(runner, attr):
     transformer = getattr(pipe, attr, None)
     if transformer is None:
         return None
-    try:
-        from xfuser.model_executor.cache.adapters.cache_dit import _unwrap_fsdp
-    except ImportError:
-        return transformer
-    return _unwrap_fsdp(transformer)
+    from xdit_comfyui.xdit_compat import unwrap_cache_dit_fsdp
+
+    return unwrap_cache_dit_fsdp(transformer)
 
 
 def _tree_cache_blocks(runner):
@@ -188,8 +186,9 @@ def _overrides_for_target(name, broadcast, keyed, *, per_transformer: bool):
 
 
 def _build_dbcache_refresh_config(runner, steps, target, overrides: dict[str, Any]):
-    from xfuser.model_executor.cache.adapters.cache_dit import _build_config, _import_cache_dit
+    from xdit_comfyui.xdit_compat import cache_dit_config_helpers
 
+    _build_config, _, _import_cache_dit = cache_dit_config_helpers()
     cache_config_json = json.dumps(overrides, sort_keys=True) if overrides else None
     _, DBCacheConfig, _, _ = _import_cache_dit()
     return _build_config(

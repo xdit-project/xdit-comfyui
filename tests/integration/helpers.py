@@ -58,7 +58,7 @@ def stop_comfyui_dev_script() -> str:
 
 
 def ensure_comfy_importable() -> None:
-    """The Sample node returns ComfyUI's ExecutionBlocker, so ComfyUI must be importable."""
+    """Add ComfyUI to sys.path for integration cases that exercise its runtime types."""
     import os
     import sys
 
@@ -75,7 +75,8 @@ def comfy_video_api():
     exercised on a machine that has ComfyUI checked out — which CI does not.
     """
     import sys
-    import types
+
+    from tests.comfy_stubs import comfy_video_modules
 
     try:
         import comfy_api.latest._input_impl.video_types  # noqa: F401
@@ -85,27 +86,8 @@ def comfy_video_api():
     except Exception:
         pass
 
-    class VideoComponents:
-        def __init__(self, images, frame_rate):
-            self.images = images
-            self.frame_rate = frame_rate
-
-    class VideoFromComponents:
-        def __init__(self, components):
-            self.components = components
-
-    names = (
-        "comfy_api",
-        "comfy_api.latest",
-        "comfy_api.latest._input_impl",
-        "comfy_api.latest._input_impl.video_types",
-        "comfy_api.latest._util",
-        "comfy_api.latest._util.video_types",
-    )
-    modules = {name: types.ModuleType(name) for name in names}
-    modules["comfy_api.latest._input_impl.video_types"].VideoFromComponents = VideoFromComponents
-    modules["comfy_api.latest._util.video_types"].VideoComponents = VideoComponents
-    previous = {name: sys.modules.get(name) for name in names}
+    modules, _video_type = comfy_video_modules()
+    previous = {name: sys.modules.get(name) for name in modules}
     sys.modules.update(modules)
     try:
         yield
@@ -635,8 +617,11 @@ def validate_loader_init_step_cache(worker_payload: dict[str, Any]) -> None:
     if not cache_method or cache_method in ("none", "false", "0"):
         return
 
-    from xfuser.model_executor.cache.adapters.cache_dit import _build_scm_mask
     from xfuser.runner import xFuserModelRunner
+
+    from xdit_comfyui.xdit_compat import cache_dit_config_helpers
+
+    _, _build_scm_mask, _ = cache_dit_config_helpers()
 
     skip_without_gpu()
     runner = xFuserModelRunner(worker_payload)
