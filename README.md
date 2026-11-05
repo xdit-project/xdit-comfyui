@@ -61,13 +61,13 @@ The xDiT sidebar shows resident workers, assigned GPUs, memory use, and unload c
 
 ## Nodes
 
-| Node                | Purpose                                                                    |
-| ------------------- | -------------------------------------------------------------------------- |
-| **xDiT Preset**     | Applies a benchmark-tested model, GPU, and generation configuration.       |
-| **xDiT Model**      | Configures and manages a model worker.                                     |
-| **xDiT Sample**     | Supplies generation inputs and produces an image or video.                 |
-| **Save xDiT Image** | Saves image results.                                                       |
-| **Save xDiT Video** | Saves video results.                                                       |
+| Node                | Purpose                                                              |
+| ------------------- | -------------------------------------------------------------------- |
+| **xDiT Preset**     | Applies a benchmark-tested model, GPU, and generation configuration. |
+| **xDiT Model**      | Configures and manages a model worker.                               |
+| **xDiT Sample**     | Supplies generation inputs and produces an image or video.           |
+| **Save xDiT Image** | Saves image results.                                                 |
+| **Save xDiT Video** | Saves video results.                                                 |
 
 The Model node owns model initialization and runtime controls, including VAE settings. The
 Sample node owns generation inputs. Advanced controls are grouped and filtered according to

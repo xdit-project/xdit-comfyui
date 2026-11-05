@@ -103,15 +103,14 @@ globalThis.fetch = async (url, init) => {
       pending.requests -= 1;
       return { ok: false, status: 404, json: async () => ({}) };
     }
-    // The body resolves lazily, so the caller's `await response.json()` still counts
-    // as work in flight while the harness decides whether the graph has settled.
+    // A fetch is no longer in flight once its response resolves. Some endpoints
+    // intentionally ignore an empty response body, so tying completion to json()
+    // would leave those requests pending forever.
+    pending.requests -= 1;
     return {
       ok: true,
       status: 200,
-      json: async () => {
-        pending.requests -= 1;
-        return body;
-      },
+      json: async () => body,
     };
   } catch (error) {
     pending.requests -= 1;

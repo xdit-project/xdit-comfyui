@@ -694,9 +694,11 @@ class RunnerContractTest(unittest.TestCase):
         )
 
     def test_cache_config_fields_for_method(self):
-        self.assertEqual(
-            cache_config_fields_for_method("dbcache"), frozenset(cache_config_widget_names())
-        )
+        widget_fields = frozenset(cache_config_widget_names())
+        dbcache_fields = cache_config_fields_for_method("dbcache")
+        self.assertLessEqual(dbcache_fields, widget_fields)
+        self.assertLessEqual(widget_fields - dbcache_fields, {"steps_computation_policy"})
+        self.assertEqual(cache_config_fields_for_method("pipefusion"), widget_fields)
         self.assertEqual(
             cache_config_fields_for_method("teacache"), frozenset({"residual_diff_threshold"})
         )

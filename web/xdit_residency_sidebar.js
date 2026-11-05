@@ -45,7 +45,8 @@ async function reapDeletedLoaders(modelNodes) {
       live_node_ids: modelNodes.map((node) => String(node.id)),
     }),
   });
-  if (!response.ok) throw new Error(`Refresh cleanup failed (${response.status})`);
+  if (!response.ok)
+    throw new Error(`Refresh cleanup failed (${response.status})`);
 }
 
 function nodeValue(node, name) {

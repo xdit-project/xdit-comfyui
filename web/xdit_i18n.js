@@ -29,6 +29,8 @@ const ENGLISH = {
     "Release request failed. Check the ComfyUI server log.",
   "xdit.group.video.label": "Video",
   "xdit.group.video.description": "Video frame and guidance settings.",
+  "xdit.group.vae.label": "VAE",
+  "xdit.group.vae.description": "VAE decoding and tiling settings.",
 };
 
 export function t(key, values = {}) {

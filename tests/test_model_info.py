@@ -40,7 +40,11 @@ class ModelInfoTest(unittest.TestCase):
         self.assertTrue(gates.get("gemm_precision"))
         self.assertTrue(gates.get("use_parallel_vae"))
 
-    def test_cache_methods_come_from_runner_settings(self):
+    @mock.patch(
+        "xdit_comfyui.runner_contract.cache_method_choices",
+        return_value=["none", "teacache", "dbcache"],
+    )
+    def test_cache_methods_come_from_runner_settings(self, _choices):
         from xdit_comfyui.model_info import _supported_cache_methods
 
         caps = SimpleNamespace(supports_step_caching=True)

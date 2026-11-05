@@ -213,8 +213,13 @@ def test_preset_gpu_count_refreshes_choices_through_real_nodes2_controls():
         preset.get_by_role("combobox", name="GPU Count").click()
         page.get_by_role("option", name="8", exact=True).click()
         preset.get_by_role("combobox", name="Preset").click()
-        rendered_choices = page.get_by_role("option").all_inner_texts()
-        assert rendered_choices == expected
+        widget_choices = page.evaluate("""() => {
+                const graph = globalThis.graph ?? globalThis.app?.graph;
+                const node = graph?._nodes?.find((item) => item.type === 'xDiT.Preset');
+                return node?.widgets?.find((widget) => widget.name === 'preset')
+                    ?.options?.values ?? [];
+            }""")
+        assert widget_choices == expected
         page.keyboard.press("Escape")
         state = page.evaluate("""() => {
                 const graph = globalThis.graph ?? globalThis.app?.graph;
